@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "ddal-kkak-front",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
