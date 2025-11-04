@@ -526,6 +526,136 @@ function EmptyState({ message = "표시할 데이터가 없습니다.", icon = "
   );
 }
 
+// ================== AI 분석 스코어 컴포넌트 ==================
+
+// AI 분석 점수 게이지 (0-100점)
+function AIScoreGauge({ score, sentiment, size = "md" }: { score: number; sentiment: "POS" | "NEG" | "NEU"; size?: "sm" | "md" | "lg" }) {
+  const sizeMap = {
+    sm: { container: "h-16 w-16", text: "text-lg", label: "text-[9px]" },
+    md: { container: "h-24 w-24", text: "text-2xl", label: "text-xs" },
+    lg: { container: "h-32 w-32", text: "text-3xl", label: "text-sm" }
+  };
+  const s = sizeMap[size];
+
+  const colorMap = {
+    POS: { stroke: "#10b981", bg: "#d1fae5", text: "text-emerald-700" },
+    NEG: { stroke: "#ef4444", bg: "#fee2e2", text: "text-red-700" },
+    NEU: { stroke: "#6b7280", bg: "#f3f4f6", text: "text-gray-700" }
+  };
+  const color = colorMap[sentiment];
+
+  const radius = 45;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (score / 100) * circumference;
+
+  return (
+    <div className={classNames("relative", s.container)}>
+      <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
+        {/* 배경 원 */}
+        <circle cx="50" cy="50" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="8" />
+        {/* 점수 원 */}
+        <circle
+          cx="50"
+          cy="50"
+          r={radius}
+          fill="none"
+          stroke={color.stroke}
+          strokeWidth="8"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className={classNames("font-extrabold", color.text, s.text)}>{score}</div>
+        <div className={classNames("text-gray-500", s.label)}>점</div>
+      </div>
+    </div>
+  );
+}
+
+// 분석 상태 배지
+function AnalysisStatusBadge({ sentiment, confidence }: { sentiment: "POS" | "NEG" | "NEU"; confidence?: number }) {
+  const map = {
+    POS: { label: "긍정", emoji: "📈", bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200" },
+    NEG: { label: "부정", emoji: "📉", bg: "bg-red-50", text: "text-red-700", ring: "ring-red-200" },
+    NEU: { label: "중립", emoji: "➡️", bg: "bg-gray-50", text: "text-gray-700", ring: "ring-gray-200" }
+  };
+  const s = map[sentiment];
+
+  return (
+    <div className={classNames("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold ring-1", s.bg, s.text, s.ring)}>
+      <span>{s.emoji}</span>
+      <span>{s.label}</span>
+      {confidence !== undefined && <span className="text-xs opacity-75">({(confidence * 100).toFixed(0)}%)</span>}
+    </div>
+  );
+}
+
+// 오늘의 주목 종목 카드
+function FeaturedStockCard({ stock, onClick }: { stock: any; onClick: () => void }) {
+  return (
+    <div
+      onClick={onClick}
+      className="group cursor-pointer rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-5 shadow-md hover:shadow-xl transition-all"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            {stock.logoUrl && <img src={stock.logoUrl} alt={stock.name} className="h-10 w-10 rounded-lg" />}
+            <div>
+              <div className="text-sm text-gray-600">{stock.symbol}</div>
+              <div className="text-lg font-bold text-gray-900">{stock.name}</div>
+            </div>
+          </div>
+          <p className="mt-3 text-sm text-gray-700 line-clamp-2">{stock.reason}</p>
+          <div className="mt-3 flex items-center gap-2">
+            <AnalysisStatusBadge sentiment={stock.sentiment} confidence={stock.confidence} />
+            <span className="text-xs text-gray-500">{stock.category}</span>
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="md" />
+          <div className="text-xs text-gray-600 font-semibold">AI 분석</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 공시 분석 리포트 카드
+function FilingAnalysisCard({ filing, onClick }: { filing: any; onClick: () => void }) {
+  return (
+    <div
+      onClick={onClick}
+      className="cursor-pointer rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0">
+          <AIScoreGauge score={filing.aiScore} sentiment={filing.sentiment} size="sm" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium">
+              {filing.formType}
+            </span>
+            <span className="text-xs text-gray-500">{filing.market}</span>
+            <span className="text-xs text-gray-400">{filing.date}</span>
+          </div>
+          <div className="font-semibold text-gray-900 mb-1">
+            {filing.symbol} · {filing.company}
+          </div>
+          <p className="text-sm text-gray-600 line-clamp-2 mb-2">{filing.summary}</p>
+          <div className="flex items-center gap-2">
+            <AnalysisStatusBadge sentiment={filing.sentiment} confidence={filing.confidence} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Quick Actions 바
 function QuickActionsBar() {
   const [calcModalOpen, setCalcModalOpen] = useState(false);
@@ -687,19 +817,145 @@ export function UndervaluedRow({ item, isFavorite, onToggleFavorite, onClick }: 
 }
 
 // ------------------------------------------------------------------
-// MOCK DATA (미국/한국 + 섹터 카테고리 + 로고 + 100일 수익률)
+// MOCK DATA (AI 분석 점수 포함)
 // ------------------------------------------------------------------
-const mockFilings = [
-  { id: "f1", market: "US", symbol: "MSFT", company: "Microsoft", formType: "10-Q", summary: "클라우드 성장 지속", direction: "POS", confidence: 0.8, category: "정보기술", logoUrl: "https://logo.clearbit.com/microsoft.com" },
-  { id: "f2", market: "US", symbol: "AAPL", company: "Apple", formType: "10-K", summary: "수익성 방어, R&D 확대", direction: "NEU", confidence: 0.62, category: "정보기술", logoUrl: "https://logo.clearbit.com/apple.com" },
-  { id: "f3", market: "KR", symbol: "005930.KS", company: "삼성전자", formType: "분기보고서", summary: "메모리 ASP 상승", direction: "POS", confidence: 0.7, category: "정보기술", logoUrl: "https://logo.clearbit.com/samsung.com" },
-  { id: "f4", market: "KR", symbol: "068270.KS", company: "셀트리온", formType: "분기보고서", summary: "바이오시밀러 성장", direction: "POS", confidence: 0.66, category: "헬스케어", logoUrl: "https://logo.clearbit.com/celltrion.com" },
+
+// 오늘의 주목 저평가주 (Featured)
+const mockFeaturedStocks = [
+  {
+    id: "fs1",
+    market: "US",
+    symbol: "NVDA",
+    name: "NVIDIA",
+    category: "정보기술",
+    aiScore: 92,
+    sentiment: "POS" as const,
+    confidence: 0.88,
+    reason: "AI 칩 수요 폭발적 증가, 데이터센터 매출 3분기 연속 150% 성장. 차세대 Blackwell 아키텍처 출시 임박",
+    logoUrl: "https://logo.clearbit.com/nvidia.com",
+    currentPrice: 487.2,
+    targetPrice: 620.0,
+    upside: 27.3
+  },
+  {
+    id: "fs2",
+    market: "KR",
+    symbol: "005930.KS",
+    name: "삼성전자",
+    category: "정보기술",
+    aiScore: 85,
+    sentiment: "POS" as const,
+    confidence: 0.82,
+    reason: "HBM3E 수율 개선 확인, AI 서버용 메모리 공급 본격화. 파운드리 3나노 양산 가시화",
+    logoUrl: "https://logo.clearbit.com/samsung.com",
+    currentPrice: 73500,
+    targetPrice: 95000,
+    upside: 29.3
+  },
+  {
+    id: "fs3",
+    market: "US",
+    symbol: "AMD",
+    name: "AMD",
+    category: "정보기술",
+    aiScore: 78,
+    sentiment: "POS" as const,
+    confidence: 0.75,
+    reason: "MI300 AI 가속기 수주 확대, 데이터센터 CPU 점유율 꾸준한 상승",
+    logoUrl: "https://logo.clearbit.com/amd.com",
+    currentPrice: 142.8,
+    targetPrice: 180.0,
+    upside: 26.0
+  }
 ];
+
+// 최근 공시 분석
+const mockFilings = [
+  {
+    id: "f1",
+    market: "US",
+    symbol: "MSFT",
+    company: "Microsoft",
+    formType: "10-Q",
+    date: "2025-11-03",
+    summary: "Azure 클라우드 매출 31% 성장, AI 통합 서비스 확대로 경쟁력 강화",
+    direction: "POS",
+    sentiment: "POS" as const,
+    confidence: 0.85,
+    aiScore: 88,
+    category: "정보기술",
+    logoUrl: "https://logo.clearbit.com/microsoft.com"
+  },
+  {
+    id: "f2",
+    market: "US",
+    symbol: "TSLA",
+    company: "Tesla",
+    formType: "10-Q",
+    date: "2025-11-02",
+    summary: "차량 인도량 전분기 대비 6% 감소, 마진율 하락 우려",
+    direction: "NEG",
+    sentiment: "NEG" as const,
+    confidence: 0.73,
+    aiScore: 42,
+    category: "경기소비재",
+    logoUrl: "https://logo.clearbit.com/tesla.com"
+  },
+  {
+    id: "f3",
+    market: "KR",
+    symbol: "005930.KS",
+    company: "삼성전자",
+    formType: "분기보고서",
+    date: "2025-11-01",
+    summary: "메모리 부문 ASP 상승, HBM 매출 비중 확대",
+    direction: "POS",
+    sentiment: "POS" as const,
+    confidence: 0.79,
+    aiScore: 82,
+    category: "정보기술",
+    logoUrl: "https://logo.clearbit.com/samsung.com"
+  },
+  {
+    id: "f4",
+    market: "KR",
+    symbol: "068270.KS",
+    company: "셀트리온",
+    formType: "분기보고서",
+    date: "2025-10-31",
+    summary: "바이오시밀러 유럽 매출 안정적, 신약 파이프라인 진행 중",
+    direction: "NEU",
+    sentiment: "NEU" as const,
+    confidence: 0.65,
+    aiScore: 68,
+    category: "헬스케어",
+    logoUrl: "https://logo.clearbit.com/celltrion.com"
+  },
+  {
+    id: "f5",
+    market: "US",
+    symbol: "META",
+    company: "Meta",
+    formType: "10-Q",
+    date: "2025-10-30",
+    summary: "광고 매출 회복세, Reality Labs 투자 지속으로 적자 확대",
+    direction: "NEU",
+    sentiment: "NEU" as const,
+    confidence: 0.58,
+    aiScore: 64,
+    category: "커뮤니케이션 서비스",
+    logoUrl: "https://logo.clearbit.com/meta.com"
+  }
+];
+
+// 저평가 우량주 랭킹
 const mockUndervalued = [
-  { market: "US", symbol: "MSFT", name: "Microsoft", category: "정보기술", rank: 1, score: 88.2, introducedAt: "2025-08-12", perfSinceIntro: 0.124, perf100d: 0.153, logoUrl: "https://logo.clearbit.com/microsoft.com" },
-  { market: "US", symbol: "XOM", name: "Exxon Mobil", category: "에너지", rank: 2, score: 80.1, introducedAt: "2025-08-15", perfSinceIntro: 0.044, perf100d: -0.021, logoUrl: "https://logo.clearbit.com/exxon.com" },
-  { market: "KR", symbol: "005930.KS", name: "삼성전자", category: "정보기술", rank: 1, score: 84.5, introducedAt: "2025-09-02", perfSinceIntro: 0.089, perf100d: 0.112, logoUrl: "https://logo.clearbit.com/samsung.com" },
-  { market: "KR", symbol: "068270.KS", name: "셀트리온", category: "헬스케어", rank: 2, score: 79.3, introducedAt: "2025-08-30", perfSinceIntro: 0.031, perf100d: 0.064, logoUrl: "https://logo.clearbit.com/celltrion.com" },
+  { market: "US", symbol: "NVDA", name: "NVIDIA", category: "정보기술", rank: 1, aiScore: 92, sentiment: "POS" as const, introducedAt: "2025-08-12", perfSinceIntro: 0.124, perf100d: 0.153, logoUrl: "https://logo.clearbit.com/nvidia.com" },
+  { market: "US", symbol: "MSFT", name: "Microsoft", category: "정보기술", rank: 2, aiScore: 88, sentiment: "POS" as const, introducedAt: "2025-08-15", perfSinceIntro: 0.104, perf100d: 0.132, logoUrl: "https://logo.clearbit.com/microsoft.com" },
+  { market: "US", symbol: "AMD", name: "AMD", category: "정보기술", rank: 3, aiScore: 78, sentiment: "POS" as const, introducedAt: "2025-09-01", perfSinceIntro: 0.067, perf100d: 0.089, logoUrl: "https://logo.clearbit.com/amd.com" },
+  { market: "KR", symbol: "005930.KS", name: "삼성전자", category: "정보기술", rank: 1, aiScore: 85, sentiment: "POS" as const, introducedAt: "2025-09-02", perfSinceIntro: 0.089, perf100d: 0.112, logoUrl: "https://logo.clearbit.com/samsung.com" },
+  { market: "KR", symbol: "000660.KS", name: "SK하이닉스", category: "정보기술", rank: 2, aiScore: 81, sentiment: "POS" as const, introducedAt: "2025-08-25", perfSinceIntro: 0.095, perf100d: 0.128, logoUrl: "https://logo.clearbit.com/skhynix.com" },
+  { market: "KR", symbol: "068270.KS", name: "셀트리온", category: "헬스케어", rank: 3, aiScore: 72, sentiment: "NEU" as const, introducedAt: "2025-08-30", perfSinceIntro: 0.031, perf100d: 0.064, logoUrl: "https://logo.clearbit.com/celltrion.com" },
 ];
 
 // ------------------------------------------------------------------
@@ -861,23 +1117,41 @@ function Header({ mode, setMode }: { mode: "stock" | "coin"; setMode: (m: "stock
   const isStock = mode === "stock";
   const isCoin = mode === "coin";
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-lg shadow-sm">
       <div className="mx-auto max-w-7xl px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="text-xl font-extrabold tracking-tight">DDalKKak</div>
-            <div className="rounded-full border border-gray-200 bg-gray-50 p-1">
-              <button className={classNames("rounded-full px-3 py-1 text-sm font-semibold", isStock ? "shadow" : "text-gray-700")} style={{ backgroundColor: isStock ? "#a7f3d0" : "#ffffff", color: isStock ? "#065f46" : undefined }} onClick={() => setMode("stock")}>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🤖</span>
+              <div>
+                <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  DDalKKak AI
+                </div>
+                <div className="text-[9px] text-gray-500 font-medium">AI 기업 분석 플랫폼</div>
+              </div>
+            </div>
+            <div className="hidden md:flex rounded-full border border-gray-200 bg-gray-50 p-1">
+              <button
+                className={classNames("rounded-full px-3 py-1 text-sm font-semibold transition-all", isStock ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                onClick={() => setMode("stock")}
+              >
                 주식
               </button>
-              <button className={classNames("rounded-full px-3 py-1 text-sm font-semibold", isCoin ? "shadow" : "text-gray-700")} style={{ backgroundColor: isCoin ? "#d4af37" : "#ffffff", color: isCoin ? "#111827" : undefined }} onClick={() => setMode("coin")}>
+              <button
+                className={classNames("rounded-full px-3 py-1 text-sm font-semibold transition-all", isCoin ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                onClick={() => setMode("coin")}
+              >
                 코인
               </button>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold hover:bg-gray-50">로그인</button>
-            <button className="rounded-xl bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700">회원가입</button>
+            <button className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold hover:bg-gray-50 transition-colors">
+              로그인
+            </button>
+            <button className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 text-sm font-semibold text-white hover:from-indigo-700 hover:to-purple-700 transition-all">
+              무료 시작
+            </button>
           </div>
         </div>
       </div>
@@ -886,40 +1160,40 @@ function Header({ mode, setMode }: { mode: "stock" | "coin"; setMode: (m: "stock
 }
 
 function BottomNav({ active = "home", onChange }: { active?: TabKey; onChange: (k: TabKey) => void }) {
-  const itemCls = (key: TabKey) => classNames("block w-full h-14 py-3 text-sm font-semibold touch-manipulation", key === active ? "text-indigo-700 bg-indigo-50 ring-1 ring-indigo-200" : "text-gray-600 hover:text-gray-900");
+  const items = [
+    { key: "home" as TabKey, icon: "🏠", label: "홈" },
+    { key: "undervalued" as TabKey, icon: "💎", label: "저평가 발굴" },
+    { key: "filings" as TabKey, icon: "📊", label: "공시 분석" },
+    { key: "stocks" as TabKey, icon: "🔍", label: "종목 검색" },
+    { key: "watchlist" as TabKey, icon: "⭐", label: "관심 종목" }
+  ];
+
+  const itemCls = (key: TabKey) => classNames(
+    "flex flex-col items-center justify-center w-full h-16 py-2 text-xs font-semibold touch-manipulation transition-colors",
+    key === active ? "text-indigo-700 bg-indigo-50" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+  );
+
   const click = (key: TabKey) => (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     onChange && onChange(key);
   };
+
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/90 backdrop-blur">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-lg shadow-lg">
       <div className="mx-auto max-w-7xl">
         <ul className="grid grid-cols-5">
-          <li>
-            <button className={itemCls("news")} onClick={click("news")} aria-current={active === "news" ? "page" : undefined}>
-              뉴스 요약
-            </button>
-          </li>
-          <li>
-            <button className={itemCls("reports")} onClick={click("reports")} aria-current={active === "reports" ? "page" : undefined}>
-              공시/보고서 목록
-            </button>
-          </li>
-          <li>
-            <button className={itemCls("home")} onClick={click("home")} aria-current={active === "home" ? "page" : undefined}>
-              홈
-            </button>
-          </li>
-          <li>
-            <button className={itemCls("list")} onClick={click("list")} aria-current={active === "list" ? "page" : undefined}>
-              종목 목록
-            </button>
-          </li>
-          <li>
-            <button className={itemCls("detail")} onClick={click("detail")} aria-current={active === "detail" ? "page" : undefined}>
-              종목 상세
-            </button>
-          </li>
+          {items.map((item) => (
+            <li key={item.key}>
+              <button
+                className={itemCls(item.key)}
+                onClick={click(item.key)}
+                aria-current={active === item.key ? "page" : undefined}
+              >
+                <span className="text-xl mb-1">{item.icon}</span>
+                <span className="text-[10px]">{item.label}</span>
+              </button>
+            </li>
+          ))}
         </ul>
       </div>
     </nav>
@@ -1260,7 +1534,7 @@ function NewsSummaryTab() {
 }
 
 // ======================= DemoHome (메인) =======================
-const TAB_KEYS = ["home", "news", "reports", "list", "detail"] as const;
+const TAB_KEYS = ["home", "undervalued", "filings", "stocks", "watchlist"] as const;
 type TabKey = (typeof TAB_KEYS)[number];
 
 export default function DemoHome() {
@@ -1278,26 +1552,26 @@ export default function DemoHome() {
   // ✅ 탭별 스크롤 위치 저장용
   const scrollPositions = useRef<Record<TabKey, number>>({
     home: 0,
-    news: 0,
-    reports: 0,
-    list: 0,
-    detail: 0,
+    undervalued: 0,
+    filings: 0,
+    stocks: 0,
+    watchlist: 0,
   });
 
   // ✅ 탭별 개별 스크롤 컨테이너 ref
   const homeRef = useRef<HTMLDivElement>(null);
-  const newsRef = useRef<HTMLDivElement>(null);
-  const reportsRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-  const detailRef = useRef<HTMLDivElement>(null);
+  const undervaluedRef = useRef<HTMLDivElement>(null);
+  const filingsRef = useRef<HTMLDivElement>(null);
+  const stocksRef = useRef<HTMLDivElement>(null);
+  const watchlistRef = useRef<HTMLDivElement>(null);
 
   // 2) ⬇️ 여기 타입을 RefObject<HTMLDivElement> → MutableRefObject<HTMLDivElement | null> 로 수정
   const refMap: Record<TabKey, React.MutableRefObject<HTMLDivElement | null>> = {
     home: homeRef,
-    news: newsRef,
-    reports: reportsRef,
-    list: listRef,
-    detail: detailRef,
+    undervalued: undervaluedRef,
+    filings: filingsRef,
+    stocks: stocksRef,
+    watchlist: watchlistRef,
   };
 
   // ✅ 탭 전환 시: 현재 탭 스크롤 저장 → 다음 탭 스크롤 복원
@@ -1376,135 +1650,288 @@ export default function DemoHome() {
             activeTab === "home" ? "block" : "hidden"
           )}
         >
-          <main className="mx-auto max-w-7xl space-y-8 px-4 py-6 pb-24">
-            {/* 핵심 지표 대시보드 요약 */}
-            <DashboardSummaryCard
-              usdkrw={mockUSDKRW[mockUSDKRW.length - 1]}
-              gold={mockGoldUSD[mockGoldUSD.length - 1]}
-              fearGreedUS={fearGreedUS}
-              fearGreedKR={fearGreedKR}
-              lastUpdate={new Date()}
-            />
-
-            {/* Quick Actions 바 */}
-            <QuickActionsBar />
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <FearGreedCard title="미국 공포·탐욕 지수" index={fearGreedUS} asOf={asOfUS} variant="US" series={usFearGreedSeries} />
-              <FearGreedCard title="한국 공포·탐욕 지수" index={fearGreedKR} asOf={asOfKR} variant="KR" series={krFearGreedSeries} />
+          <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 pb-24">
+            {/* Hero Section - AI 분석 플랫폼 소개 */}
+            <div className="rounded-3xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-8 text-white shadow-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-4xl">🤖</span>
+                <div>
+                  <h1 className="text-2xl font-extrabold">AI 기업 분석 플랫폼</h1>
+                  <p className="text-sm text-indigo-100 mt-1">저평가 우량주 발굴 · 공시 분석 · 투자 기회 탐색</p>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+                <div className="rounded-xl bg-white/20 backdrop-blur p-3">
+                  <div className="text-2xl font-bold">{mockFeaturedStocks.length}</div>
+                  <div className="text-xs text-indigo-100">오늘의 주목 종목</div>
+                </div>
+                <div className="rounded-xl bg-white/20 backdrop-blur p-3">
+                  <div className="text-2xl font-bold">{mockFilings.length}</div>
+                  <div className="text-xs text-indigo-100">최근 공시 분석</div>
+                </div>
+                <div className="rounded-xl bg-white/20 backdrop-blur p-3">
+                  <div className="text-2xl font-bold">{mockUndervalued.length}</div>
+                  <div className="text-xs text-indigo-100">저평가 우량주</div>
+                </div>
+              </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <BuffettCard title="미국 버핏지수" asOf={asOf} data={usBuffettSeries} />
-              <BuffettCard title="한국 버핏지수" asOf={asOf} data={krBuffettSeries} />
+            {/* 오늘의 주목 저평가주 */}
+            <section>
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
+                    <span>💎</span>
+                    오늘의 주목 저평가주
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">AI가 선정한 투자 가치가 높은 종목</p>
+                </div>
+                <button
+                  onClick={() => switchTab("undervalued")}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                >
+                  전체 보기 →
+                </button>
+              </div>
+              <div className="space-y-4">
+                {mockFeaturedStocks.map((stock) => (
+                  <FeaturedStockCard key={stock.id} stock={stock} onClick={() => {}} />
+                ))}
+              </div>
+            </section>
+
+            {/* 최근 공시 분석 */}
+            <section>
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
+                    <span>📊</span>
+                    최근 공시 분석
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">AI가 분석한 최신 기업 공시 및 보고서</p>
+                </div>
+                <button
+                  onClick={() => switchTab("filings")}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                >
+                  전체 보기 →
+                </button>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                {mockFilings.slice(0, 4).map((filing) => (
+                  <FilingAnalysisCard key={filing.id} filing={filing} onClick={() => {}} />
+                ))}
+              </div>
+            </section>
+
+            {/* 시장 현황 요약 */}
+            <section>
+              <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
+                <span>📈</span>
+                시장 현황
+              </h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                <LineChartCard title="원·달러 환율" unit="KRW" asOf={asOf} data={mockUSDKRW} />
+                <LineChartCard title="금 시세" unit="USD/oz" asOf={asOf} data={mockGoldUSD} />
+              </div>
+            </section>
+
+            {/* 면책 조항 */}
+            <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-center">
+              <p className="text-xs text-gray-600">
+                ⚠️ 본 서비스는 AI 기반 분석 정보를 제공하며, 투자 권유나 자문이 아닙니다.<br />
+                모든 투자 결정은 투자자 본인의 판단과 책임 하에 이루어져야 합니다.
+              </p>
             </div>
-
-            <CategoryHeatmapCard movesUS={mockCategoryMovesUS} movesKR={mockCategoryMovesKR} asOf={asOf} />
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <LineChartCard title="원·달러 환율" unit="KRW" asOf={asOf} data={mockUSDKRW} />
-              <LineChartCard title="금 시세" unit="USD/oz" asOf={asOf} data={mockGoldUSD} />
-            </div>
-
-            <div className="space-y-6">
-              <FilingsSectionByMarket
-                market="US"
-                selectedCategory={filingCatUS}
-                setSelectedCategory={setFilingCatUS}
-                favorites={favorites}
-                toggleFavorite={toggleFavorite}
-                asOf={asOf}
-                sentiment={filingSentUS}
-                setSentiment={setFilingSentUS}
-              />
-              <FilingsSectionByMarket
-                market="KR"
-                selectedCategory={filingCatKR}
-                setSelectedCategory={setFilingCatKR}
-                favorites={favorites}
-                toggleFavorite={toggleFavorite}
-                asOf={asOf}
-                sentiment={filingSentKR}
-                setSentiment={setFilingSentKR}
-              />
-            </div>
-
-            <div className="space-y-6">
-              <RankingSectionByMarket
-                market="US"
-                selectedCategory={rankCatUS}
-                setSelectedCategory={setRankCatUS}
-                favorites={favorites}
-                toggleFavorite={toggleFavorite}
-                asOf={asOf}
-              />
-              <RankingSectionByMarket
-                market="KR"
-                selectedCategory={rankCatKR}
-                setSelectedCategory={setRankCatKR}
-                favorites={favorites}
-                toggleFavorite={toggleFavorite}
-                asOf={asOf}
-              />
-            </div>
-
-            <p className="text-xs text-gray-500">
-              ※ 본 서비스는 투자 자문이 아니며, 제공 정보는 참고용입니다. 데이터 출처, 산출 로직, 스냅샷 생성시각을 각 화면에 명시합니다.
-            </p>
           </main>
         </div>
 
-        {/* NEWS */}
+        {/* UNDERVALUED - 저평가 발굴 */}
         <div
-          ref={newsRef}
+          ref={undervaluedRef}
           className={classNames(
             "absolute inset-0 overflow-y-auto overscroll-contain",
-            activeTab === "news" ? "block" : "hidden"
+            activeTab === "undervalued" ? "block" : "hidden"
           )}
         >
-          <NewsSummaryTab />
-        </div>
+          <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
+            <div className="mb-6">
+              <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+                <span>💎</span>
+                저평가 우량주 발굴
+              </h1>
+              <p className="mt-2 text-sm text-gray-600">AI가 선별한 투자 가치가 높은 기업들을 확인하세요</p>
+            </div>
 
-        {/* REPORTS */}
-        <div
-          ref={reportsRef}
-          className={classNames(
-            "absolute inset-0 overflow-y-auto overscroll-contain",
-            activeTab === "reports" ? "block" : "hidden"
-          )}
-        >
-          <main className="mx-auto max-w-7xl px-4 py-8 pb-24">
-            <h1 className="text-xl font-bold">보고서 목록 (준비중)</h1>
-            <p className="mt-2 text-sm text-gray-600">최근 공시/보고서의 전체 리스트/검색 화면이 들어갈 자리입니다.</p>
-            <div className="mt-6 h-[1200px] rounded-2xl border border-dashed border-gray-200 bg-white/50" />
+            {/* 미국 저평가주 */}
+            <section className="mb-8">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                🇺🇸 미국 시장
+              </h2>
+              <div className="space-y-3">
+                {mockUndervalued.filter(s => s.market === "US").map((stock) => (
+                  <div key={stock.symbol} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="flex-shrink-0">
+                          <div className="text-2xl font-bold text-indigo-600">#{stock.rank}</div>
+                        </div>
+                        {stock.logoUrl && <img src={stock.logoUrl} alt={stock.name} className="h-12 w-12 rounded-lg" />}
+                        <div className="flex-1">
+                          <div className="font-bold text-gray-900 text-lg">{stock.name}</div>
+                          <div className="text-sm text-gray-600">{stock.symbol} · {stock.category}</div>
+                          <div className="mt-2 flex items-center gap-2">
+                            <AnalysisStatusBadge sentiment={stock.sentiment} />
+                            <span className="text-sm text-gray-600">100일 수익률: <span className={stock.perf100d >= 0 ? "text-emerald-600 font-semibold" : "text-red-600 font-semibold"}>{(stock.perf100d * 100).toFixed(1)}%</span></span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center gap-2">
+                        <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="md" />
+                        <div className="text-xs text-gray-600 font-semibold">AI 점수</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* 한국 저평가주 */}
+            <section>
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                🇰🇷 한국 시장
+              </h2>
+              <div className="space-y-3">
+                {mockUndervalued.filter(s => s.market === "KR").map((stock) => (
+                  <div key={stock.symbol} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="flex-shrink-0">
+                          <div className="text-2xl font-bold text-indigo-600">#{stock.rank}</div>
+                        </div>
+                        {stock.logoUrl && <img src={stock.logoUrl} alt={stock.name} className="h-12 w-12 rounded-lg" />}
+                        <div className="flex-1">
+                          <div className="font-bold text-gray-900 text-lg">{stock.name}</div>
+                          <div className="text-sm text-gray-600">{stock.symbol} · {stock.category}</div>
+                          <div className="mt-2 flex items-center gap-2">
+                            <AnalysisStatusBadge sentiment={stock.sentiment} />
+                            <span className="text-sm text-gray-600">100일 수익률: <span className={stock.perf100d >= 0 ? "text-emerald-600 font-semibold" : "text-red-600 font-semibold"}>{(stock.perf100d * 100).toFixed(1)}%</span></span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center gap-2">
+                        <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="md" />
+                        <div className="text-xs text-gray-600 font-semibold">AI 점수</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
           </main>
         </div>
 
-        {/* LIST */}
+        {/* FILINGS - 공시 분석 */}
         <div
-          ref={listRef}
+          ref={filingsRef}
           className={classNames(
             "absolute inset-0 overflow-y-auto overscroll-contain",
-            activeTab === "list" ? "block" : "hidden"
+            activeTab === "filings" ? "block" : "hidden"
           )}
         >
-          <main className="mx-auto max-w-7xl px-4 py-8 pb-24">
-            <h1 className="text-xl font-bold">종목 목록 (준비중)</h1>
-            <div className="mt-6 h-[1200px] rounded-2xl border border-dashed border-gray-200 bg-white/50" />
+          <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
+            <div className="mb-6">
+              <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+                <span>📊</span>
+                공시 분석 리포트
+              </h1>
+              <p className="mt-2 text-sm text-gray-600">AI가 분석한 최신 기업 공시 및 보고서를 확인하세요</p>
+            </div>
+
+            {/* 필터 */}
+            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <CategoryChips value={filingCatUS} onChange={setFilingCatUS} categories={[...CATEGORIES]} />
+              </div>
+            </div>
+
+            {/* 공시 목록 */}
+            <div className="space-y-3">
+              {mockFilings.map((filing) => (
+                <FilingAnalysisCard key={filing.id} filing={filing} onClick={() => {}} />
+              ))}
+            </div>
           </main>
         </div>
 
-        {/* DETAIL */}
+        {/* STOCKS - 종목 검색 */}
         <div
-          ref={detailRef}
+          ref={stocksRef}
           className={classNames(
             "absolute inset-0 overflow-y-auto overscroll-contain",
-            activeTab === "detail" ? "block" : "hidden"
+            activeTab === "stocks" ? "block" : "hidden"
           )}
         >
-          <main className="mx-auto max-w-7xl px-4 py-8 pb-24">
-            <h1 className="text-xl font-bold">종목 상세 (준비중)</h1>
-            <div className="mt-6 h-[1200px] rounded-2xl border border-dashed border-gray-200 bg-white/50" />
+          <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
+            <div className="mb-6">
+              <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+                <span>🔍</span>
+                종목 검색
+              </h1>
+              <p className="mt-2 text-sm text-gray-600">종목명, 티커로 검색하여 AI 분석 정보를 확인하세요</p>
+            </div>
+
+            {/* 검색 바 */}
+            <div className="mb-6">
+              <input
+                type="text"
+                placeholder="종목명 또는 티커 입력 (예: 삼성전자, AAPL)"
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+              />
+            </div>
+
+            {/* 카테고리 필터 */}
+            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
+              <CategoryChips value={rankCatUS} onChange={setRankCatUS} categories={[...CATEGORIES]} />
+            </div>
+
+            {/* 검색 결과 */}
+            <div className="text-center py-12">
+              <div className="text-5xl mb-4">🔍</div>
+              <p className="text-gray-600">검색어를 입력하여 종목을 찾아보세요</p>
+            </div>
+          </main>
+        </div>
+
+        {/* WATCHLIST - 관심 종목 */}
+        <div
+          ref={watchlistRef}
+          className={classNames(
+            "absolute inset-0 overflow-y-auto overscroll-contain",
+            activeTab === "watchlist" ? "block" : "hidden"
+          )}
+        >
+          <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
+            <div className="mb-6">
+              <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+                <span>⭐</span>
+                관심 종목
+              </h1>
+              <p className="mt-2 text-sm text-gray-600">즐겨찾기한 종목의 AI 분석을 한눈에 확인하세요</p>
+            </div>
+
+            {/* 빈 상태 */}
+            <div className="text-center py-16">
+              <div className="text-6xl mb-4">⭐</div>
+              <p className="text-gray-600 mb-2">아직 관심 종목이 없습니다</p>
+              <p className="text-sm text-gray-500 mb-4">종목 카드의 별 아이콘을 눌러 관심 종목으로 등록하세요</p>
+              <button
+                onClick={() => switchTab("undervalued")}
+                className="rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
+              >
+                저평가주 둘러보기
+              </button>
+            </div>
           </main>
         </div>
       </div>
