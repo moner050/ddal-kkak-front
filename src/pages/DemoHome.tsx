@@ -1111,51 +1111,122 @@ function RankingSectionByMarket({
 }
 
 // ------------------------------------------------------------------
+// 로그인/회원가입 모달
+// ------------------------------------------------------------------
+function LoginModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="relative z-[1001] w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-200 m-3">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">로그인</h2>
+
+        <div className="space-y-3">
+          <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold hover:bg-gray-50 transition-colors">
+            <img src="https://www.google.com/favicon.ico" alt="Google" className="h-5 w-5" />
+            Google로 로그인
+          </button>
+
+          <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-yellow-400 bg-yellow-300 px-4 py-3 text-sm font-semibold hover:bg-yellow-400 transition-colors">
+            <span className="text-lg">💬</span>
+            카카오로 로그인
+          </button>
+
+          <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-green-500 bg-green-500 px-4 py-3 text-sm font-semibold text-white hover:bg-green-600 transition-colors">
+            <span className="text-lg font-bold">N</span>
+            네이버로 로그인
+          </button>
+        </div>
+
+        <div className="mt-6 text-center">
+          <button onClick={onClose} className="text-sm text-gray-600 hover:text-gray-900">
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SignupModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="relative z-[1001] w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-200 m-3">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">회원가입</h2>
+        <p className="text-sm text-gray-600 mb-6">AI 기업 분석을 무료로 시작하세요</p>
+
+        <div className="space-y-3">
+          <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold hover:bg-gray-50 transition-colors">
+            <img src="https://www.google.com/favicon.ico" alt="Google" className="h-5 w-5" />
+            Google로 시작하기
+          </button>
+
+          <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-yellow-400 bg-yellow-300 px-4 py-3 text-sm font-semibold hover:bg-yellow-400 transition-colors">
+            <span className="text-lg">💬</span>
+            카카오로 시작하기
+          </button>
+
+          <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-green-500 bg-green-500 px-4 py-3 text-sm font-semibold text-white hover:bg-green-600 transition-colors">
+            <span className="text-lg font-bold">N</span>
+            네이버로 시작하기
+          </button>
+        </div>
+
+        <div className="mt-6 text-center">
+          <button onClick={onClose} className="text-sm text-gray-600 hover:text-gray-900">
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------
 // 헤더 + 하단 네비
 // ------------------------------------------------------------------
-function Header({ mode, setMode }: { mode: "stock" | "coin"; setMode: (m: "stock" | "coin") => void }) {
-  const isStock = mode === "stock";
-  const isCoin = mode === "coin";
+function Header() {
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [signupOpen, setSignupOpen] = useState(false);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-lg shadow-sm">
-      <div className="mx-auto max-w-7xl px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+    <>
+      <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-lg shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-2xl">🤖</span>
               <div>
                 <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  DDalKKak AI
+                  DDalKKak
                 </div>
                 <div className="text-[9px] text-gray-500 font-medium">AI 기업 분석 플랫폼</div>
               </div>
             </div>
-            <div className="hidden md:flex rounded-full border border-gray-200 bg-gray-50 p-1">
+            <div className="flex items-center gap-2">
               <button
-                className={classNames("rounded-full px-3 py-1 text-sm font-semibold transition-all", isStock ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
-                onClick={() => setMode("stock")}
+                onClick={() => setLoginOpen(true)}
+                className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold hover:bg-gray-50 transition-colors"
               >
-                주식
+                로그인
               </button>
               <button
-                className={classNames("rounded-full px-3 py-1 text-sm font-semibold transition-all", isCoin ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
-                onClick={() => setMode("coin")}
+                onClick={() => setSignupOpen(true)}
+                className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 text-sm font-semibold text-white hover:from-indigo-700 hover:to-purple-700 transition-all"
               >
-                코인
+                회원가입
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold hover:bg-gray-50 transition-colors">
-              로그인
-            </button>
-            <button className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 text-sm font-semibold text-white hover:from-indigo-700 hover:to-purple-700 transition-all">
-              무료 시작
-            </button>
-          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+      <SignupModal open={signupOpen} onClose={() => setSignupOpen(false)} />
+    </>
   );
 }
 
@@ -1164,7 +1235,6 @@ function BottomNav({ active = "home", onChange }: { active?: TabKey; onChange: (
     { key: "home" as TabKey, icon: "🏠", label: "홈" },
     { key: "undervalued" as TabKey, icon: "💎", label: "저평가 발굴" },
     { key: "filings" as TabKey, icon: "📊", label: "공시 분석" },
-    { key: "stocks" as TabKey, icon: "🔍", label: "종목 검색" },
     { key: "watchlist" as TabKey, icon: "⭐", label: "관심 종목" }
   ];
 
@@ -1181,7 +1251,7 @@ function BottomNav({ active = "home", onChange }: { active?: TabKey; onChange: (
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-lg shadow-lg">
       <div className="mx-auto max-w-7xl">
-        <ul className="grid grid-cols-5">
+        <ul className="grid grid-cols-4">
           {items.map((item) => (
             <li key={item.key}>
               <button
@@ -1534,12 +1604,10 @@ function NewsSummaryTab() {
 }
 
 // ======================= DemoHome (메인) =======================
-const TAB_KEYS = ["home", "undervalued", "filings", "stocks", "watchlist"] as const;
+const TAB_KEYS = ["home", "undervalued", "filings", "watchlist"] as const;
 type TabKey = (typeof TAB_KEYS)[number];
 
 export default function DemoHome() {
-  const [mode, setMode] = useState<"stock" | "coin">("stock");
-
   const fearGreedUS = usFearGreedSeries[usFearGreedSeries.length - 1];
   const fearGreedKR = krFearGreedSeries[krFearGreedSeries.length - 1];
   const asOfUS = formatAsOf(new Date());
@@ -1549,12 +1617,15 @@ export default function DemoHome() {
   // 탭 상태
   const [activeTab, setActiveTab] = useState<TabKey>("home");
 
+  // 홈 화면 필터
+  const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
+  const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
+
   // ✅ 탭별 스크롤 위치 저장용
   const scrollPositions = useRef<Record<TabKey, number>>({
     home: 0,
     undervalued: 0,
     filings: 0,
-    stocks: 0,
     watchlist: 0,
   });
 
@@ -1562,7 +1633,6 @@ export default function DemoHome() {
   const homeRef = useRef<HTMLDivElement>(null);
   const undervaluedRef = useRef<HTMLDivElement>(null);
   const filingsRef = useRef<HTMLDivElement>(null);
-  const stocksRef = useRef<HTMLDivElement>(null);
   const watchlistRef = useRef<HTMLDivElement>(null);
 
   // 2) ⬇️ 여기 타입을 RefObject<HTMLDivElement> → MutableRefObject<HTMLDivElement | null> 로 수정
@@ -1570,7 +1640,6 @@ export default function DemoHome() {
     home: homeRef,
     undervalued: undervaluedRef,
     filings: filingsRef,
-    stocks: stocksRef,
     watchlist: watchlistRef,
   };
 
@@ -1638,7 +1707,7 @@ export default function DemoHome() {
     // ✅ 전체 레이아웃: 헤더 / (탭별 개별 스크롤 영역) / 고정 하단 네비
     <div className="h-screen w-full bg-gray-50 flex flex-col overflow-hidden">
       {/* 상단 고정 헤더 */}
-      <Header mode={mode} setMode={setMode} />
+      <Header />
 
       {/* ✅ 중앙: 탭별 개별 스크롤 컨테이너들 (겹쳐 놓고, active만 표시) */}
       <div className="relative flex-1 overflow-hidden">
@@ -1653,12 +1722,9 @@ export default function DemoHome() {
           <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 pb-24">
             {/* Hero Section - AI 분석 플랫폼 소개 */}
             <div className="rounded-3xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-8 text-white shadow-xl">
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-4xl">🤖</span>
-                <div>
-                  <h1 className="text-2xl font-extrabold">AI 기업 분석 플랫폼</h1>
-                  <p className="text-sm text-indigo-100 mt-1">저평가 우량주 발굴 · 공시 분석 · 투자 기회 탐색</p>
-                </div>
+              <div className="mb-3">
+                <h1 className="text-2xl font-extrabold">AI 기업 분석 플랫폼</h1>
+                <p className="text-sm text-indigo-100 mt-1">저평가 우량주 발굴 · 공시 분석 · 투자 기회 탐색</p>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-4 text-center">
                 <div className="rounded-xl bg-white/20 backdrop-blur p-3">
@@ -1678,23 +1744,38 @@ export default function DemoHome() {
 
             {/* 오늘의 주목 저평가주 */}
             <section>
-              <div className="mb-4 flex items-center justify-between">
-                <div>
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
                   <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
-                    <span>💎</span>
-                    오늘의 주목 저평가주
+                    💎 오늘의 주목 저평가주
                   </h2>
-                  <p className="text-sm text-gray-600 mt-1">AI가 선정한 투자 가치가 높은 종목</p>
+                  <button
+                    onClick={() => switchTab("undervalued")}
+                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                  >
+                    전체 보기 →
+                  </button>
                 </div>
-                <button
-                  onClick={() => switchTab("undervalued")}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-                >
-                  전체 보기 →
-                </button>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600">AI가 선정한 투자 가치가 높은 종목</p>
+                  <div className="rounded-full border border-gray-200 bg-gray-50 p-1 flex gap-1">
+                    <button
+                      onClick={() => setFeaturedMarket("US")}
+                      className={classNames("rounded-full px-3 py-1 text-xs font-semibold transition-all", featuredMarket === "US" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                    >
+                      🇺🇸 미국
+                    </button>
+                    <button
+                      onClick={() => setFeaturedMarket("KR")}
+                      className={classNames("rounded-full px-3 py-1 text-xs font-semibold transition-all", featuredMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                    >
+                      🇰🇷 한국
+                    </button>
+                  </div>
+                </div>
               </div>
               <div className="space-y-4">
-                {mockFeaturedStocks.map((stock) => (
+                {mockFeaturedStocks.filter(s => s.market === featuredMarket).map((stock) => (
                   <FeaturedStockCard key={stock.id} stock={stock} onClick={() => {}} />
                 ))}
               </div>
@@ -1702,23 +1783,38 @@ export default function DemoHome() {
 
             {/* 최근 공시 분석 */}
             <section>
-              <div className="mb-4 flex items-center justify-between">
-                <div>
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
                   <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
-                    <span>📊</span>
-                    최근 공시 분석
+                    📊 최근 공시 분석
                   </h2>
-                  <p className="text-sm text-gray-600 mt-1">AI가 분석한 최신 기업 공시 및 보고서</p>
+                  <button
+                    onClick={() => switchTab("filings")}
+                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                  >
+                    전체 보기 →
+                  </button>
                 </div>
-                <button
-                  onClick={() => switchTab("filings")}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-                >
-                  전체 보기 →
-                </button>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600">AI가 분석한 최신 기업 공시 및 보고서</p>
+                  <div className="rounded-full border border-gray-200 bg-gray-50 p-1 flex gap-1">
+                    <button
+                      onClick={() => setFilingsMarket("US")}
+                      className={classNames("rounded-full px-3 py-1 text-xs font-semibold transition-all", filingsMarket === "US" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                    >
+                      🇺🇸 미국
+                    </button>
+                    <button
+                      onClick={() => setFilingsMarket("KR")}
+                      className={classNames("rounded-full px-3 py-1 text-xs font-semibold transition-all", filingsMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                    >
+                      🇰🇷 한국
+                    </button>
+                  </div>
+                </div>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
-                {mockFilings.slice(0, 4).map((filing) => (
+                {mockFilings.filter(f => f.market === filingsMarket).slice(0, 4).map((filing) => (
                   <FilingAnalysisCard key={filing.id} filing={filing} onClick={() => {}} />
                 ))}
               </div>
@@ -1727,10 +1823,17 @@ export default function DemoHome() {
             {/* 시장 현황 요약 */}
             <section>
               <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
-                <span>📈</span>
-                시장 현황
+                📈 시장 현황
               </h2>
               <div className="grid gap-4 md:grid-cols-2">
+                <FearGreedCard title="미국 공포·탐욕 지수" index={fearGreedUS} asOf={asOfUS} variant="US" series={usFearGreedSeries} />
+                <FearGreedCard title="한국 공포·탐욕 지수" index={fearGreedKR} asOf={asOfKR} variant="KR" series={krFearGreedSeries} />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 mt-4">
+                <BuffettCard title="미국 버핏지수" asOf={asOf} data={usBuffettSeries} />
+                <BuffettCard title="한국 버핏지수" asOf={asOf} data={krBuffettSeries} />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 mt-4">
                 <LineChartCard title="원·달러 환율" unit="KRW" asOf={asOf} data={mockUSDKRW} />
                 <LineChartCard title="금 시세" unit="USD/oz" asOf={asOf} data={mockGoldUSD} />
               </div>
