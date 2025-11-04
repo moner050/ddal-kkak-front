@@ -1621,6 +1621,14 @@ export default function DemoHome() {
   const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
   const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
 
+  // 저평가 발굴 페이지 필터
+  const [undervaluedSearchQuery, setUndervaluedSearchQuery] = useState("");
+  const [undervaluedMarket, setUndervaluedMarket] = useState<"전체" | "US" | "KR">("전체");
+  const [undervaluedCategory, setUndervaluedCategory] = useState("전체");
+
+  // 공시 분석 페이지 필터
+  const [filingsSearchQuery, setFilingsSearchQuery] = useState("");
+
   // ✅ 탭별 스크롤 위치 저장용
   const scrollPositions = useRef<Record<TabKey, number>>({
     home: 0,
@@ -1860,77 +1868,131 @@ export default function DemoHome() {
           <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
             <div className="mb-6">
               <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-                <span>💎</span>
-                저평가 우량주 발굴
+                💎 저평가 우량주 발굴
               </h1>
               <p className="mt-2 text-sm text-gray-600">AI가 선별한 투자 가치가 높은 기업들을 확인하세요</p>
             </div>
 
-            {/* 미국 저평가주 */}
-            <section className="mb-8">
-              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                🇺🇸 미국 시장
-              </h2>
-              <div className="space-y-3">
-                {mockUndervalued.filter(s => s.market === "US").map((stock) => (
-                  <div key={stock.symbol} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="flex-shrink-0">
-                          <div className="text-2xl font-bold text-indigo-600">#{stock.rank}</div>
-                        </div>
-                        {stock.logoUrl && <img src={stock.logoUrl} alt={stock.name} className="h-12 w-12 rounded-lg" />}
-                        <div className="flex-1">
-                          <div className="font-bold text-gray-900 text-lg">{stock.name}</div>
-                          <div className="text-sm text-gray-600">{stock.symbol} · {stock.category}</div>
-                          <div className="mt-2 flex items-center gap-2">
-                            <AnalysisStatusBadge sentiment={stock.sentiment} />
-                            <span className="text-sm text-gray-600">100일 수익률: <span className={stock.perf100d >= 0 ? "text-emerald-600 font-semibold" : "text-red-600 font-semibold"}>{(stock.perf100d * 100).toFixed(1)}%</span></span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-center gap-2">
-                        <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="md" />
-                        <div className="text-xs text-gray-600 font-semibold">AI 점수</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+            {/* 검색 및 필터 */}
+            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 space-y-4">
+              {/* 검색창 */}
+              <input
+                type="text"
+                value={undervaluedSearchQuery}
+                onChange={(e) => setUndervaluedSearchQuery(e.target.value)}
+                placeholder="종목명 또는 티커 검색 (예: 삼성전자, AAPL)"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+              />
 
-            {/* 한국 저평가주 */}
-            <section>
-              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                🇰🇷 한국 시장
-              </h2>
-              <div className="space-y-3">
-                {mockUndervalued.filter(s => s.market === "KR").map((stock) => (
-                  <div key={stock.symbol} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="flex-shrink-0">
-                          <div className="text-2xl font-bold text-indigo-600">#{stock.rank}</div>
-                        </div>
-                        {stock.logoUrl && <img src={stock.logoUrl} alt={stock.name} className="h-12 w-12 rounded-lg" />}
-                        <div className="flex-1">
-                          <div className="font-bold text-gray-900 text-lg">{stock.name}</div>
-                          <div className="text-sm text-gray-600">{stock.symbol} · {stock.category}</div>
-                          <div className="mt-2 flex items-center gap-2">
-                            <AnalysisStatusBadge sentiment={stock.sentiment} />
-                            <span className="text-sm text-gray-600">100일 수익률: <span className={stock.perf100d >= 0 ? "text-emerald-600 font-semibold" : "text-red-600 font-semibold"}>{(stock.perf100d * 100).toFixed(1)}%</span></span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-center gap-2">
-                        <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="md" />
-                        <div className="text-xs text-gray-600 font-semibold">AI 점수</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              {/* 시장 선택 */}
+              <div>
+                <div className="text-xs text-gray-600 mb-2 font-semibold">시장</div>
+                <div className="flex gap-2">
+                  {(["전체", "US", "KR"] as const).map((market) => (
+                    <button
+                      key={market}
+                      onClick={() => setUndervaluedMarket(market)}
+                      className={classNames(
+                        "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                        undervaluedMarket === market
+                          ? "bg-indigo-600 text-white shadow"
+                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                      )}
+                    >
+                      {market === "전체" ? "전체" : market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </section>
+
+              {/* 카테고리 선택 */}
+              <div>
+                <div className="text-xs text-gray-600 mb-2 font-semibold">GICS 섹터</div>
+                <CategoryChips
+                  value={undervaluedCategory}
+                  onChange={setUndervaluedCategory}
+                  categories={[...CATEGORIES]}
+                />
+              </div>
+            </div>
+
+            {/* 게시판 형식 테이블 */}
+            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        종목
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        섹터
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        AI 점수
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        분석
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        100일 수익률
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {mockUndervalued
+                      .filter((stock) => {
+                        const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
+                        const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
+                        const matchQuery =
+                          !undervaluedSearchQuery ||
+                          stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
+                          stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
+                        return matchMarket && matchCategory && matchQuery;
+                      })
+                      .map((stock) => (
+                        <tr key={stock.symbol} className="hover:bg-gray-50 cursor-pointer transition-colors">
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-3">
+                              {stock.logoUrl && <img src={stock.logoUrl} alt={stock.name} className="h-10 w-10 rounded-lg" />}
+                              <div>
+                                <div className="text-sm font-bold text-gray-900">{stock.name}</div>
+                                <div className="text-xs text-gray-500">
+                                  {stock.symbol} · {stock.market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+                              {stock.category}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <div className="flex justify-center">
+                              <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="sm" />
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <AnalysisStatusBadge sentiment={stock.sentiment} />
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-right">
+                            <span
+                              className={classNames(
+                                "text-sm font-bold",
+                                stock.perf100d >= 0 ? "text-emerald-600" : "text-red-600"
+                              )}
+                            >
+                              {stock.perf100d >= 0 ? "+" : ""}
+                              {(stock.perf100d * 100).toFixed(1)}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </main>
         </div>
 
@@ -1951,57 +2013,38 @@ export default function DemoHome() {
               <p className="mt-2 text-sm text-gray-600">AI가 분석한 최신 기업 공시 및 보고서를 확인하세요</p>
             </div>
 
-            {/* 필터 */}
-            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
-              <div className="flex items-center gap-3 flex-wrap">
+            {/* 검색 및 필터 */}
+            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 space-y-4">
+              {/* 검색창 */}
+              <input
+                type="text"
+                value={filingsSearchQuery}
+                onChange={(e) => setFilingsSearchQuery(e.target.value)}
+                placeholder="종목명 또는 티커 검색 (예: 삼성전자, AAPL)"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+              />
+
+              {/* 카테고리 선택 */}
+              <div>
+                <div className="text-xs text-gray-600 mb-2 font-semibold">GICS 섹터</div>
                 <CategoryChips value={filingCatUS} onChange={setFilingCatUS} categories={[...CATEGORIES]} />
               </div>
             </div>
 
             {/* 공시 목록 */}
             <div className="space-y-3">
-              {mockFilings.map((filing) => (
-                <FilingAnalysisCard key={filing.id} filing={filing} onClick={() => {}} />
-              ))}
-            </div>
-          </main>
-        </div>
-
-        {/* STOCKS - 종목 검색 */}
-        <div
-          ref={stocksRef}
-          className={classNames(
-            "absolute inset-0 overflow-y-auto overscroll-contain",
-            activeTab === "stocks" ? "block" : "hidden"
-          )}
-        >
-          <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
-            <div className="mb-6">
-              <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-                <span>🔍</span>
-                종목 검색
-              </h1>
-              <p className="mt-2 text-sm text-gray-600">종목명, 티커로 검색하여 AI 분석 정보를 확인하세요</p>
-            </div>
-
-            {/* 검색 바 */}
-            <div className="mb-6">
-              <input
-                type="text"
-                placeholder="종목명 또는 티커 입력 (예: 삼성전자, AAPL)"
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-              />
-            </div>
-
-            {/* 카테고리 필터 */}
-            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
-              <CategoryChips value={rankCatUS} onChange={setRankCatUS} categories={[...CATEGORIES]} />
-            </div>
-
-            {/* 검색 결과 */}
-            <div className="text-center py-12">
-              <div className="text-5xl mb-4">🔍</div>
-              <p className="text-gray-600">검색어를 입력하여 종목을 찾아보세요</p>
+              {mockFilings
+                .filter((filing) => {
+                  const matchCategory = filingCatUS === "전체" || filing.category === filingCatUS;
+                  const matchQuery =
+                    !filingsSearchQuery ||
+                    filing.company.toLowerCase().includes(filingsSearchQuery.toLowerCase()) ||
+                    filing.symbol.toLowerCase().includes(filingsSearchQuery.toLowerCase());
+                  return matchCategory && matchQuery;
+                })
+                .map((filing) => (
+                  <FilingAnalysisCard key={filing.id} filing={filing} onClick={() => {}} />
+                ))}
             </div>
           </main>
         </div>
