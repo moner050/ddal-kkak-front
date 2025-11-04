@@ -2215,6 +2215,9 @@ export default function DemoHome() {
   // 탭 상태
   const [activeTab, setActiveTab] = useState<TabKey>("home");
 
+  // 종목 상세 모달
+  const [stockDetailModal, setStockDetailModal] = useState<{ open: boolean; symbol: string; tab?: "info" | "filings" }>({ open: false, symbol: "", tab: "info" });
+
   // 홈 화면 필터
   const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
   const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
@@ -2485,7 +2488,13 @@ export default function DemoHome() {
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 {mockFilings.filter(f => f.market === filingsMarket).slice(0, 4).map((filing) => (
-                  <FilingAnalysisCard key={filing.id} filing={filing} onClick={() => {}} favorites={favorites} toggleFavorite={toggleFavorite} />
+                  <FilingAnalysisCard
+                    key={filing.id}
+                    filing={filing}
+                    onClick={() => setStockDetailModal({ open: true, symbol: filing.symbol, tab: "filings" })}
+                    favorites={favorites}
+                    toggleFavorite={toggleFavorite}
+                  />
                 ))}
               </div>
             </section>
@@ -2732,7 +2741,11 @@ export default function DemoHome() {
                       const paginatedStocks = filteredStocks.slice(startIndex, endIndex);
 
                       return paginatedStocks.map((stock) => (
-                        <tr key={stock.symbol} className="hover:bg-gray-50 cursor-pointer transition-colors">
+                        <tr
+                          key={stock.symbol}
+                          onClick={() => setStockDetailModal({ open: true, symbol: stock.symbol, tab: "info" })}
+                          className="hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
                           <td className="px-4 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
                               {stock.logoUrl && (
@@ -2965,7 +2978,13 @@ export default function DemoHome() {
                 const paginatedFilings = filteredFilings.slice(startIndex, endIndex);
 
                 return paginatedFilings.map((filing) => (
-                  <FilingAnalysisCard key={filing.id} filing={filing} onClick={() => {}} favorites={favorites} toggleFavorite={toggleFavorite} />
+                  <FilingAnalysisCard
+                    key={filing.id}
+                    filing={filing}
+                    onClick={() => setStockDetailModal({ open: true, symbol: filing.symbol, tab: "filings" })}
+                    favorites={favorites}
+                    toggleFavorite={toggleFavorite}
+                  />
                 ));
               })()}
             </div>
@@ -3130,6 +3149,132 @@ export default function DemoHome() {
           </main>
         </div>
       </div>
+
+      {/* 종목 상세 모달 */}
+      {stockDetailModal.open && (() => {
+        const stockDetail = mockStockDetails[stockDetailModal.symbol];
+        const stockInfo = mockUndervalued.find(s => s.symbol === stockDetailModal.symbol);
+        const stockFilings = mockFilings.filter(f => f.symbol === stockDetailModal.symbol);
+
+        if (!stockDetail) return null;
+
+        return (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center overflow-y-auto bg-black/50">
+            <div className="relative w-full max-w-6xl m-4 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+                <div className="flex items-center gap-4">
+                  {stockInfo?.logoUrl && <img src={stockInfo.logoUrl} alt={stockDetail.Name} className="h-12 w-12 rounded-lg" />}
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">{stockDetail.Name}</h2>
+                    <p className="text-sm text-gray-600">{stockDetail.Ticker} · {stockDetail.Sector} · {stockDetail.Industry}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setStockDetailModal({ open: false, symbol: "", tab: "info" })}
+                  className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex border-b border-gray-200 bg-gray-50 px-6">
+                <button
+                  onClick={() => setStockDetailModal({ ...stockDetailModal, tab: "info" })}
+                  className={classNames(
+                    "px-4 py-3 text-sm font-semibold border-b-2 transition-colors",
+                    stockDetailModal.tab === "info"
+                      ? "border-indigo-600 text-indigo-600"
+                      : "border-transparent text-gray-600 hover:text-gray-900"
+                  )}
+                >
+                  종목 정보
+                </button>
+                <button
+                  onClick={() => setStockDetailModal({ ...stockDetailModal, tab: "filings" })}
+                  className={classNames(
+                    "px-4 py-3 text-sm font-semibold border-b-2 transition-colors",
+                    stockDetailModal.tab === "filings"
+                      ? "border-indigo-600 text-indigo-600"
+                      : "border-transparent text-gray-600 hover:text-gray-900"
+                  )}
+                >
+                  공시 분석 요약
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {stockDetailModal.tab === "info" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Object.entries(stockDetail).map(([key, value]) => {
+                      if (key === "Ticker" || key === "Name" || key === "Sector" || key === "Industry") return null;
+
+                      let displayValue = value;
+                      if (typeof value === "number") {
+                        if (key.includes("Score") || key.includes("Percent") || key.includes("Ratio") || key.includes("Margin")) {
+                          displayValue = value.toFixed(1) + (key.includes("Score") ? "" : "%");
+                        } else if (key === "Price" || key.includes("Cap") || key.includes("Vol")) {
+                          displayValue = value.toLocaleString();
+                        } else {
+                          displayValue = value.toFixed(2);
+                        }
+                      }
+
+                      return (
+                        <div key={key} className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+                          <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                          <div className="text-lg font-bold text-gray-900">{displayValue}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {stockFilings.length > 0 ? stockFilings.map(filing => (
+                      <div key={filing.id} className="p-4 rounded-lg border border-gray-200 bg-white">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="inline-flex items-center rounded-md bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700">
+                                {filing.formType}
+                              </span>
+                              <span className="text-sm text-gray-500">{filing.date}</span>
+                            </div>
+                            <h3 className="font-semibold text-gray-900">{filing.summary}</h3>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <AIScoreGauge score={filing.aiScore} sentiment={filing.sentiment} size="sm" />
+                          </div>
+                        </div>
+                        {filing.previousScores && (
+                          <div className="mt-2 pt-2 border-t border-gray-100">
+                            <div className="text-xs text-gray-500 mb-2">이전 공시 점수</div>
+                            <div className="flex gap-2">
+                              {filing.previousScores.map((score: number, idx: number) => (
+                                <div key={idx} className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                                  {score}점
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )) : (
+                      <div className="text-center py-12 text-gray-500">
+                        <p>공시 분석 정보가 없습니다</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 하단 고정 네비 */}
       <BottomNav active={activeTab} onChange={switchTab} />
