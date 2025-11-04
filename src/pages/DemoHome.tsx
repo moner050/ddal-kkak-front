@@ -75,6 +75,24 @@ const CATEGORIES = [
   "부동산",
 ] as const;
 
+// Cookie helpers for storing favorites
+const setCookie = (name: string, value: string, days: number = 365) => {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+};
+
+const getCookie = (name: string): string | null => {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+};
+
 // 섹터별 관련 테마 맵 (툴팁용)
 const SECTOR_THEMES: Record<string, string[]> = {
   정보기술: ["AI 인프라·소프트웨어", "반도체", "클라우드/SaaS", "사이버보안", "IT서비스/컨설팅", "전자부품/EMS", "데이터센터 하드웨어"],
@@ -625,14 +643,45 @@ function FeaturedStockCard({ stock, onClick }: { stock: any; onClick: () => void
 }
 
 // 공시 분석 리포트 카드
-function FilingAnalysisCard({ filing, onClick }: { filing: any; onClick: () => void }) {
+function FilingAnalysisCard({ filing, onClick, favorites, toggleFavorite }: { filing: any; onClick: () => void; favorites?: Record<string, boolean>; toggleFavorite?: (symbol: string) => void }) {
   return (
     <div
       onClick={onClick}
       className="cursor-pointer rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
     >
       <div className="flex items-start gap-3">
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 flex items-center gap-2">
+          {filing.previousScores && filing.previousScores.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              {filing.previousScores.map((score: number, idx: number) => {
+                const getSentiment = (s: number): "POS" | "NEG" | "NEU" => {
+                  if (s >= 70) return "POS";
+                  if (s < 50) return "NEG";
+                  return "NEU";
+                };
+                return (
+                  <div key={idx} className="relative" style={{ width: '32px', height: '32px' }}>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-[10px] font-bold text-gray-400">{score}</div>
+                    </div>
+                    <svg className="w-full h-full -rotate-90 opacity-40" viewBox="0 0 36 36">
+                      <circle
+                        cx="18"
+                        cy="18"
+                        r="14"
+                        fill="none"
+                        stroke={getSentiment(score) === "POS" ? "#10b981" : getSentiment(score) === "NEG" ? "#ef4444" : "#f59e0b"}
+                        strokeWidth="3"
+                        strokeDasharray={`${(score / 100) * 88} 88`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+                );
+              })}
+              <div className="text-gray-400 text-xs">→</div>
+            </div>
+          )}
           <AIScoreGauge score={filing.aiScore} sentiment={filing.sentiment} size="sm" />
         </div>
         <div className="flex-1 min-w-0">
@@ -643,8 +692,21 @@ function FilingAnalysisCard({ filing, onClick }: { filing: any; onClick: () => v
             <span className="text-xs text-gray-500">{filing.market}</span>
             <span className="text-xs text-gray-400">{filing.date}</span>
           </div>
-          <div className="font-semibold text-gray-900 mb-1">
-            {filing.symbol} · {filing.company}
+          <div className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+            <span>{filing.symbol} · {filing.company}</span>
+            {toggleFavorite && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFavorite(filing.symbol);
+                }}
+                className="flex-shrink-0 hover:scale-110 transition-transform"
+              >
+                <span className="text-sm">
+                  {favorites && favorites[filing.symbol] ? '❤️' : '🤍'}
+                </span>
+              </button>
+            )}
           </div>
           <p className="text-sm text-gray-600 line-clamp-2 mb-2">{filing.summary}</p>
           <div className="flex items-center gap-2">
@@ -747,6 +809,98 @@ export function CategoryChips({ value, onChange, categories = CATEGORIES as unkn
           {c}
         </button>
       ))}
+    </div>
+  );
+}
+
+export function Pagination({ currentPage, totalPages, onPageChange }: { currentPage: number; totalPages: number; onPageChange: (page: number) => void }) {
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible) {
+      // Show all pages if total is less than or equal to max visible
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always show first page
+      pages.push(1);
+
+      // Calculate range around current page
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalPages - 1, currentPage + 1);
+
+      // Adjust if we're near the beginning
+      if (currentPage <= 3) {
+        end = 4;
+      }
+
+      // Adjust if we're near the end
+      if (currentPage >= totalPages - 2) {
+        start = totalPages - 3;
+      }
+
+      // Add ellipsis after first page if needed
+      if (start > 2) {
+        pages.push('...');
+      }
+
+      // Add middle pages
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+
+      // Add ellipsis before last page if needed
+      if (end < totalPages - 1) {
+        pages.push('...');
+      }
+
+      // Always show last page
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
+  return (
+    <div className="flex items-center justify-center gap-2 mt-6">
+      <button
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+        disabled={currentPage === 1}
+        className="px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        &lt;
+      </button>
+
+      {getPageNumbers().map((page, idx) => (
+        typeof page === 'number' ? (
+          <button
+            key={idx}
+            onClick={() => onPageChange(page)}
+            className={classNames(
+              "px-4 py-2 text-sm font-semibold rounded-lg transition-colors",
+              currentPage === page
+                ? "bg-indigo-600 text-white"
+                : "text-gray-700 hover:bg-gray-100"
+            )}
+          >
+            {page}
+          </button>
+        ) : (
+          <span key={idx} className="px-2 text-gray-500">
+            {page}
+          </span>
+        )
+      ))}
+
+      <button
+        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage === totalPages}
+        className="px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        &gt;
+      </button>
     </div>
   );
 }
@@ -884,7 +1038,8 @@ const mockFilings = [
     confidence: 0.85,
     aiScore: 88,
     category: "정보기술",
-    logoUrl: "https://logo.clearbit.com/microsoft.com"
+    logoUrl: "https://logo.clearbit.com/microsoft.com",
+    previousScores: [82, 85, 87]
   },
   {
     id: "f2",
@@ -899,7 +1054,8 @@ const mockFilings = [
     confidence: 0.73,
     aiScore: 42,
     category: "경기소비재",
-    logoUrl: "https://logo.clearbit.com/tesla.com"
+    logoUrl: "https://logo.clearbit.com/tesla.com",
+    previousScores: [68, 52, 48]
   },
   {
     id: "f3",
@@ -914,7 +1070,8 @@ const mockFilings = [
     confidence: 0.79,
     aiScore: 82,
     category: "정보기술",
-    logoUrl: "https://logo.clearbit.com/samsung.com"
+    logoUrl: "https://logo.clearbit.com/samsung.com",
+    previousScores: [74, 78, 80]
   },
   {
     id: "f4",
@@ -929,7 +1086,8 @@ const mockFilings = [
     confidence: 0.65,
     aiScore: 68,
     category: "헬스케어",
-    logoUrl: "https://logo.clearbit.com/celltrion.com"
+    logoUrl: "https://logo.clearbit.com/celltrion.com",
+    previousScores: [65, 67, 69]
   },
   {
     id: "f5",
@@ -944,7 +1102,8 @@ const mockFilings = [
     confidence: 0.58,
     aiScore: 64,
     category: "커뮤니케이션 서비스",
-    logoUrl: "https://logo.clearbit.com/meta.com"
+    logoUrl: "https://logo.clearbit.com/meta.com",
+    previousScores: [58, 61, 63]
   }
 ];
 
@@ -1114,13 +1273,59 @@ function RankingSectionByMarket({
 // 로그인/회원가입 모달
 // ------------------------------------------------------------------
 function LoginModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [id, setId] = useState('');
+  const [password, setPassword] = useState('');
+
   if (!open) return null;
+
+  const handleLogin = () => {
+    // TODO: Implement login logic
+    console.log('Login with ID:', id);
+  };
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className="relative z-[1001] w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-200 m-3">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">로그인</h2>
+
+        <div className="space-y-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">아이디</label>
+            <input
+              type="text"
+              value={id}
+              onChange={(e) => setId(e.target.value)}
+              placeholder="아이디를 입력하세요"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">비밀번호</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="비밀번호를 입력하세요"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors"
+            />
+          </div>
+          <button
+            onClick={handleLogin}
+            className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition-colors"
+          >
+            로그인
+          </button>
+        </div>
+
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-white text-gray-500">또는</span>
+          </div>
+        </div>
 
         <div className="space-y-3">
           <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold hover:bg-gray-50 transition-colors">
@@ -1150,14 +1355,158 @@ function LoginModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 }
 
 function SignupModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [id, setId] = useState('');
+  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isCodeSent, setIsCodeSent] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [timer, setTimer] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (timer > 0) {
+      timerRef.current = setTimeout(() => setTimer(timer - 1), 1000);
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [timer]);
+
+  useEffect(() => {
+    // Reset state when modal closes
+    if (!open) {
+      setId('');
+      setPassword('');
+      setEmail('');
+      setVerificationCode('');
+      setIsCodeSent(false);
+      setIsVerified(false);
+      setTimer(0);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    }
+  }, [open]);
+
   if (!open) return null;
 
+  const handleSendCode = () => {
+    // TODO: Implement send verification code logic
+    console.log('Sending verification code to:', email);
+    setIsCodeSent(true);
+    setTimer(300); // 5 minutes = 300 seconds
+  };
+
+  const handleVerify = () => {
+    // TODO: Implement verification logic
+    console.log('Verifying code:', verificationCode);
+    setIsVerified(true);
+    setTimer(0);
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
+
+  const handleSignup = () => {
+    // TODO: Implement signup logic
+    console.log('Signup with ID:', id);
+  };
+
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center overflow-y-auto">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative z-[1001] w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-200 m-3">
+      <div className="relative z-[1001] w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-200 m-3 my-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">회원가입</h2>
         <p className="text-sm text-gray-600 mb-6">AI 기업 분석을 무료로 시작하세요</p>
+
+        <div className="space-y-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">아이디</label>
+            <input
+              type="text"
+              value={id}
+              onChange={(e) => setId(e.target.value)}
+              placeholder="아이디를 입력하세요"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">비밀번호</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="비밀번호를 입력하세요"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">이메일</label>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="이메일을 입력하세요"
+                disabled={isCodeSent}
+                className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors disabled:bg-gray-100"
+              />
+              <button
+                onClick={handleSendCode}
+                disabled={!email || isCodeSent}
+                className="px-4 py-3 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                인증번호 발송
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              인증번호
+              {timer > 0 && <span className="ml-2 text-red-600 font-bold">{formatTimer(timer)}</span>}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+                placeholder="인증번호를 입력하세요"
+                disabled={!isCodeSent || isVerified}
+                className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors disabled:bg-gray-100"
+              />
+              <button
+                onClick={handleVerify}
+                disabled={!isCodeSent || !verificationCode || isVerified}
+                className="px-4 py-3 bg-green-600 text-white text-sm font-semibold rounded-xl hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {isVerified ? '인증완료' : '인증'}
+              </button>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSignup}
+            disabled={!isVerified}
+            className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+          >
+            회원가입
+          </button>
+        </div>
+
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-white text-gray-500">또는</span>
+          </div>
+        </div>
 
         <div className="space-y-3">
           <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold hover:bg-gray-50 transition-colors">
@@ -1625,9 +1974,11 @@ export default function DemoHome() {
   const [undervaluedSearchQuery, setUndervaluedSearchQuery] = useState("");
   const [undervaluedMarket, setUndervaluedMarket] = useState<"전체" | "US" | "KR">("전체");
   const [undervaluedCategory, setUndervaluedCategory] = useState("전체");
+  const [undervaluedPage, setUndervaluedPage] = useState(1);
 
   // 공시 분석 페이지 필터
   const [filingsSearchQuery, setFilingsSearchQuery] = useState("");
+  const [filingsPage, setFilingsPage] = useState(1);
 
   // ✅ 탭별 스크롤 위치 저장용
   const scrollPositions = useRef<Record<TabKey, number>>({
@@ -1676,8 +2027,35 @@ export default function DemoHome() {
   const [rankCatKR, setRankCatKR] = useState("전체");
 
   // 즐겨찾기
-  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
-  const toggleFavorite = (symbol: string) => setFavorites((prev) => ({ ...prev, [symbol]: !prev[symbol] }));
+  const [favorites, setFavorites] = useState<Record<string, boolean>>(() => {
+    // Load favorites from cookie on mount
+    const cookieValue = getCookie('ddal-kkak-favorites');
+    if (cookieValue) {
+      try {
+        return JSON.parse(decodeURIComponent(cookieValue));
+      } catch (e) {
+        return {};
+      }
+    }
+    return {};
+  });
+  const favoriteDebounceRef = useRef<Record<string, boolean>>({});
+
+  const toggleFavorite = (symbol: string) => {
+    // Prevent rapid clicks (1 second debounce)
+    if (favoriteDebounceRef.current[symbol]) return;
+
+    favoriteDebounceRef.current[symbol] = true;
+    const newFavorites = { ...favorites, [symbol]: !favorites[symbol] };
+    setFavorites(newFavorites);
+
+    // Save to cookie
+    setCookie('ddal-kkak-favorites', encodeURIComponent(JSON.stringify(newFavorites)));
+
+    setTimeout(() => {
+      favoriteDebounceRef.current[symbol] = false;
+    }, 1000);
+  };
 
   // URL → 상태 복원
   useEffect(() => {
@@ -1823,7 +2201,7 @@ export default function DemoHome() {
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 {mockFilings.filter(f => f.market === filingsMarket).slice(0, 4).map((filing) => (
-                  <FilingAnalysisCard key={filing.id} filing={filing} onClick={() => {}} />
+                  <FilingAnalysisCard key={filing.id} filing={filing} onClick={() => {}} favorites={favorites} toggleFavorite={toggleFavorite} />
                 ))}
               </div>
             </section>
@@ -1940,8 +2318,8 @@ export default function DemoHome() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
-                    {mockUndervalued
-                      .filter((stock) => {
+                    {(() => {
+                      const filteredStocks = mockUndervalued.filter((stock) => {
                         const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
                         const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
                         const matchQuery =
@@ -1949,12 +2327,33 @@ export default function DemoHome() {
                           stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
                           stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
                         return matchMarket && matchCategory && matchQuery;
-                      })
-                      .map((stock) => (
+                      });
+
+                      const itemsPerPage = 10;
+                      const startIndex = (undervaluedPage - 1) * itemsPerPage;
+                      const endIndex = startIndex + itemsPerPage;
+                      const paginatedStocks = filteredStocks.slice(startIndex, endIndex);
+
+                      return paginatedStocks.map((stock) => (
                         <tr key={stock.symbol} className="hover:bg-gray-50 cursor-pointer transition-colors">
                           <td className="px-4 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
-                              {stock.logoUrl && <img src={stock.logoUrl} alt={stock.name} className="h-10 w-10 rounded-lg" />}
+                              {stock.logoUrl && (
+                                <div className="relative">
+                                  <img src={stock.logoUrl} alt={stock.name} className="h-10 w-10 rounded-lg" />
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleFavorite(stock.symbol);
+                                    }}
+                                    className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
+                                  >
+                                    <span className="text-xs">
+                                      {favorites[stock.symbol] ? '❤️' : '🤍'}
+                                    </span>
+                                  </button>
+                                </div>
+                              )}
                               <div>
                                 <div className="text-sm font-bold text-gray-900">{stock.name}</div>
                                 <div className="text-xs text-gray-500">
@@ -1988,11 +2387,36 @@ export default function DemoHome() {
                             </span>
                           </td>
                         </tr>
-                      ))}
+                      ));
+                    })()}
                   </tbody>
                 </table>
               </div>
             </div>
+
+            {/* Pagination */}
+            {(() => {
+              const filteredStocks = mockUndervalued.filter((stock) => {
+                const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
+                const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
+                const matchQuery =
+                  !undervaluedSearchQuery ||
+                  stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
+                  stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
+                return matchMarket && matchCategory && matchQuery;
+              });
+              const totalPages = Math.ceil(filteredStocks.length / 10);
+
+              if (totalPages <= 1) return null;
+
+              return (
+                <Pagination
+                  currentPage={undervaluedPage}
+                  totalPages={totalPages}
+                  onPageChange={setUndervaluedPage}
+                />
+              );
+            })()}
           </main>
         </div>
 
@@ -2033,19 +2457,49 @@ export default function DemoHome() {
 
             {/* 공시 목록 */}
             <div className="space-y-3">
-              {mockFilings
-                .filter((filing) => {
+              {(() => {
+                const filteredFilings = mockFilings.filter((filing) => {
                   const matchCategory = filingCatUS === "전체" || filing.category === filingCatUS;
                   const matchQuery =
                     !filingsSearchQuery ||
                     filing.company.toLowerCase().includes(filingsSearchQuery.toLowerCase()) ||
                     filing.symbol.toLowerCase().includes(filingsSearchQuery.toLowerCase());
                   return matchCategory && matchQuery;
-                })
-                .map((filing) => (
-                  <FilingAnalysisCard key={filing.id} filing={filing} onClick={() => {}} />
-                ))}
+                });
+
+                const itemsPerPage = 10;
+                const startIndex = (filingsPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const paginatedFilings = filteredFilings.slice(startIndex, endIndex);
+
+                return paginatedFilings.map((filing) => (
+                  <FilingAnalysisCard key={filing.id} filing={filing} onClick={() => {}} favorites={favorites} toggleFavorite={toggleFavorite} />
+                ));
+              })()}
             </div>
+
+            {/* Pagination */}
+            {(() => {
+              const filteredFilings = mockFilings.filter((filing) => {
+                const matchCategory = filingCatUS === "전체" || filing.category === filingCatUS;
+                const matchQuery =
+                  !filingsSearchQuery ||
+                  filing.company.toLowerCase().includes(filingsSearchQuery.toLowerCase()) ||
+                  filing.symbol.toLowerCase().includes(filingsSearchQuery.toLowerCase());
+                return matchCategory && matchQuery;
+              });
+              const totalPages = Math.ceil(filteredFilings.length / 10);
+
+              if (totalPages <= 1) return null;
+
+              return (
+                <Pagination
+                  currentPage={filingsPage}
+                  totalPages={totalPages}
+                  onPageChange={setFilingsPage}
+                />
+              );
+            })()}
           </main>
         </div>
 
@@ -2066,18 +2520,120 @@ export default function DemoHome() {
               <p className="mt-2 text-sm text-gray-600">즐겨찾기한 종목의 AI 분석을 한눈에 확인하세요</p>
             </div>
 
-            {/* 빈 상태 */}
-            <div className="text-center py-16">
-              <div className="text-6xl mb-4">⭐</div>
-              <p className="text-gray-600 mb-2">아직 관심 종목이 없습니다</p>
-              <p className="text-sm text-gray-500 mb-4">종목 카드의 별 아이콘을 눌러 관심 종목으로 등록하세요</p>
-              <button
-                onClick={() => switchTab("undervalued")}
-                className="rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
-              >
-                저평가주 둘러보기
-              </button>
-            </div>
+            {(() => {
+              // Get favorited symbols
+              const favoritedSymbols = Object.keys(favorites).filter(symbol => favorites[symbol]);
+
+              if (favoritedSymbols.length === 0) {
+                // Show empty state
+                return (
+                  <div className="text-center py-16">
+                    <div className="text-6xl mb-4">⭐</div>
+                    <p className="text-gray-600 mb-2">아직 관심 종목이 없습니다</p>
+                    <p className="text-sm text-gray-500 mb-4">종목 카드의 하트 아이콘을 눌러 관심 종목으로 등록하세요</p>
+                    <button
+                      onClick={() => switchTab("undervalued")}
+                      className="rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
+                    >
+                      저평가주 둘러보기
+                    </button>
+                  </div>
+                );
+              }
+
+              // Get favorited stocks from mockUndervalued
+              const favoritedStocks = mockUndervalued.filter(stock => favorites[stock.symbol]);
+
+              return (
+                <div>
+                  <div className="mb-4 text-sm text-gray-600">
+                    총 {favoritedSymbols.length}개의 관심 종목
+                  </div>
+
+                  <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                              종목
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                              섹터
+                            </th>
+                            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                              AI 점수
+                            </th>
+                            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                              분석
+                            </th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                              100일 수익률
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-100">
+                          {favoritedStocks.map((stock) => (
+                            <tr key={stock.symbol} className="hover:bg-gray-50 cursor-pointer transition-colors">
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                <div className="flex items-center gap-3">
+                                  {stock.logoUrl && (
+                                    <div className="relative">
+                                      <img src={stock.logoUrl} alt={stock.name} className="h-10 w-10 rounded-lg" />
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleFavorite(stock.symbol);
+                                        }}
+                                        className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
+                                      >
+                                        <span className="text-xs">
+                                          {favorites[stock.symbol] ? '❤️' : '🤍'}
+                                        </span>
+                                      </button>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <div className="text-sm font-bold text-gray-900">{stock.name}</div>
+                                    <div className="text-xs text-gray-500">
+                                      {stock.symbol} · {stock.market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+                                  {stock.category}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-center">
+                                <div className="flex justify-center">
+                                  <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="sm" />
+                                </div>
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-center">
+                                <AnalysisStatusBadge sentiment={stock.sentiment} />
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-right">
+                                <span
+                                  className={classNames(
+                                    "text-sm font-bold",
+                                    stock.perf100d >= 0 ? "text-emerald-600" : "text-red-600"
+                                  )}
+                                >
+                                  {stock.perf100d >= 0 ? "+" : ""}
+                                  {(stock.perf100d * 100).toFixed(1)}%
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </main>
         </div>
       </div>
