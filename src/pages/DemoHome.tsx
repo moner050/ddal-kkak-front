@@ -1843,13 +1843,17 @@ function Header() {
   );
 }
 
-function BottomNav({ active = "home", onChange }: { active?: TabKey; onChange: (k: TabKey) => void }) {
-  const items = [
+function BottomNav({ active = "home", onChange, showDetail = false }: { active?: TabKey; onChange: (k: TabKey) => void; showDetail?: boolean }) {
+  const baseItems = [
     { key: "home" as TabKey, icon: "🏠", label: "홈" },
     { key: "undervalued" as TabKey, icon: "💎", label: "저평가 발굴" },
     { key: "filings" as TabKey, icon: "📊", label: "공시 분석" },
     { key: "watchlist" as TabKey, icon: "⭐", label: "관심 종목" }
   ];
+
+  const items = showDetail
+    ? [...baseItems, { key: "detail" as TabKey, icon: "📈", label: "종목 상세" }]
+    : baseItems;
 
   const itemCls = (key: TabKey) => classNames(
     "flex flex-col items-center justify-center w-full h-16 py-2 text-xs font-semibold touch-manipulation transition-colors",
@@ -2217,7 +2221,7 @@ function NewsSummaryTab() {
 }
 
 // ======================= DemoHome (메인) =======================
-const TAB_KEYS = ["home", "undervalued", "filings", "watchlist"] as const;
+const TAB_KEYS = ["home", "undervalued", "filings", "watchlist", "detail"] as const;
 type TabKey = (typeof TAB_KEYS)[number];
 
 // 재무 지표 평가 함수 (좋음: 초록색, 보통: 검정색, 나쁨: 빨간색)
@@ -2344,9 +2348,6 @@ export default function DemoHome() {
   // 탭 상태
   const [activeTab, setActiveTab] = useState<TabKey>("home");
 
-  // 종목 상세 모달
-  const [stockDetailModal, setStockDetailModal] = useState<{ open: boolean; symbol: string; tab?: "info" | "filings" }>({ open: false, symbol: "", tab: "info" });
-
   // 홈 화면 필터
   const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
   const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
@@ -2376,12 +2377,17 @@ export default function DemoHome() {
   const [watchlistCategory, setWatchlistCategory] = useState("전체");
   const [watchlistIndustry, setWatchlistIndustry] = useState("전체");
 
+  // 종목 상세 페이지 상태
+  const [detailSymbol, setDetailSymbol] = useState<string>("");
+  const [detailTab, setDetailTab] = useState<"info" | "filings">("info");
+
   // ✅ 탭별 스크롤 위치 저장용
   const scrollPositions = useRef<Record<TabKey, number>>({
     home: 0,
     undervalued: 0,
     filings: 0,
     watchlist: 0,
+    detail: 0,
   });
 
   // ✅ 탭별 개별 스크롤 컨테이너 ref
@@ -2389,6 +2395,7 @@ export default function DemoHome() {
   const undervaluedRef = useRef<HTMLDivElement>(null);
   const filingsRef = useRef<HTMLDivElement>(null);
   const watchlistRef = useRef<HTMLDivElement>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
 
   // 2) ⬇️ 여기 타입을 RefObject<HTMLDivElement> → MutableRefObject<HTMLDivElement | null> 로 수정
   const refMap: Record<TabKey, React.MutableRefObject<HTMLDivElement | null>> = {
@@ -2396,6 +2403,7 @@ export default function DemoHome() {
     undervalued: undervaluedRef,
     filings: filingsRef,
     watchlist: watchlistRef,
+    detail: detailRef,
   };
 
   // ✅ 탭 전환 시: 현재 탭 스크롤 저장 → 다음 탭 스크롤 복원
@@ -2472,6 +2480,13 @@ export default function DemoHome() {
       setFilingsSortDirection("desc");
     }
     setFilingsPage(1); // Reset to first page on sort
+  };
+
+  // 종목 상세 페이지 열기
+  const openStockDetail = (symbol: string, tab: "info" | "filings" = "info") => {
+    setDetailSymbol(symbol);
+    setDetailTab(tab);
+    switchTab("detail");
   };
 
   // URL → 상태 복원
@@ -2601,7 +2616,7 @@ export default function DemoHome() {
               </div>
               <div className="space-y-4">
                 {mockFeaturedStocks.filter(s => s.market === featuredMarket).map((stock) => (
-                  <FeaturedStockCard key={stock.id} stock={stock} onClick={() => setStockDetailModal({ open: true, symbol: stock.symbol, tab: "info" })} />
+                  <FeaturedStockCard key={stock.id} stock={stock} onClick={() => openStockDetail(stock.symbol, "info")} />
                 ))}
               </div>
             </section>
@@ -2643,7 +2658,7 @@ export default function DemoHome() {
                   <FilingAnalysisCard
                     key={filing.id}
                     filing={filing}
-                    onClick={() => setStockDetailModal({ open: true, symbol: filing.symbol, tab: "filings" })}
+                    onClick={() => openStockDetail(filing.symbol, "filings")}
                     favorites={favorites}
                     toggleFavorite={toggleFavorite}
                   />
@@ -2910,7 +2925,7 @@ export default function DemoHome() {
                       return paginatedStocks.map((stock) => (
                         <tr
                           key={stock.symbol}
-                          onClick={() => setStockDetailModal({ open: true, symbol: stock.symbol, tab: "info" })}
+                          onClick={() => openStockDetail(stock.symbol, "info")}
                           className="hover:bg-gray-50 cursor-pointer transition-colors"
                         >
                           <td className="px-4 py-4 whitespace-nowrap">
@@ -3183,7 +3198,7 @@ export default function DemoHome() {
                   <FilingAnalysisCard
                     key={filing.id}
                     filing={filing}
-                    onClick={() => setStockDetailModal({ open: true, symbol: filing.symbol, tab: "filings" })}
+                    onClick={() => openStockDetail(filing.symbol, "filings")}
                     favorites={favorites}
                     toggleFavorite={toggleFavorite}
                   />
@@ -3374,7 +3389,7 @@ export default function DemoHome() {
                             return (
                               <tr
                                 key={stock.symbol}
-                                onClick={() => setStockDetailModal({ open: true, symbol: stock.symbol, tab: "info" })}
+                                onClick={() => openStockDetail(stock.symbol, "info")}
                                 className="hover:bg-gray-50 cursor-pointer transition-colors"
                               >
                                 <td className="px-4 py-4 whitespace-nowrap">
@@ -3442,121 +3457,232 @@ export default function DemoHome() {
             })()}
           </main>
         </div>
-      </div>
 
-      {/* 종목 상세 모달 */}
-      {stockDetailModal.open && (() => {
-        const stockDetail = mockStockDetails[stockDetailModal.symbol];
-        const stockInfo = mockUndervalued.find(s => s.symbol === stockDetailModal.symbol);
-        const stockFilings = mockFilings.filter(f => f.symbol === stockDetailModal.symbol);
+        {/* DETAIL - 종목 상세 */}
+        <div
+          ref={detailRef}
+          className={classNames(
+            "absolute inset-0 overflow-y-auto overscroll-contain",
+            activeTab === "detail" ? "block" : "hidden"
+          )}
+        >
+          {(() => {
+            if (!detailSymbol) return null;
 
-        if (!stockDetail) return null;
+            const stockDetail = mockStockDetails[detailSymbol];
+            const stockInfo = mockUndervalued.find(s => s.symbol === detailSymbol);
+            const stockFilings = mockFilings.filter(f => f.symbol === detailSymbol);
 
-        return (
-          <div className="fixed inset-0 z-[1000] flex items-center justify-center overflow-y-auto bg-black/50">
-            <div className="relative w-full max-w-6xl m-4 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
-              {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50">
-                <div className="flex items-center gap-4">
-                  {stockInfo?.logoUrl && <img src={stockInfo.logoUrl} alt={stockDetail.Name} className="h-12 w-12 rounded-lg" />}
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{stockDetail.Name}</h2>
-                    <p className="text-sm text-gray-600">{stockDetail.Ticker} · {stockDetail.Sector} · {stockDetail.Industry}</p>
+            if (!stockDetail) return null;
+
+            return (
+              <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
+                {/* 히어로 섹션 */}
+                <div className="mb-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-8 text-white shadow-xl">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-6">
+                      {stockInfo?.logoUrl && (
+                        <img
+                          src={stockInfo.logoUrl}
+                          alt={stockDetail.Name}
+                          className="h-20 w-20 rounded-2xl bg-white p-2 shadow-lg"
+                        />
+                      )}
+                      <div>
+                        <h1 className="text-4xl font-extrabold mb-2">{stockDetail.Name}</h1>
+                        <p className="text-xl text-indigo-100 mb-3">
+                          {stockDetail.Ticker} · {stockDetail.Sector} · {stockDetail.Industry}
+                        </p>
+                        <div className="flex items-center gap-4">
+                          <div>
+                            <div className="text-sm text-indigo-200">현재가</div>
+                            <div className="text-3xl font-bold">${stockDetail.Price?.toLocaleString()}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-indigo-200">시가총액</div>
+                            <div className="text-2xl font-bold">${stockDetail.MktCap?.toLocaleString()}B</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {stockInfo && (
+                        <div className="inline-block">
+                          <AIScoreGauge score={stockInfo.aiScore} sentiment={stockInfo.sentiment} size="lg" />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => setStockDetailModal({ open: false, symbol: "", tab: "info" })}
-                  className="p-2 hover:bg-gray-200 rounded-full transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
 
-              {/* Tabs */}
-              <div className="flex border-b border-gray-200 bg-gray-50 px-6">
-                <button
-                  onClick={() => setStockDetailModal({ ...stockDetailModal, tab: "info" })}
-                  className={classNames(
-                    "px-4 py-3 text-sm font-semibold border-b-2 transition-colors",
-                    stockDetailModal.tab === "info"
-                      ? "border-indigo-600 text-indigo-600"
-                      : "border-transparent text-gray-600 hover:text-gray-900"
-                  )}
-                >
-                  종목 정보
-                </button>
-                <button
-                  onClick={() => setStockDetailModal({ ...stockDetailModal, tab: "filings" })}
-                  className={classNames(
-                    "px-4 py-3 text-sm font-semibold border-b-2 transition-colors",
-                    stockDetailModal.tab === "filings"
-                      ? "border-indigo-600 text-indigo-600"
-                      : "border-transparent text-gray-600 hover:text-gray-900"
-                  )}
-                >
-                  공시 분석 요약
-                </button>
-              </div>
+                {/* 탭 네비게이션 */}
+                <div className="mb-6 flex gap-2">
+                  <button
+                    onClick={() => setDetailTab("info")}
+                    className={classNames(
+                      "rounded-lg px-6 py-3 text-sm font-semibold transition-all",
+                      detailTab === "info"
+                        ? "bg-indigo-600 text-white shadow-lg"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    )}
+                  >
+                    📊 종목 정보
+                  </button>
+                  <button
+                    onClick={() => setDetailTab("filings")}
+                    className={classNames(
+                      "rounded-lg px-6 py-3 text-sm font-semibold transition-all",
+                      detailTab === "filings"
+                        ? "bg-indigo-600 text-white shadow-lg"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    )}
+                  >
+                    📈 공시 분석 요약
+                  </button>
+                </div>
 
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto p-6">
-                {stockDetailModal.tab === "info" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Object.entries(stockDetail).map(([key, value]) => {
-                      if (key === "Ticker" || key === "Name" || key === "Sector" || key === "Industry") return null;
+                {/* 컨텐츠 */}
+                {detailTab === "info" ? (
+                  <div className="space-y-6">
+                    {/* 종합 점수 */}
+                    <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
+                      <h2 className="text-lg font-bold text-gray-900 mb-4">🏆 종합 평가</h2>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        {["GrowthScore", "QualityScore", "ValueScore", "MomentumScore", "TotalScore"].map(key => (
+                          <div key={key} className="text-center p-4 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
+                            <div className="text-xs text-gray-600 mb-2">{key.replace("Score", "")}</div>
+                            <div className={classNames("text-3xl font-bold", getMetricColor(key, stockDetail[key]))}>
+                              {stockDetail[key]}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
-                      let displayValue = value;
-                      let colorClass = "text-gray-900"; // 기본 색상
+                    {/* 밸류에이션 */}
+                    <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
+                      <h2 className="text-lg font-bold text-gray-900 mb-4">💰 밸류에이션</h2>
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        {["FairValue", "Discount", "PE", "PEG", "PB", "PS", "EV_EBITDA"].map(key => {
+                          if (!stockDetail[key]) return null;
+                          const value = stockDetail[key];
+                          let displayValue = typeof value === "number" ? value.toFixed(2) : value;
+                          if (key === "Discount") displayValue = value.toFixed(1) + "%";
+                          const colorClass = typeof value === "number" ? getMetricColor(key, value) : "text-gray-900";
+                          return (
+                            <div key={key} className="p-4 rounded-lg bg-gray-50">
+                              <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                              <div className={classNames("text-xl font-bold", colorClass)}>{displayValue}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                      if (typeof value === "number") {
-                        // 숫자 값에 대해 색상 결정
-                        colorClass = getMetricColor(key, value);
-
-                        // 표시 형식 결정
-                        if (key.includes("Score") || key.includes("Percent") || key.includes("Ratio") || key.includes("Margin")) {
-                          displayValue = value.toFixed(1) + (key.includes("Score") ? "" : "%");
-                        } else if (key === "Price" || key.includes("Cap") || key.includes("Vol")) {
-                          displayValue = value.toLocaleString();
-                        } else {
-                          displayValue = value.toFixed(2);
-                        }
-                      }
-
-                      return (
-                        <div key={key} className="p-4 rounded-lg border border-gray-200 bg-gray-50">
-                          <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
-                          <div className={classNames("text-lg font-bold", colorClass)}>{displayValue}</div>
+                    {/* 수익성 & 성장성 */}
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
+                        <h2 className="text-lg font-bold text-gray-900 mb-4">📈 수익성</h2>
+                        <div className="grid grid-cols-2 gap-4">
+                          {["ROE", "ROA", "OpMarginTTM", "OperatingMargins"].map(key => {
+                            if (!stockDetail[key]) return null;
+                            const value = stockDetail[key];
+                            const displayValue = value.toFixed(1) + "%";
+                            const colorClass = getMetricColor(key, value);
+                            return (
+                              <div key={key} className="p-4 rounded-lg bg-gray-50">
+                                <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
+                      </div>
+
+                      <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
+                        <h2 className="text-lg font-bold text-gray-900 mb-4">🚀 성장성</h2>
+                        <div className="grid grid-cols-2 gap-4">
+                          {["RevYoY", "Revenue_Growth_3Y", "EPS_Growth_3Y", "EBITDA_Growth_3Y"].map(key => {
+                            if (!stockDetail[key]) return null;
+                            const value = stockDetail[key];
+                            const displayValue = value.toFixed(1) + "%";
+                            const colorClass = getMetricColor(key, value);
+                            return (
+                              <div key={key} className="p-4 rounded-lg bg-gray-50">
+                                <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 나머지 지표들 */}
+                    <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
+                      <h2 className="text-lg font-bold text-gray-900 mb-4">📊 기타 지표</h2>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {Object.entries(stockDetail).map(([key, value]) => {
+                          // 이미 표시한 지표들은 제외
+                          const excludeKeys = ["Ticker", "Name", "Sector", "Industry", "Price", "MktCap",
+                            "GrowthScore", "QualityScore", "ValueScore", "MomentumScore", "TotalScore",
+                            "FairValue", "Discount", "PE", "PEG", "PB", "PS", "EV_EBITDA",
+                            "ROE", "ROA", "OpMarginTTM", "OperatingMargins",
+                            "RevYoY", "Revenue_Growth_3Y", "EPS_Growth_3Y", "EBITDA_Growth_3Y"];
+                          if (excludeKeys.includes(key)) return null;
+
+                          let displayValue = value;
+                          let colorClass = "text-gray-900";
+
+                          if (typeof value === "number") {
+                            colorClass = getMetricColor(key, value);
+                            if (key.includes("Score") || key.includes("Percent") || key.includes("Ratio") || key.includes("Margin")) {
+                              displayValue = value.toFixed(1) + (key.includes("Score") ? "" : "%");
+                            } else if (key.includes("Cap") || key.includes("Vol")) {
+                              displayValue = value.toLocaleString();
+                            } else {
+                              displayValue = value.toFixed(2);
+                            }
+                          }
+
+                          return (
+                            <div key={key} className="p-4 rounded-lg bg-gray-50">
+                              <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                              <div className={classNames("text-lg font-bold", colorClass)}>{displayValue}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {stockFilings.length > 0 ? stockFilings.map(filing => (
-                      <div key={filing.id} className="p-4 rounded-lg border border-gray-200 bg-white">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="inline-flex items-center rounded-md bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700">
+                      <div key={filing.id} className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="inline-flex items-center rounded-lg bg-indigo-100 px-3 py-1.5 text-sm font-semibold text-indigo-700">
                                 {filing.formType}
                               </span>
                               <span className="text-sm text-gray-500">{filing.date}</span>
                             </div>
-                            <h3 className="font-semibold text-gray-900">{filing.summary}</h3>
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">{filing.summary}</h3>
                           </div>
                           <div className="flex-shrink-0">
-                            <AIScoreGauge score={filing.aiScore} sentiment={filing.sentiment} size="sm" />
+                            <AIScoreGauge score={filing.aiScore} sentiment={filing.sentiment} size="md" />
                           </div>
                         </div>
                         {filing.previousScores && (
-                          <div className="mt-2 pt-2 border-t border-gray-100">
-                            <div className="text-xs text-gray-500 mb-2">이전 공시 점수</div>
-                            <div className="flex gap-2">
+                          <div className="mt-4 pt-4 border-t border-gray-200">
+                            <div className="text-sm text-gray-600 font-semibold mb-3">이전 공시 점수 추이</div>
+                            <div className="flex gap-3">
                               {filing.previousScores.map((score: number, idx: number) => (
-                                <div key={idx} className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                                  {score}점
+                                <div key={idx} className="text-center">
+                                  <div className="text-xs text-gray-500 mb-1">-{filing.previousScores.length - idx}회</div>
+                                  <div className="text-sm font-bold text-gray-900 bg-gray-100 px-3 py-2 rounded-lg">
+                                    {score}점
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -3564,20 +3690,21 @@ export default function DemoHome() {
                         )}
                       </div>
                     )) : (
-                      <div className="text-center py-12 text-gray-500">
-                        <p>공시 분석 정보가 없습니다</p>
+                      <div className="text-center py-16 bg-white rounded-xl shadow-md">
+                        <div className="text-6xl mb-4">📄</div>
+                        <p className="text-gray-600 text-lg">공시 분석 정보가 없습니다</p>
                       </div>
                     )}
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+              </main>
+            );
+          })()}
+        </div>
+      </div>
 
       {/* 하단 고정 네비 */}
-      <BottomNav active={activeTab} onChange={switchTab} />
+      <BottomNav active={activeTab} onChange={switchTab} showDetail={!!detailSymbol} />
     </div>
   );
 }
