@@ -905,6 +905,56 @@ export function Pagination({ currentPage, totalPages, onPageChange }: { currentP
   );
 }
 
+// Tooltip component for table headers
+export function TooltipHeader({ label, tooltip, sortKey, currentSortKey, sortDirection, onSort }: {
+  label: string;
+  tooltip?: string;
+  sortKey?: string;
+  currentSortKey: string | null;
+  sortDirection: "asc" | "desc";
+  onSort?: (key: string) => void;
+}) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const isSorted = currentSortKey === sortKey;
+
+  return (
+    <div className="flex items-center justify-center gap-1 relative group">
+      <button
+        className={classNames(
+          "font-semibold uppercase tracking-wider transition-colors",
+          sortKey && onSort ? "hover:text-indigo-600 cursor-pointer" : "",
+          isSorted ? "text-indigo-600" : "text-gray-600"
+        )}
+        onClick={() => sortKey && onSort && onSort(sortKey)}
+      >
+        {label}
+        {isSorted && (
+          <span className="ml-1">{sortDirection === "asc" ? "↑" : "↓"}</span>
+        )}
+      </button>
+      {tooltip && (
+        <>
+          <button
+            className="text-gray-400 hover:text-gray-600"
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            onClick={() => setShowTooltip(!showTooltip)}
+          >
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </button>
+          {showTooltip && (
+            <div className="absolute top-full mt-1 z-50 w-48 p-2 text-xs text-white bg-gray-900 rounded shadow-lg whitespace-normal left-1/2 transform -translate-x-1/2">
+              {tooltip}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export function FilingCard({ item, onClick, isFavorite, onToggleFavorite }: { item: any; onClick: () => void; isFavorite?: boolean; onToggleFavorite?: () => void }) {
   return (
     <div role="button" onClick={onClick} className="group w-full text-left rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md">
@@ -1109,13 +1159,212 @@ const mockFilings = [
 
 // 저평가 우량주 랭킹
 const mockUndervalued = [
-  { market: "US", symbol: "NVDA", name: "NVIDIA", category: "정보기술", rank: 1, aiScore: 92, sentiment: "POS" as const, introducedAt: "2025-08-12", perfSinceIntro: 0.124, perf100d: 0.153, logoUrl: "https://logo.clearbit.com/nvidia.com" },
-  { market: "US", symbol: "MSFT", name: "Microsoft", category: "정보기술", rank: 2, aiScore: 88, sentiment: "POS" as const, introducedAt: "2025-08-15", perfSinceIntro: 0.104, perf100d: 0.132, logoUrl: "https://logo.clearbit.com/microsoft.com" },
-  { market: "US", symbol: "AMD", name: "AMD", category: "정보기술", rank: 3, aiScore: 78, sentiment: "POS" as const, introducedAt: "2025-09-01", perfSinceIntro: 0.067, perf100d: 0.089, logoUrl: "https://logo.clearbit.com/amd.com" },
-  { market: "KR", symbol: "005930.KS", name: "삼성전자", category: "정보기술", rank: 1, aiScore: 85, sentiment: "POS" as const, introducedAt: "2025-09-02", perfSinceIntro: 0.089, perf100d: 0.112, logoUrl: "https://logo.clearbit.com/samsung.com" },
-  { market: "KR", symbol: "000660.KS", name: "SK하이닉스", category: "정보기술", rank: 2, aiScore: 81, sentiment: "POS" as const, introducedAt: "2025-08-25", perfSinceIntro: 0.095, perf100d: 0.128, logoUrl: "https://logo.clearbit.com/skhynix.com" },
-  { market: "KR", symbol: "068270.KS", name: "셀트리온", category: "헬스케어", rank: 3, aiScore: 72, sentiment: "NEU" as const, introducedAt: "2025-08-30", perfSinceIntro: 0.031, perf100d: 0.064, logoUrl: "https://logo.clearbit.com/celltrion.com" },
+  {
+    market: "US", symbol: "NVDA", name: "NVIDIA", category: "정보기술", industry: "반도체",
+    rank: 1, aiScore: 92, sentiment: "POS" as const, introducedAt: "2025-08-12",
+    perfSinceIntro: 0.124, perf100d: 0.153, logoUrl: "https://logo.clearbit.com/nvidia.com",
+    ROE: 28.5, PER: 45.2, PEG: 0.82, PBR: 12.8, PSR: 18.3,
+    RevYoY: 34.2, EPS_Growth_3Y: 55.3, OpMarginTTM: 32.1, FCF_Yield: 2.8
+  },
+  {
+    market: "US", symbol: "MSFT", name: "Microsoft", category: "정보기술", industry: "소프트웨어",
+    rank: 2, aiScore: 88, sentiment: "POS" as const, introducedAt: "2025-08-15",
+    perfSinceIntro: 0.104, perf100d: 0.132, logoUrl: "https://logo.clearbit.com/microsoft.com",
+    ROE: 42.3, PER: 32.5, PEG: 0.95, PBR: 10.5, PSR: 11.2,
+    RevYoY: 16.8, EPS_Growth_3Y: 34.2, OpMarginTTM: 42.5, FCF_Yield: 3.5
+  },
+  {
+    market: "US", symbol: "AMD", name: "AMD", category: "정보기술", industry: "반도체",
+    rank: 3, aiScore: 78, sentiment: "POS" as const, introducedAt: "2025-09-01",
+    perfSinceIntro: 0.067, perf100d: 0.089, logoUrl: "https://logo.clearbit.com/amd.com",
+    ROE: 18.2, PER: 38.7, PEG: 1.12, PBR: 5.3, PSR: 7.8,
+    RevYoY: 18.5, EPS_Growth_3Y: 34.5, OpMarginTTM: 24.3, FCF_Yield: 2.1
+  },
+  {
+    market: "KR", symbol: "005930.KS", name: "삼성전자", category: "정보기술", industry: "전자기기",
+    rank: 1, aiScore: 85, sentiment: "POS" as const, introducedAt: "2025-09-02",
+    perfSinceIntro: 0.089, perf100d: 0.112, logoUrl: "https://logo.clearbit.com/samsung.com",
+    ROE: 12.8, PER: 18.5, PEG: 0.88, PBR: 1.8, PSR: 1.2,
+    RevYoY: 12.3, EPS_Growth_3Y: 21.0, OpMarginTTM: 14.5, FCF_Yield: 4.2
+  },
+  {
+    market: "KR", symbol: "000660.KS", name: "SK하이닉스", category: "정보기술", industry: "반도체",
+    rank: 2, aiScore: 81, sentiment: "POS" as const, introducedAt: "2025-08-25",
+    perfSinceIntro: 0.095, perf100d: 0.128, logoUrl: "https://logo.clearbit.com/skhynix.com",
+    ROE: 15.3, PER: 22.1, PEG: 0.75, PBR: 2.3, PSR: 2.1,
+    RevYoY: 28.7, EPS_Growth_3Y: 29.4, OpMarginTTM: 18.9, FCF_Yield: 3.8
+  },
+  {
+    market: "KR", symbol: "068270.KS", name: "셀트리온", category: "헬스케어", industry: "바이오의약품",
+    rank: 3, aiScore: 72, sentiment: "NEU" as const, introducedAt: "2025-08-30",
+    perfSinceIntro: 0.031, perf100d: 0.064, logoUrl: "https://logo.clearbit.com/celltrion.com",
+    ROE: 9.5, PER: 25.3, PEG: 1.35, PBR: 2.8, PSR: 3.5,
+    RevYoY: 8.2, EPS_Growth_3Y: 18.7, OpMarginTTM: 21.3, FCF_Yield: 2.5
+  },
 ];
+
+// 종목 상세 정보 (포괄적인 재무/기술적 지표 포함)
+const mockStockDetails: Record<string, any> = {
+  "NVDA": {
+    Ticker: "NVDA",
+    Name: "NVIDIA",
+    Sector: "정보기술",
+    Industry: "반도체",
+    Price: 487.20,
+    MktCap: 1200.5,
+    DollarVol: 3500.2,
+    FairValue: 520.00,
+    Discount: 6.3,
+    PE: 45.2,
+    PEG: 0.82,
+    PB: 12.8,
+    PS: 18.3,
+    EV_EBITDA: 38.5,
+    ROE: 28.5,
+    ROA: 18.3,
+    OpMarginTTM: 32.1,
+    OperatingMargins: 31.8,
+    RevYoY: 34.2,
+    EPS_Growth_3Y: 55.3,
+    Revenue_Growth_3Y: 42.1,
+    EBITDA_Growth_3Y: 48.7,
+    FCF_Yield: 2.8,
+    DivYield: 0.04,
+    PayoutRatio: 0.05,
+    Beta: 1.85,
+    ShortPercent: 1.2,
+    InsiderOwnership: 4.3,
+    InstitutionOwnership: 68.5,
+    RVOL: 1.15,
+    RSI_14: 67.3,
+    ATR_PCT: 3.2,
+    Volatility_21D: 2.8,
+    RET5: 2.1,
+    RET20: 8.5,
+    RET63: 15.3,
+    SMA20: 478.50,
+    SMA50: 465.30,
+    SMA200: 420.80,
+    MACD: 5.2,
+    MACD_Signal: 3.8,
+    MACD_Histogram: 1.4,
+    BB_Position: 0.75,
+    High_52W_Ratio: 0.95,
+    Low_52W_Ratio: 1.88,
+    Momentum_12M: 124.5,
+    GrowthScore: 95,
+    QualityScore: 88,
+    ValueScore: 65,
+    MomentumScore: 82,
+    TotalScore: 92
+  },
+  "MSFT": {
+    Ticker: "MSFT",
+    Name: "Microsoft",
+    Sector: "정보기술",
+    Industry: "소프트웨어",
+    Price: 378.85,
+    MktCap: 2850.3,
+    DollarVol: 2200.5,
+    FairValue: 395.00,
+    Discount: 4.1,
+    PE: 32.5,
+    PEG: 0.95,
+    PB: 10.5,
+    PS: 11.2,
+    EV_EBITDA: 25.8,
+    ROE: 42.3,
+    ROA: 22.5,
+    OpMarginTTM: 42.5,
+    OperatingMargins: 42.1,
+    RevYoY: 16.8,
+    EPS_Growth_3Y: 34.2,
+    Revenue_Growth_3Y: 18.5,
+    EBITDA_Growth_3Y: 22.3,
+    FCF_Yield: 3.5,
+    DivYield: 0.82,
+    PayoutRatio: 0.28,
+    Beta: 0.92,
+    ShortPercent: 0.8,
+    InsiderOwnership: 0.1,
+    InstitutionOwnership: 73.2,
+    RVOL: 0.95,
+    RSI_14: 58.2,
+    ATR_PCT: 2.1,
+    Volatility_21D: 1.9,
+    RET5: 1.2,
+    RET20: 5.8,
+    RET63: 13.2,
+    SMA20: 375.20,
+    SMA50: 368.50,
+    SMA200: 355.80,
+    MACD: 3.5,
+    MACD_Signal: 2.8,
+    MACD_Histogram: 0.7,
+    BB_Position: 0.62,
+    High_52W_Ratio: 0.98,
+    Low_52W_Ratio: 1.42,
+    Momentum_12M: 32.5,
+    GrowthScore: 82,
+    QualityScore: 95,
+    ValueScore: 72,
+    MomentumScore: 75,
+    TotalScore: 88
+  },
+  "005930.KS": {
+    Ticker: "005930.KS",
+    Name: "삼성전자",
+    Sector: "정보기술",
+    Industry: "전자기기",
+    Price: 72500,
+    MktCap: 432.5,
+    DollarVol: 850.3,
+    FairValue: 78000,
+    Discount: 7.1,
+    PE: 18.5,
+    PEG: 0.88,
+    PB: 1.8,
+    PS: 1.2,
+    EV_EBITDA: 12.3,
+    ROE: 12.8,
+    ROA: 8.5,
+    OpMarginTTM: 14.5,
+    OperatingMargins: 14.2,
+    RevYoY: 12.3,
+    EPS_Growth_3Y: 21.0,
+    Revenue_Growth_3Y: 8.5,
+    EBITDA_Growth_3Y: 15.2,
+    FCF_Yield: 4.2,
+    DivYield: 2.3,
+    PayoutRatio: 0.35,
+    Beta: 1.15,
+    ShortPercent: 1.5,
+    InsiderOwnership: 21.2,
+    InstitutionOwnership: 45.8,
+    RVOL: 1.05,
+    RSI_14: 52.8,
+    ATR_PCT: 2.5,
+    Volatility_21D: 2.2,
+    RET5: 1.5,
+    RET20: 6.2,
+    RET63: 11.2,
+    SMA20: 71200,
+    SMA50: 69800,
+    SMA200: 67500,
+    MACD: 850,
+    MACD_Signal: 620,
+    MACD_Histogram: 230,
+    BB_Position: 0.68,
+    High_52W_Ratio: 0.91,
+    Low_52W_Ratio: 1.35,
+    Momentum_12M: 18.5,
+    GrowthScore: 75,
+    QualityScore: 82,
+    ValueScore: 88,
+    MomentumScore: 68,
+    TotalScore: 85
+  }
+};
 
 // ------------------------------------------------------------------
 // 섹션: 최근 공시/보고서 시그널 (시장별)
@@ -1975,10 +2224,15 @@ export default function DemoHome() {
   const [undervaluedMarket, setUndervaluedMarket] = useState<"전체" | "US" | "KR">("전체");
   const [undervaluedCategory, setUndervaluedCategory] = useState("전체");
   const [undervaluedPage, setUndervaluedPage] = useState(1);
+  const [undervaluedSortBy, setUndervaluedSortBy] = useState<string | null>(null);
+  const [undervaluedSortDirection, setUndervaluedSortDirection] = useState<"asc" | "desc">("desc");
 
   // 공시 분석 페이지 필터
   const [filingsSearchQuery, setFilingsSearchQuery] = useState("");
   const [filingsPage, setFilingsPage] = useState(1);
+  const [filingsSortBy, setFilingsSortBy] = useState<string | null>(null);
+  const [filingsSortDirection, setFilingsSortDirection] = useState<"asc" | "desc">("desc");
+  const [filingsSentimentFilter, setFilingsSentimentFilter] = useState<"ALL" | "POS" | "NEG" | "NEU">("ALL");
 
   // ✅ 탭별 스크롤 위치 저장용
   const scrollPositions = useRef<Record<TabKey, number>>({
@@ -2055,6 +2309,27 @@ export default function DemoHome() {
     setTimeout(() => {
       favoriteDebounceRef.current[symbol] = false;
     }, 1000);
+  };
+
+  // 정렬 핸들러
+  const handleUndervaluedSort = (key: string) => {
+    if (undervaluedSortBy === key) {
+      setUndervaluedSortDirection(undervaluedSortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setUndervaluedSortBy(key);
+      setUndervaluedSortDirection("desc");
+    }
+    setUndervaluedPage(1); // Reset to first page on sort
+  };
+
+  const handleFilingsSort = (key: string) => {
+    if (filingsSortBy === key) {
+      setFilingsSortDirection(filingsSortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setFilingsSortBy(key);
+      setFilingsSortDirection("desc");
+    }
+    setFilingsPage(1); // Reset to first page on sort
   };
 
   // URL → 상태 복원
@@ -2300,26 +2575,128 @@ export default function DemoHome() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs">
                         종목
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs">
                         섹터
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        AI 점수
+                      <th className="px-4 py-3 text-left text-xs">
+                        산업군
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        분석
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="AI 점수"
+                          sortKey="aiScore"
+                          currentSortKey={undervaluedSortBy}
+                          sortDirection={undervaluedSortDirection}
+                          onSort={handleUndervaluedSort}
+                        />
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        100일 수익률
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="ROE"
+                          tooltip="자기자본이익률 - 높을수록 우수"
+                          sortKey="ROE"
+                          currentSortKey={undervaluedSortBy}
+                          sortDirection={undervaluedSortDirection}
+                          onSort={handleUndervaluedSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="PER"
+                          tooltip="주가수익비율 - 낮을수록 저평가"
+                          sortKey="PER"
+                          currentSortKey={undervaluedSortBy}
+                          sortDirection={undervaluedSortDirection}
+                          onSort={handleUndervaluedSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="PEG"
+                          tooltip="PEG 비율 (PER/성장률) - 1 이하 매력적"
+                          sortKey="PEG"
+                          currentSortKey={undervaluedSortBy}
+                          sortDirection={undervaluedSortDirection}
+                          onSort={handleUndervaluedSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="PBR"
+                          tooltip="주가순자산비율 - 낮을수록 저평가"
+                          sortKey="PBR"
+                          currentSortKey={undervaluedSortBy}
+                          sortDirection={undervaluedSortDirection}
+                          onSort={handleUndervaluedSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="PSR"
+                          tooltip="주가매출비율 - 낮을수록 저평가"
+                          sortKey="PSR"
+                          currentSortKey={undervaluedSortBy}
+                          sortDirection={undervaluedSortDirection}
+                          onSort={handleUndervaluedSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="RevYoY"
+                          tooltip="매출 YoY 성장률"
+                          sortKey="RevYoY"
+                          currentSortKey={undervaluedSortBy}
+                          sortDirection={undervaluedSortDirection}
+                          onSort={handleUndervaluedSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="EPS 3Y"
+                          tooltip="3년 EPS 성장률"
+                          sortKey="EPS_Growth_3Y"
+                          currentSortKey={undervaluedSortBy}
+                          sortDirection={undervaluedSortDirection}
+                          onSort={handleUndervaluedSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="영업이익률"
+                          tooltip="영업이익률 - 높을수록 우수"
+                          sortKey="OpMarginTTM"
+                          currentSortKey={undervaluedSortBy}
+                          sortDirection={undervaluedSortDirection}
+                          onSort={handleUndervaluedSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="FCF"
+                          tooltip="FCF 수익률 (현금 창출 능력)"
+                          sortKey="FCF_Yield"
+                          currentSortKey={undervaluedSortBy}
+                          sortDirection={undervaluedSortDirection}
+                          onSort={handleUndervaluedSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="100일 수익률"
+                          sortKey="perf100d"
+                          currentSortKey={undervaluedSortBy}
+                          sortDirection={undervaluedSortDirection}
+                          onSort={handleUndervaluedSort}
+                        />
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
                     {(() => {
-                      const filteredStocks = mockUndervalued.filter((stock) => {
+                      let filteredStocks = mockUndervalued.filter((stock) => {
                         const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
                         const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
                         const matchQuery =
@@ -2328,6 +2705,17 @@ export default function DemoHome() {
                           stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
                         return matchMarket && matchCategory && matchQuery;
                       });
+
+                      // Apply sorting
+                      if (undervaluedSortBy) {
+                        filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
+                          const aVal = a[undervaluedSortBy];
+                          const bVal = b[undervaluedSortBy];
+                          if (aVal === undefined || bVal === undefined) return 0;
+                          const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                          return undervaluedSortDirection === "asc" ? comparison : -comparison;
+                        });
+                      }
 
                       const itemsPerPage = 10;
                       const startIndex = (undervaluedPage - 1) * itemsPerPage;
@@ -2367,18 +2755,45 @@ export default function DemoHome() {
                               {stock.category}
                             </span>
                           </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-left">
+                            <span className="text-xs text-gray-700">{stock.industry}</span>
+                          </td>
                           <td className="px-4 py-4 whitespace-nowrap text-center">
                             <div className="flex justify-center">
                               <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="sm" />
                             </div>
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap text-center">
-                            <AnalysisStatusBadge sentiment={stock.sentiment} />
+                            <span className="text-xs text-gray-900 font-medium">{stock.ROE}%</span>
                           </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-right">
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <span className="text-xs text-gray-900 font-medium">{stock.PER}</span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <span className="text-xs text-gray-900 font-medium">{stock.PEG}</span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <span className="text-xs text-gray-900 font-medium">{stock.PBR}</span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <span className="text-xs text-gray-900 font-medium">{stock.PSR}</span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <span className="text-xs text-emerald-600 font-medium">{stock.RevYoY}%</span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <span className="text-xs text-emerald-600 font-medium">{stock.EPS_Growth_3Y}%</span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <span className="text-xs text-gray-900 font-medium">{stock.OpMarginTTM}%</span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
+                            <span className="text-xs text-gray-900 font-medium">{stock.FCF_Yield}%</span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
                             <span
                               className={classNames(
-                                "text-sm font-bold",
+                                "text-xs font-bold",
                                 stock.perf100d >= 0 ? "text-emerald-600" : "text-red-600"
                               )}
                             >
