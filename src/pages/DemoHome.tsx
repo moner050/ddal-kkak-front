@@ -2220,6 +2220,120 @@ function NewsSummaryTab() {
 const TAB_KEYS = ["home", "undervalued", "filings", "watchlist"] as const;
 type TabKey = (typeof TAB_KEYS)[number];
 
+// 재무 지표 평가 함수 (좋음: 초록색, 보통: 검정색, 나쁨: 빨간색)
+function getMetricColor(key: string, value: number): string {
+  // 높을수록 좋은 지표들
+  if (key === "ROE" || key === "ROA") {
+    if (value >= 15) return "text-emerald-600";
+    if (value >= 10) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  if (key === "OpMarginTTM" || key === "OperatingMargins") {
+    if (value >= 20) return "text-emerald-600";
+    if (value >= 10) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  if (key === "RevYoY" || key === "Revenue_Growth_3Y" || key === "EPS_Growth_3Y" || key === "EBITDA_Growth_3Y") {
+    if (value >= 20) return "text-emerald-600";
+    if (value >= 10) return "text-gray-900";
+    if (value >= 0) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  if (key === "FCF_Yield") {
+    if (value >= 5) return "text-emerald-600";
+    if (value >= 2) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  if (key === "DivYield") {
+    if (value === 0) return "text-gray-900";
+    if (value >= 4) return "text-emerald-600";
+    if (value >= 2) return "text-gray-900";
+    return "text-gray-900";
+  }
+
+  if (key === "Discount") {
+    if (value >= 20) return "text-emerald-600"; // 저평가
+    if (value >= 0) return "text-gray-900";
+    return "text-red-600"; // 고평가
+  }
+
+  if (key.includes("Score")) {
+    if (value >= 80) return "text-emerald-600";
+    if (value >= 60) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  // 낮을수록 좋은 지표들
+  if (key === "PE" || key === "PER") {
+    if (value <= 15) return "text-emerald-600";
+    if (value <= 25) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  if (key === "PEG") {
+    if (value <= 1) return "text-emerald-600";
+    if (value <= 2) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  if (key === "PB" || key === "PBR") {
+    if (value <= 2) return "text-emerald-600";
+    if (value <= 4) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  if (key === "PS" || key === "PSR") {
+    if (value <= 2) return "text-emerald-600";
+    if (value <= 5) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  if (key === "EV_EBITDA") {
+    if (value <= 10) return "text-emerald-600";
+    if (value <= 15) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  if (key === "Beta") {
+    if (value <= 1) return "text-emerald-600";
+    if (value <= 1.5) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  if (key === "ShortPercent") {
+    if (value <= 5) return "text-emerald-600";
+    if (value <= 10) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  // 적절한 범위가 있는 지표들
+  if (key === "InsiderOwnership" || key === "InstitutionOwnership") {
+    if (value >= 10 && value <= 50) return "text-emerald-600";
+    if ((value >= 5 && value < 10) || (value > 50 && value <= 70)) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  if (key === "PayoutRatio") {
+    if (value >= 30 && value <= 60) return "text-emerald-600";
+    if ((value >= 20 && value < 30) || (value > 60 && value <= 80)) return "text-gray-900";
+    return "text-red-600";
+  }
+
+  // RSI (과매수/과매도 지표)
+  if (key === "RSI_14") {
+    if (value >= 40 && value <= 60) return "text-emerald-600"; // 중립
+    if ((value >= 30 && value < 40) || (value > 60 && value <= 70)) return "text-gray-900";
+    return "text-red-600"; // 과매도(<30) 또는 과매수(>70)
+  }
+
+  // 기본값: 중립 (가격, 시가총액, 거래량 등)
+  return "text-gray-900";
+}
+
 export default function DemoHome() {
   const fearGreedUS = usFearGreedSeries[usFearGreedSeries.length - 1];
   const fearGreedKR = krFearGreedSeries[krFearGreedSeries.length - 1];
@@ -3394,7 +3508,13 @@ export default function DemoHome() {
                       if (key === "Ticker" || key === "Name" || key === "Sector" || key === "Industry") return null;
 
                       let displayValue = value;
+                      let colorClass = "text-gray-900"; // 기본 색상
+
                       if (typeof value === "number") {
+                        // 숫자 값에 대해 색상 결정
+                        colorClass = getMetricColor(key, value);
+
+                        // 표시 형식 결정
                         if (key.includes("Score") || key.includes("Percent") || key.includes("Ratio") || key.includes("Margin")) {
                           displayValue = value.toFixed(1) + (key.includes("Score") ? "" : "%");
                         } else if (key === "Price" || key.includes("Cap") || key.includes("Vol")) {
@@ -3407,7 +3527,7 @@ export default function DemoHome() {
                       return (
                         <div key={key} className="p-4 rounded-lg border border-gray-200 bg-gray-50">
                           <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
-                          <div className="text-lg font-bold text-gray-900">{displayValue}</div>
+                          <div className={classNames("text-lg font-bold", colorClass)}>{displayValue}</div>
                         </div>
                       );
                     })}
