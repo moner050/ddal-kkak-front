@@ -12,6 +12,38 @@ function classNames(...args: Array<string | false | null | undefined>) {
   return args.filter(Boolean).join(" ");
 }
 
+// 숫자 포맷팅 유틸리티
+function formatNumber(num: number, options?: { compact?: boolean; decimals?: number }): string {
+  const { compact = false, decimals = 2 } = options || {};
+
+  if (compact && Math.abs(num) >= 1000000) {
+    return (num / 1000000).toFixed(decimals) + "M";
+  } else if (compact && Math.abs(num) >= 1000) {
+    return (num / 1000).toFixed(decimals) + "K";
+  }
+
+  return num.toLocaleString("ko-KR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: decimals
+  });
+}
+
+// 상대 시간 표시 (예: "5분 전", "2시간 전")
+function getRelativeTime(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffSec < 60) return "방금 전";
+  if (diffMin < 60) return `${diffMin}분 전`;
+  if (diffHour < 24) return `${diffHour}시간 전`;
+  if (diffDay < 7) return `${diffDay}일 전`;
+  return formatAsOf(date);
+}
+
 // URL 쿼리 유틸
 function setQueryParams(updates: Record<string, string | null | undefined>) {
   if (typeof window === "undefined") return;
@@ -136,6 +168,59 @@ function calcDeltaAndMA(series: number[], window = 7) {
   const ma = arr.reduce((a, b) => a + b, 0) / arr.length;
   return { delta, ma };
 }
+// 핵심 지표 대시보드 요약 카드
+function DashboardSummaryCard({
+  usdkrw,
+  gold,
+  fearGreedUS,
+  fearGreedKR,
+  lastUpdate
+}: {
+  usdkrw: number;
+  gold: number;
+  fearGreedUS: number;
+  fearGreedKR: number;
+  lastUpdate: Date;
+}) {
+  const metrics = [
+    { label: "USD/KRW", value: formatNumber(usdkrw, { decimals: 2 }), unit: "원", change: 0 },
+    { label: "금 시세", value: formatNumber(gold, { decimals: 2 }), unit: "$/oz", change: 0 },
+    { label: "US 공포·탐욕", value: fearGreedUS, unit: "", sentiment: classifyFG(fearGreedUS, "US").label },
+    { label: "KR 공포·탐욕", value: fearGreedKR, unit: "", sentiment: classifyFG(fearGreedKR, "KR").label }
+  ];
+
+  return (
+    <div className="rounded-3xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-5 shadow-lg">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-extrabold text-gray-900">📊 시장 현황 요약</h2>
+        <span className="text-xs text-gray-600 flex items-center gap-1">
+          <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          {getRelativeTime(lastUpdate)}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {metrics.map((m, idx) => (
+          <div key={idx} className="rounded-xl bg-white/80 backdrop-blur p-3 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="text-xs text-gray-600 mb-1">{m.label}</div>
+            <div className="flex items-end gap-1">
+              <div className="text-xl font-extrabold text-gray-900">
+                {typeof m.value === "number" ? formatNumber(m.value) : m.value}
+              </div>
+              {m.unit && <div className="text-xs text-gray-500 pb-0.5">{m.unit}</div>}
+            </div>
+            {m.sentiment && (
+              <div className="mt-1 text-xs text-gray-600">
+                {m.sentiment}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function FearGreedCard({ title = "공포·탐욕 지수", index = 62, asOf, variant = "US", series }: { title?: string; index?: number; asOf?: string; variant?: "US" | "KR"; series: number[] }) {
   const { label, cls } = classifyFG(index, variant);
   const barPct = Math.max(0, Math.min(100, index));
@@ -172,10 +257,13 @@ function FearGreedCard({ title = "공포·탐욕 지수", index = 62, asOf, vari
   );
 }
 
-// 간단 스파크라인 차트 (SVG)
-function Sparkline({ data = [], height = 120, stroke = "#4338ca", fill = "rgba(99,102,241,0.15)" }: { data: number[]; height?: number; stroke?: string; fill?: string }) {
+// 간단 스파크라인 차트 (SVG) - 인터랙티브 툴팁 포함
+function Sparkline({ data = [], height = 120, stroke = "#4338ca", fill = "rgba(99,102,241,0.15)", showTooltip = false, unit = "" }: { data: number[]; height?: number; stroke?: string; fill?: string; showTooltip?: boolean; unit?: string }) {
   const width = 500;
   const n = data.length;
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
   if (n === 0) return null;
   const min = Math.min(...data);
   const max = Math.max(...data);
@@ -186,11 +274,53 @@ function Sparkline({ data = [], height = 120, stroke = "#4338ca", fill = "rgba(9
   const x = (i: number) => (i / (n - 1)) * width;
   const d = data.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(v)}`).join(" ");
   const area = `${d} L ${width} ${height} L 0 ${height} Z`;
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!showTooltip) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const pct = relX / rect.width;
+    const idx = Math.round(pct * (n - 1));
+    const clampedIdx = Math.max(0, Math.min(n - 1, idx));
+    setHoveredIndex(clampedIdx);
+    setTooltipPos({ x: relX, y: e.clientY - rect.top });
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredIndex(null);
+  };
+
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="h-28 w-full">
-      <path d={area} fill={fill} />
-      <path d={d} fill="none" stroke={stroke} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
+    <div className="relative">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="none"
+        className="h-28 w-full"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
+        <path d={area} fill={fill} />
+        <path d={d} fill="none" stroke={stroke} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        {showTooltip && hoveredIndex !== null && (
+          <>
+            <line x1={x(hoveredIndex)} y1={0} x2={x(hoveredIndex)} y2={height} stroke="#6b7280" strokeWidth={1} strokeDasharray="4 2" />
+            <circle cx={x(hoveredIndex)} cy={y(data[hoveredIndex])} r={4} fill={stroke} stroke="white" strokeWidth={2} />
+          </>
+        )}
+      </svg>
+      {showTooltip && hoveredIndex !== null && (
+        <div
+          className="absolute z-10 rounded-lg bg-gray-900 px-2 py-1 text-xs text-white shadow-lg pointer-events-none"
+          style={{
+            left: tooltipPos.x,
+            top: tooltipPos.y - 30,
+            transform: "translateX(-50%)"
+          }}
+        >
+          {formatNumber(data[hoveredIndex], { decimals: 2 })} {unit}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -201,23 +331,23 @@ function LineChartCard({ title, unit, asOf, data }: { title: string; unit: strin
   const pct = first ? (diff / first) * 100 : 0;
   const up = diff >= 0;
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-600">
-          {title} <span className="ml-1 text-xs text-gray-400">({asOf})</span>
+          {title} <span className="ml-1 text-xs text-gray-400">({getRelativeTime(new Date())})</span>
         </div>
         <div className={classNames("rounded-full px-2 py-0.5 text-xs font-semibold ring-1", up ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-red-50 text-red-700 ring-red-200")}>
           {up ? "+" : ""}
           {pct.toFixed(2)}%
         </div>
       </div>
-      <div className="mt-2 flex items-end justify-between">{/* ← 오타 수정: flex.items-end → flex items-end */}
+      <div className="mt-2 flex items-end justify-between">
         <div className="text-2xl font-extrabold text-gray-900">
-          {last.toLocaleString()} <span className="text-sm font-semibold text-gray-500">{unit}</span>
+          {formatNumber(last, { decimals: 2 })} <span className="text-sm font-semibold text-gray-500">{unit}</span>
         </div>
       </div>
       <div className="mt-2">
-        <Sparkline data={data} />
+        <Sparkline data={data} showTooltip={true} unit={unit} />
       </div>
     </div>
   );
@@ -227,15 +357,15 @@ function BuffettCard({ title, asOf, data }: { title: string; asOf?: string; data
   const last = data[data.length - 1];
   const pct = last * 100;
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-600">
-          {title} <span className="ml-1 text-xs text-gray-400">({asOf})</span>
+          {title} <span className="ml-1 text-xs text-gray-400">({getRelativeTime(new Date())})</span>
         </div>
         <div className={classNames("rounded-full px-2 py-0.5 text-xs font-semibold ring-1", pct >= 100 ? "bg-amber-50 text-amber-800 ring-amber-200" : "bg-emerald-50 text-emerald-700 ring-emerald-200")}>{pct.toFixed(0)}%</div>
       </div>
       <div className="mt-2">
-        <Sparkline data={data} stroke="#0f766e" fill="rgba(16,185,129,0.15)" />
+        <Sparkline data={data} stroke="#0f766e" fill="rgba(16,185,129,0.15)" showTooltip={true} unit="%" />
       </div>
       <div className="mt-1 text-[11px] text-gray-500">(총시가총액 / GDP 비율, 100% 초과 시 상대적 고평가 경향)</div>
     </div>
@@ -347,6 +477,132 @@ export function ImpactBadge({ direction, confidence = 0.7 }: { direction: "POS" 
 }
 
 // ✅ 공용 카테고리 칩 (오버플로우 없이 줄바꿈)
+// 로딩 스켈레톤 컴포넌트
+function LoadingSkeleton({ className = "" }: { className?: string }) {
+  return (
+    <div className={classNames("animate-pulse rounded-2xl bg-gray-200", className)}>
+      <div className="h-full w-full" />
+    </div>
+  );
+}
+
+function CardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="animate-pulse space-y-3">
+        <div className="h-4 w-1/3 rounded bg-gray-200" />
+        <div className="h-8 w-1/2 rounded bg-gray-200" />
+        <div className="h-24 w-full rounded bg-gray-200" />
+      </div>
+    </div>
+  );
+}
+
+// 에러 표시 컴포넌트
+function ErrorCard({ message = "데이터를 불러오는 중 오류가 발생했습니다.", onRetry }: { message?: string; onRetry?: () => void }) {
+  return (
+    <div className="rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm text-center">
+      <div className="text-4xl mb-3">⚠️</div>
+      <div className="text-sm font-semibold text-red-800 mb-2">{message}</div>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+        >
+          다시 시도
+        </button>
+      )}
+    </div>
+  );
+}
+
+// 빈 상태 표시 컴포넌트
+function EmptyState({ message = "표시할 데이터가 없습니다.", icon = "📭" }: { message?: string; icon?: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
+      <div className="text-5xl mb-3">{icon}</div>
+      <div className="text-sm text-gray-600">{message}</div>
+    </div>
+  );
+}
+
+// Quick Actions 바
+function QuickActionsBar() {
+  const [calcModalOpen, setCalcModalOpen] = useState(false);
+  const [amount, setAmount] = useState("1000");
+  const [rate] = useState(mockUSDKRW[mockUSDKRW.length - 1]);
+
+  const actions = [
+    { icon: "🔄", label: "새로고침", onClick: () => window.location.reload() },
+    { icon: "💱", label: "환율 계산", onClick: () => setCalcModalOpen(true) },
+    { icon: "🔔", label: "알림 설정", onClick: () => alert("알림 설정 기능은 곧 출시됩니다!") },
+    { icon: "📊", label: "보고서", onClick: () => alert("보고서 기능은 곧 출시됩니다!") }
+  ];
+
+  return (
+    <>
+      <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-gray-600">빠른 기능</span>
+          <div className="flex gap-2">
+            {actions.map((action, idx) => (
+              <button
+                key={idx}
+                onClick={action.onClick}
+                className="flex flex-col items-center gap-1 rounded-xl bg-gray-50 px-3 py-2 text-xs hover:bg-gray-100 transition-colors"
+              >
+                <span className="text-lg">{action.icon}</span>
+                <span className="text-[10px] text-gray-600">{action.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 환율 계산기 모달 */}
+      {calcModalOpen && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setCalcModalOpen(false)} />
+          <div className="relative z-[1001] w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-gray-200 m-3">
+            <h3 className="text-base font-bold text-gray-900">💱 환율 계산기</h3>
+            <p className="mt-1 text-xs text-gray-500">현재 환율: {formatNumber(rate, { decimals: 2 })} KRW/USD</p>
+
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="text-sm text-gray-600">금액 (USD)</label>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                  placeholder="금액 입력"
+                />
+              </div>
+
+              <div className="rounded-lg bg-indigo-50 p-3">
+                <div className="text-xs text-gray-600">환산 금액 (KRW)</div>
+                <div className="text-2xl font-bold text-indigo-700">
+                  {formatNumber(parseFloat(amount || "0") * rate, { decimals: 0 })} 원
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCalcModalOpen(false)}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-50"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function CategoryChips({ value, onChange, categories = CATEGORIES as unknown as string[] }: { value: string; onChange: (v: string) => void; categories?: string[] }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -1121,6 +1377,18 @@ export default function DemoHome() {
           )}
         >
           <main className="mx-auto max-w-7xl space-y-8 px-4 py-6 pb-24">
+            {/* 핵심 지표 대시보드 요약 */}
+            <DashboardSummaryCard
+              usdkrw={mockUSDKRW[mockUSDKRW.length - 1]}
+              gold={mockGoldUSD[mockGoldUSD.length - 1]}
+              fearGreedUS={fearGreedUS}
+              fearGreedKR={fearGreedKR}
+              lastUpdate={new Date()}
+            />
+
+            {/* Quick Actions 바 */}
+            <QuickActionsBar />
+
             <div className="grid gap-4 md:grid-cols-2">
               <FearGreedCard title="미국 공포·탐욕 지수" index={fearGreedUS} asOf={asOfUS} variant="US" series={usFearGreedSeries} />
               <FearGreedCard title="한국 공포·탐욕 지수" index={fearGreedKR} asOf={asOfKR} variant="KR" series={krFearGreedSeries} />
