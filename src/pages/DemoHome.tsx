@@ -75,6 +75,21 @@ const CATEGORIES = [
   "부동산",
 ] as const;
 
+// 섹터별 산업군 매핑
+const SECTOR_INDUSTRIES: Record<string, string[]> = {
+  "정보기술": ["전체", "반도체", "소프트웨어", "전자기기", "IT 서비스", "하드웨어"],
+  "커뮤니케이션 서비스": ["전체", "미디어", "엔터테인먼트", "통신", "게임"],
+  "경기소비재": ["전체", "자동차", "의류", "호텔·레저", "소매", "가전"],
+  "필수소비재": ["전체", "식품", "음료", "생활용품", "슈퍼마켓"],
+  "헬스케어": ["전체", "제약", "바이오의약품", "의료기기", "의료서비스"],
+  "금융": ["전체", "은행", "보험", "증권", "자산운용"],
+  "산업재": ["전체", "건설", "항공우주", "운송", "기계"],
+  "소재": ["전체", "화학", "금속", "건축자재", "용기·포장재"],
+  "에너지": ["전체", "석유·가스", "신재생에너지", "에너지설비"],
+  "유틸리티": ["전체", "전력", "수도", "가스"],
+  "부동산": ["전체", "부동산 개발", "리츠", "부동산 서비스"],
+};
+
 // Cookie helpers for storing favorites
 const setCookie = (name: string, value: string, days: number = 365) => {
   const expires = new Date();
@@ -2226,6 +2241,7 @@ export default function DemoHome() {
   const [undervaluedSearchQuery, setUndervaluedSearchQuery] = useState("");
   const [undervaluedMarket, setUndervaluedMarket] = useState<"전체" | "US" | "KR">("전체");
   const [undervaluedCategory, setUndervaluedCategory] = useState("전체");
+  const [undervaluedIndustry, setUndervaluedIndustry] = useState("전체");
   const [undervaluedPage, setUndervaluedPage] = useState(1);
   const [undervaluedSortBy, setUndervaluedSortBy] = useState<string | null>(null);
   const [undervaluedSortDirection, setUndervaluedSortDirection] = useState<"asc" | "desc">("desc");
@@ -2236,6 +2252,15 @@ export default function DemoHome() {
   const [filingsSortBy, setFilingsSortBy] = useState<string | null>(null);
   const [filingsSortDirection, setFilingsSortDirection] = useState<"asc" | "desc">("desc");
   const [filingsSentimentFilter, setFilingsSentimentFilter] = useState<"ALL" | "POS" | "NEG" | "NEU">("ALL");
+  const [filingsMarketFilter, setFilingsMarketFilter] = useState<"전체" | "US" | "KR">("전체");
+  const [filingsCategory, setFilingsCategory] = useState("전체");
+  const [filingsIndustry, setFilingsIndustry] = useState("전체");
+
+  // 관심 종목 페이지 필터
+  const [watchlistSearchQuery, setWatchlistSearchQuery] = useState("");
+  const [watchlistMarket, setWatchlistMarket] = useState<"전체" | "US" | "KR">("전체");
+  const [watchlistCategory, setWatchlistCategory] = useState("전체");
+  const [watchlistIndustry, setWatchlistIndustry] = useState("전체");
 
   // ✅ 탭별 스크롤 위치 저장용
   const scrollPositions = useRef<Record<TabKey, number>>({
@@ -2362,6 +2387,19 @@ export default function DemoHome() {
     });
   }, [filingCatUS, filingCatKR, rankCatUS, rankCatKR, filingSentUS, filingSentKR]);
 
+  // 카테고리 변경 시 산업군 리셋
+  useEffect(() => {
+    setUndervaluedIndustry("전체");
+  }, [undervaluedCategory]);
+
+  useEffect(() => {
+    setFilingsIndustry("전체");
+  }, [filingsCategory]);
+
+  useEffect(() => {
+    setWatchlistIndustry("전체");
+  }, [watchlistCategory]);
+
   // 간단 테스트
   useEffect(() => {
     console.assert(["home", "news", "reports", "list", "detail"].includes(activeTab), "activeTab should be valid");
@@ -2449,7 +2487,7 @@ export default function DemoHome() {
               </div>
               <div className="space-y-4">
                 {mockFeaturedStocks.filter(s => s.market === featuredMarket).map((stock) => (
-                  <FeaturedStockCard key={stock.id} stock={stock} onClick={() => {}} />
+                  <FeaturedStockCard key={stock.id} stock={stock} onClick={() => setStockDetailModal({ open: true, symbol: stock.symbol, tab: "info" })} />
                 ))}
               </div>
             </section>
@@ -2585,6 +2623,29 @@ export default function DemoHome() {
                   categories={[...CATEGORIES]}
                 />
               </div>
+
+              {/* 산업군 선택 */}
+              {undervaluedCategory !== "전체" && SECTOR_INDUSTRIES[undervaluedCategory] && (
+                <div>
+                  <div className="text-xs text-gray-600 mb-2 font-semibold">산업군</div>
+                  <div className="flex flex-wrap gap-2">
+                    {SECTOR_INDUSTRIES[undervaluedCategory].map((industry) => (
+                      <button
+                        key={industry}
+                        onClick={() => setUndervaluedIndustry(industry)}
+                        className={classNames(
+                          "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                          undervaluedIndustry === industry
+                            ? "bg-indigo-600 text-white shadow"
+                            : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                        )}
+                      >
+                        {industry}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 게시판 형식 테이블 */}
@@ -2701,15 +2762,6 @@ export default function DemoHome() {
                           onSort={handleUndervaluedSort}
                         />
                       </th>
-                      <th className="px-4 py-3 text-center text-xs">
-                        <TooltipHeader
-                          label="100일 수익률"
-                          sortKey="perf100d"
-                          currentSortKey={undervaluedSortBy}
-                          sortDirection={undervaluedSortDirection}
-                          onSort={handleUndervaluedSort}
-                        />
-                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
@@ -2717,11 +2769,12 @@ export default function DemoHome() {
                       let filteredStocks = mockUndervalued.filter((stock) => {
                         const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
                         const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
+                        const matchIndustry = undervaluedIndustry === "전체" || stock.industry === undervaluedIndustry;
                         const matchQuery =
                           !undervaluedSearchQuery ||
                           stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
                           stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
-                        return matchMarket && matchCategory && matchQuery;
+                        return matchMarket && matchCategory && matchIndustry && matchQuery;
                       });
 
                       // Apply sorting
@@ -2811,17 +2864,6 @@ export default function DemoHome() {
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap text-center">
                             <span className="text-xs text-gray-900 font-medium">{stock.FCF_Yield}%</span>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center">
-                            <span
-                              className={classNames(
-                                "text-xs font-bold",
-                                stock.perf100d >= 0 ? "text-emerald-600" : "text-red-600"
-                              )}
-                            >
-                              {stock.perf100d >= 0 ? "+" : ""}
-                              {(stock.perf100d * 100).toFixed(1)}%
-                            </span>
                           </td>
                         </tr>
                       ));
@@ -2935,24 +2977,70 @@ export default function DemoHome() {
                 </div>
               </div>
 
+              {/* 시장 선택 */}
+              <div>
+                <div className="text-xs text-gray-600 mb-2 font-semibold">시장</div>
+                <div className="flex gap-2">
+                  {(["전체", "US", "KR"] as const).map((market) => (
+                    <button
+                      key={market}
+                      onClick={() => setFilingsMarketFilter(market)}
+                      className={classNames(
+                        "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                        filingsMarketFilter === market
+                          ? "bg-indigo-600 text-white shadow"
+                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                      )}
+                    >
+                      {market === "전체" ? "전체" : market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* 카테고리 선택 */}
               <div>
                 <div className="text-xs text-gray-600 mb-2 font-semibold">GICS 섹터</div>
-                <CategoryChips value={filingCatUS} onChange={setFilingCatUS} categories={[...CATEGORIES]} />
+                <CategoryChips value={filingsCategory} onChange={setFilingsCategory} categories={[...CATEGORIES]} />
               </div>
+
+              {/* 산업군 선택 */}
+              {filingsCategory !== "전체" && SECTOR_INDUSTRIES[filingsCategory] && (
+                <div>
+                  <div className="text-xs text-gray-600 mb-2 font-semibold">산업군</div>
+                  <div className="flex flex-wrap gap-2">
+                    {SECTOR_INDUSTRIES[filingsCategory].map((industry) => (
+                      <button
+                        key={industry}
+                        onClick={() => setFilingsIndustry(industry)}
+                        className={classNames(
+                          "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                          filingsIndustry === industry
+                            ? "bg-indigo-600 text-white shadow"
+                            : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                        )}
+                      >
+                        {industry}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 공시 목록 */}
             <div className="space-y-3">
               {(() => {
                 let filteredFilings = mockFilings.filter((filing) => {
-                  const matchCategory = filingCatUS === "전체" || filing.category === filingCatUS;
+                  const matchMarket = filingsMarketFilter === "전체" || filing.market === filingsMarketFilter;
+                  const matchCategory = filingsCategory === "전체" || filing.category === filingsCategory;
+                  const matchIndustry = filingsIndustry === "전체" || filing.industry === filingsIndustry;
                   const matchQuery =
                     !filingsSearchQuery ||
                     filing.company.toLowerCase().includes(filingsSearchQuery.toLowerCase()) ||
                     filing.symbol.toLowerCase().includes(filingsSearchQuery.toLowerCase());
                   const matchSentiment = filingsSentimentFilter === "ALL" || filing.sentiment === filingsSentimentFilter;
-                  return matchCategory && matchQuery && matchSentiment;
+                  return matchMarket && matchCategory && matchIndustry && matchQuery && matchSentiment;
                 });
 
                 // Apply sorting
@@ -2992,13 +3080,15 @@ export default function DemoHome() {
             {/* Pagination */}
             {(() => {
               const filteredFilings = mockFilings.filter((filing) => {
-                const matchCategory = filingCatUS === "전체" || filing.category === filingCatUS;
+                const matchMarket = filingsMarketFilter === "전체" || filing.market === filingsMarketFilter;
+                const matchCategory = filingsCategory === "전체" || filing.category === filingsCategory;
+                const matchIndustry = filingsIndustry === "전체" || filing.industry === filingsIndustry;
                 const matchQuery =
                   !filingsSearchQuery ||
                   filing.company.toLowerCase().includes(filingsSearchQuery.toLowerCase()) ||
                   filing.symbol.toLowerCase().includes(filingsSearchQuery.toLowerCase());
                 const matchSentiment = filingsSentimentFilter === "ALL" || filing.sentiment === filingsSentimentFilter;
-                return matchCategory && matchQuery && matchSentiment;
+                return matchMarket && matchCategory && matchIndustry && matchQuery && matchSentiment;
               });
               const totalPages = Math.ceil(filteredFilings.length / 10);
 
@@ -3053,13 +3143,89 @@ export default function DemoHome() {
                 );
               }
 
-              // Get favorited stocks from mockUndervalued
-              const favoritedStocks = mockUndervalued.filter(stock => favorites[stock.symbol]);
+              // Get favorited stocks from mockUndervalued and apply filters
+              let favoritedStocks = mockUndervalued.filter(stock => {
+                const isFavorited = favorites[stock.symbol];
+                const matchMarket = watchlistMarket === "전체" || stock.market === watchlistMarket;
+                const matchCategory = watchlistCategory === "전체" || stock.category === watchlistCategory;
+                const matchIndustry = watchlistIndustry === "전체" || stock.industry === watchlistIndustry;
+                const matchQuery =
+                  !watchlistSearchQuery ||
+                  stock.name.toLowerCase().includes(watchlistSearchQuery.toLowerCase()) ||
+                  stock.symbol.toLowerCase().includes(watchlistSearchQuery.toLowerCase());
+                return isFavorited && matchMarket && matchCategory && matchIndustry && matchQuery;
+              });
 
               return (
                 <div>
+                  {/* 검색 및 필터 */}
+                  <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 space-y-4">
+                    {/* 검색창 */}
+                    <input
+                      type="text"
+                      value={watchlistSearchQuery}
+                      onChange={(e) => setWatchlistSearchQuery(e.target.value)}
+                      placeholder="종목명 또는 티커 검색 (예: 삼성전자, AAPL)"
+                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                    />
+
+                    {/* 시장 선택 */}
+                    <div>
+                      <div className="text-xs text-gray-600 mb-2 font-semibold">시장</div>
+                      <div className="flex gap-2">
+                        {(["전체", "US", "KR"] as const).map((market) => (
+                          <button
+                            key={market}
+                            onClick={() => setWatchlistMarket(market)}
+                            className={classNames(
+                              "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                              watchlistMarket === market
+                                ? "bg-indigo-600 text-white shadow"
+                                : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                            )}
+                          >
+                            {market === "전체" ? "전체" : market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 카테고리 선택 */}
+                    <div>
+                      <div className="text-xs text-gray-600 mb-2 font-semibold">GICS 섹터</div>
+                      <CategoryChips
+                        value={watchlistCategory}
+                        onChange={setWatchlistCategory}
+                        categories={[...CATEGORIES]}
+                      />
+                    </div>
+
+                    {/* 산업군 선택 */}
+                    {watchlistCategory !== "전체" && SECTOR_INDUSTRIES[watchlistCategory] && (
+                      <div>
+                        <div className="text-xs text-gray-600 mb-2 font-semibold">산업군</div>
+                        <div className="flex flex-wrap gap-2">
+                          {SECTOR_INDUSTRIES[watchlistCategory].map((industry) => (
+                            <button
+                              key={industry}
+                              onClick={() => setWatchlistIndustry(industry)}
+                              className={classNames(
+                                "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                                watchlistIndustry === industry
+                                  ? "bg-indigo-600 text-white shadow"
+                                  : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                              )}
+                            >
+                              {industry}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="mb-4 text-sm text-gray-600">
-                    총 {favoritedSymbols.length}개의 관심 종목
+                    총 {favoritedStocks.length}개의 관심 종목
                   </div>
 
                   <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
@@ -3073,72 +3239,86 @@ export default function DemoHome() {
                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                               섹터
                             </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                              산업군
+                            </th>
                             <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                               AI 점수
                             </th>
                             <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                              분석
+                              최근 공시 점수
                             </th>
-                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                              100일 수익률
+                            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                              분석
                             </th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-100">
-                          {favoritedStocks.map((stock) => (
-                            <tr key={stock.symbol} className="hover:bg-gray-50 cursor-pointer transition-colors">
-                              <td className="px-4 py-4 whitespace-nowrap">
-                                <div className="flex items-center gap-3">
-                                  {stock.logoUrl && (
-                                    <div className="relative">
-                                      <img src={stock.logoUrl} alt={stock.name} className="h-10 w-10 rounded-lg" />
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          toggleFavorite(stock.symbol);
-                                        }}
-                                        className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
-                                      >
-                                        <span className="text-xs">
-                                          {favorites[stock.symbol] ? '❤️' : '🤍'}
-                                        </span>
-                                      </button>
-                                    </div>
-                                  )}
-                                  <div>
-                                    <div className="text-sm font-bold text-gray-900">{stock.name}</div>
-                                    <div className="text-xs text-gray-500">
-                                      {stock.symbol} · {stock.market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                          {favoritedStocks.map((stock) => {
+                            // Get latest filing for this stock
+                            const latestFiling = mockFilings.find(f => f.symbol === stock.symbol);
+                            return (
+                              <tr
+                                key={stock.symbol}
+                                onClick={() => setStockDetailModal({ open: true, symbol: stock.symbol, tab: "info" })}
+                                className="hover:bg-gray-50 cursor-pointer transition-colors"
+                              >
+                                <td className="px-4 py-4 whitespace-nowrap">
+                                  <div className="flex items-center gap-3">
+                                    {stock.logoUrl && (
+                                      <div className="relative">
+                                        <img src={stock.logoUrl} alt={stock.name} className="h-10 w-10 rounded-lg" />
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleFavorite(stock.symbol);
+                                          }}
+                                          className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
+                                        >
+                                          <span className="text-xs">
+                                            {favorites[stock.symbol] ? '❤️' : '🤍'}
+                                          </span>
+                                        </button>
+                                      </div>
+                                    )}
+                                    <div>
+                                      <div className="text-sm font-bold text-gray-900">{stock.name}</div>
+                                      <div className="text-xs text-gray-500">
+                                        {stock.symbol} · {stock.market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap">
-                                <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-                                  {stock.category}
-                                </span>
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-center">
-                                <div className="flex justify-center">
-                                  <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="sm" />
-                                </div>
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-center">
-                                <AnalysisStatusBadge sentiment={stock.sentiment} />
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-right">
-                                <span
-                                  className={classNames(
-                                    "text-sm font-bold",
-                                    stock.perf100d >= 0 ? "text-emerald-600" : "text-red-600"
+                                </td>
+                                <td className="px-4 py-4 whitespace-nowrap">
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+                                    {stock.category}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-4 whitespace-nowrap">
+                                  <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
+                                    {stock.industry}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-4 whitespace-nowrap text-center">
+                                  <div className="flex justify-center">
+                                    <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="sm" />
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4 whitespace-nowrap text-center">
+                                  {latestFiling ? (
+                                    <div className="flex justify-center">
+                                      <AIScoreGauge score={latestFiling.aiScore} sentiment={latestFiling.sentiment} size="sm" />
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">-</span>
                                   )}
-                                >
-                                  {stock.perf100d >= 0 ? "+" : ""}
-                                  {(stock.perf100d * 100).toFixed(1)}%
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
+                                </td>
+                                <td className="px-4 py-4 whitespace-nowrap text-center">
+                                  <AnalysisStatusBadge sentiment={stock.sentiment} />
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
