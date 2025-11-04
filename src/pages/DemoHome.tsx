@@ -2388,18 +2388,27 @@ export default function DemoHome() {
                 <p className="text-sm text-indigo-100 mt-1">저평가 우량주 발굴 · 공시 분석 · 투자 기회 탐색</p>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-                <div className="rounded-xl bg-white/20 backdrop-blur p-3">
+                <button
+                  onClick={() => switchTab("home")}
+                  className="rounded-xl bg-white/20 backdrop-blur p-3 hover:bg-white/30 transition-all cursor-pointer"
+                >
                   <div className="text-2xl font-bold">{mockFeaturedStocks.length}</div>
                   <div className="text-xs text-indigo-100">오늘의 주목 종목</div>
-                </div>
-                <div className="rounded-xl bg-white/20 backdrop-blur p-3">
+                </button>
+                <button
+                  onClick={() => switchTab("filings")}
+                  className="rounded-xl bg-white/20 backdrop-blur p-3 hover:bg-white/30 transition-all cursor-pointer"
+                >
                   <div className="text-2xl font-bold">{mockFilings.length}</div>
                   <div className="text-xs text-indigo-100">최근 공시 분석</div>
-                </div>
-                <div className="rounded-xl bg-white/20 backdrop-blur p-3">
+                </button>
+                <button
+                  onClick={() => switchTab("undervalued")}
+                  className="rounded-xl bg-white/20 backdrop-blur p-3 hover:bg-white/30 transition-all cursor-pointer"
+                >
                   <div className="text-2xl font-bold">{mockUndervalued.length}</div>
                   <div className="text-xs text-indigo-100">저평가 우량주</div>
-                </div>
+                </button>
               </div>
             </div>
 
@@ -2863,6 +2872,56 @@ export default function DemoHome() {
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
               />
 
+              {/* 감정 필터 */}
+              <div>
+                <div className="text-xs text-gray-600 mb-2 font-semibold">분석 결과</div>
+                <div className="flex gap-2">
+                  {(["ALL", "POS", "NEG", "NEU"] as const).map((sentiment) => (
+                    <button
+                      key={sentiment}
+                      onClick={() => setFilingsSentimentFilter(sentiment)}
+                      className={classNames(
+                        "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                        filingsSentimentFilter === sentiment
+                          ? "bg-indigo-600 text-white shadow"
+                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                      )}
+                    >
+                      {sentiment === "ALL" ? "전체" : sentiment === "POS" ? "긍정" : sentiment === "NEG" ? "부정" : "중립"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 정렬 옵션 */}
+              <div>
+                <div className="text-xs text-gray-600 mb-2 font-semibold">정렬</div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleFilingsSort("company")}
+                    className={classNames(
+                      "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                      filingsSortBy === "company"
+                        ? "bg-indigo-600 text-white shadow"
+                        : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                    )}
+                  >
+                    종목명 {filingsSortBy === "company" && (filingsSortDirection === "asc" ? "↑" : "↓")}
+                  </button>
+                  <button
+                    onClick={() => handleFilingsSort("aiScore")}
+                    className={classNames(
+                      "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                      filingsSortBy === "aiScore"
+                        ? "bg-indigo-600 text-white shadow"
+                        : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                    )}
+                  >
+                    AI 점수 {filingsSortBy === "aiScore" && (filingsSortDirection === "asc" ? "↑" : "↓")}
+                  </button>
+                </div>
+              </div>
+
               {/* 카테고리 선택 */}
               <div>
                 <div className="text-xs text-gray-600 mb-2 font-semibold">GICS 섹터</div>
@@ -2873,14 +2932,32 @@ export default function DemoHome() {
             {/* 공시 목록 */}
             <div className="space-y-3">
               {(() => {
-                const filteredFilings = mockFilings.filter((filing) => {
+                let filteredFilings = mockFilings.filter((filing) => {
                   const matchCategory = filingCatUS === "전체" || filing.category === filingCatUS;
                   const matchQuery =
                     !filingsSearchQuery ||
                     filing.company.toLowerCase().includes(filingsSearchQuery.toLowerCase()) ||
                     filing.symbol.toLowerCase().includes(filingsSearchQuery.toLowerCase());
-                  return matchCategory && matchQuery;
+                  const matchSentiment = filingsSentimentFilter === "ALL" || filing.sentiment === filingsSentimentFilter;
+                  return matchCategory && matchQuery && matchSentiment;
                 });
+
+                // Apply sorting
+                if (filingsSortBy) {
+                  filteredFilings = [...filteredFilings].sort((a: any, b: any) => {
+                    let aVal, bVal;
+                    if (filingsSortBy === "company") {
+                      aVal = a.company.toLowerCase();
+                      bVal = b.company.toLowerCase();
+                    } else {
+                      aVal = a[filingsSortBy];
+                      bVal = b[filingsSortBy];
+                    }
+                    if (aVal === undefined || bVal === undefined) return 0;
+                    const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                    return filingsSortDirection === "asc" ? comparison : -comparison;
+                  });
+                }
 
                 const itemsPerPage = 10;
                 const startIndex = (filingsPage - 1) * itemsPerPage;
@@ -2901,7 +2978,8 @@ export default function DemoHome() {
                   !filingsSearchQuery ||
                   filing.company.toLowerCase().includes(filingsSearchQuery.toLowerCase()) ||
                   filing.symbol.toLowerCase().includes(filingsSearchQuery.toLowerCase());
-                return matchCategory && matchQuery;
+                const matchSentiment = filingsSentimentFilter === "ALL" || filing.sentiment === filingsSentimentFilter;
+                return matchCategory && matchQuery && matchSentiment;
               });
               const totalPages = Math.ceil(filteredFilings.length / 10);
 
