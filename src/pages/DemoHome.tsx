@@ -1802,7 +1802,7 @@ function SignupModal({ open, onClose }: { open: boolean; onClose: () => void }) 
 // ------------------------------------------------------------------
 // 헤더 + 하단 네비
 // ------------------------------------------------------------------
-function Header() {
+function Header({ onLogoClick }: { onLogoClick?: () => void }) {
   const [loginOpen, setLoginOpen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
 
@@ -1811,14 +1811,17 @@ function Header() {
       <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-lg shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+            <button
+              onClick={onLogoClick}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+            >
               <div>
                 <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                   DDalKKak
                 </div>
                 <div className="text-[9px] text-gray-500 font-medium">AI 기업 분석 플랫폼</div>
               </div>
-            </div>
+            </button>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setLoginOpen(true)}
@@ -1856,7 +1859,8 @@ function BottomNav({ active = "home", onChange, showDetail = false }: { active?:
     : baseItems;
 
   const itemCls = (key: TabKey) => classNames(
-    "flex flex-col items-center justify-center w-full h-16 py-2 text-xs font-semibold touch-manipulation transition-colors",
+    "flex flex-col items-center justify-center w-full h-16 py-2 font-semibold touch-manipulation transition-colors",
+    showDetail ? "text-[10px]" : "text-xs",
     key === active ? "text-indigo-700 bg-indigo-50" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
   );
 
@@ -1865,10 +1869,12 @@ function BottomNav({ active = "home", onChange, showDetail = false }: { active?:
     onChange && onChange(key);
   };
 
+  const gridColsClass = showDetail ? "grid-cols-5" : "grid-cols-4";
+
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-lg shadow-lg">
       <div className="mx-auto max-w-7xl">
-        <ul className="grid grid-cols-4">
+        <ul className={classNames("grid", gridColsClass)}>
           {items.map((item) => (
             <li key={item.key}>
               <button
@@ -1876,7 +1882,7 @@ function BottomNav({ active = "home", onChange, showDetail = false }: { active?:
                 onClick={click(item.key)}
                 aria-current={active === item.key ? "page" : undefined}
               >
-                <span className="text-xl mb-1">{item.icon}</span>
+                <span className={classNames("mb-1", showDetail ? "text-lg" : "text-xl")}>{item.icon}</span>
                 <span className="text-[10px]">{item.label}</span>
               </button>
             </li>
@@ -2538,7 +2544,7 @@ export default function DemoHome() {
     // ✅ 전체 레이아웃: 헤더 / (탭별 개별 스크롤 영역) / 고정 하단 네비
     <div className="h-screen w-full bg-gray-50 flex flex-col overflow-hidden">
       {/* 상단 고정 헤더 */}
-      <Header />
+      <Header onLogoClick={() => switchTab("home")} />
 
       {/* ✅ 중앙: 탭별 개별 스크롤 컨테이너들 (겹쳐 놓고, active만 표시) */}
       <div className="relative flex-1 overflow-hidden">
