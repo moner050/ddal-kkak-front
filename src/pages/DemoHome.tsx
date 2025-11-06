@@ -812,13 +812,13 @@ function QuickActionsBar() {
 
 export function CategoryChips({ value, onChange, categories = CATEGORIES as unknown as string[] }: { value: string; onChange: (v: string) => void; categories?: string[] }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
       {categories.map((c) => (
         <button
           key={c}
           type="button"
           onClick={() => onChange && onChange(c)}
-          className={classNames("rounded-full px-2.5 py-1 text-xs font-semibold ring-1", value === c ? "bg-gray-900 text-white ring-gray-900" : "bg-gray-50 text-gray-700 ring-gray-200 hover:bg-gray-100")}
+          className={classNames("rounded-full px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold ring-1", value === c ? "bg-gray-900 text-white ring-gray-900" : "bg-gray-50 text-gray-700 ring-gray-200 hover:bg-gray-100")}
           aria-pressed={value === c}
         >
           {c}
@@ -1809,26 +1809,26 @@ function Header() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-lg shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 py-2 sm:py-3">
+          <div className="flex items-center justify-between gap-2 sm:gap-3">
             <div className="flex items-center gap-2">
               <div>
-                <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <div className="text-base sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                   DDalKKak
                 </div>
-                <div className="text-[9px] text-gray-500 font-medium">AI 기업 분석 플랫폼</div>
+                <div className="text-[8px] sm:text-[9px] text-gray-500 font-medium">AI 기업 분석 플랫폼</div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => setLoginOpen(true)}
-                className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold hover:bg-gray-50 transition-colors"
+                className="rounded-lg sm:rounded-xl border border-gray-200 bg-white px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold hover:bg-gray-50 transition-colors"
               >
                 로그인
               </button>
               <button
                 onClick={() => setSignupOpen(true)}
-                className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 text-sm font-semibold text-white hover:from-indigo-700 hover:to-purple-700 transition-all"
+                className="rounded-lg sm:rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold text-white hover:from-indigo-700 hover:to-purple-700 transition-all"
               >
                 회원가입
               </button>
@@ -1844,19 +1844,19 @@ function Header() {
 }
 
 function BottomNav({ active = "home", onChange, showDetail = false }: { active?: TabKey; onChange: (k: TabKey) => void; showDetail?: boolean }) {
-  const baseItems = [
+  // ✅ 탭 순서: 홈 | 저평가 | 공시 | 상세 | 관심 (detail 탭 항상 표시)
+  const items = [
     { key: "home" as TabKey, icon: "🏠", label: "홈" },
-    { key: "undervalued" as TabKey, icon: "💎", label: "저평가 발굴" },
-    { key: "filings" as TabKey, icon: "📊", label: "공시 분석" },
-    { key: "watchlist" as TabKey, icon: "⭐", label: "관심 종목" }
+    { key: "undervalued" as TabKey, icon: "💎", label: "저평가" },
+    { key: "filings" as TabKey, icon: "📊", label: "공시" },
+    { key: "detail" as TabKey, icon: "📈", label: "상세" },
+    { key: "watchlist" as TabKey, icon: "⭐", label: "관심" }
   ];
 
-  const items = showDetail
-    ? [...baseItems, { key: "detail" as TabKey, icon: "📈", label: "종목 상세" }]
-    : baseItems;
-
   const itemCls = (key: TabKey) => classNames(
-    "flex flex-col items-center justify-center w-full h-16 py-2 text-xs font-semibold touch-manipulation transition-colors",
+    "flex flex-col items-center justify-center w-full py-2 text-xs font-semibold touch-manipulation transition-colors",
+    // 모바일에서 더 컴팩트하게
+    "h-14 sm:h-16",
     key === active ? "text-indigo-700 bg-indigo-50" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
   );
 
@@ -1868,7 +1868,7 @@ function BottomNav({ active = "home", onChange, showDetail = false }: { active?:
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-lg shadow-lg">
       <div className="mx-auto max-w-7xl">
-        <ul className="grid grid-cols-4">
+        <ul className="grid grid-cols-5">
           {items.map((item) => (
             <li key={item.key}>
               <button
@@ -1876,8 +1876,8 @@ function BottomNav({ active = "home", onChange, showDetail = false }: { active?:
                 onClick={click(item.key)}
                 aria-current={active === item.key ? "page" : undefined}
               >
-                <span className="text-xl mb-1">{item.icon}</span>
-                <span className="text-[10px]">{item.label}</span>
+                <span className="text-base sm:text-xl mb-0.5 sm:mb-1">{item.icon}</span>
+                <span className="text-[9px] sm:text-[10px]">{item.label}</span>
               </button>
             </li>
           ))}
@@ -2381,6 +2381,39 @@ export default function DemoHome() {
   const [detailSymbol, setDetailSymbol] = useState<string>("");
   const [detailTab, setDetailTab] = useState<"info" | "filings">("info");
 
+  // ✅ 최근 본 종목 (최대 5개, localStorage 활용)
+  const [recentStocks, setRecentStocks] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem("ddal-kkak-recent-stocks");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // detailSymbol이 변경될 때마다 최근 본 종목에 추가
+  useEffect(() => {
+    if (!detailSymbol) return;
+
+    setRecentStocks(prev => {
+      // 중복 제거하고 최신 항목을 맨 앞에 추가
+      const filtered = prev.filter(s => s !== detailSymbol);
+      const updated = [detailSymbol, ...filtered].slice(0, 5);
+
+      // localStorage에 저장
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("ddal-kkak-recent-stocks", JSON.stringify(updated));
+        } catch (e) {
+          console.error("Failed to save recent stocks:", e);
+        }
+      }
+
+      return updated;
+    });
+  }, [detailSymbol]);
+
   // ✅ 탭별 스크롤 위치 저장용
   const scrollPositions = useRef<Record<TabKey, number>>({
     home: 0,
@@ -2719,19 +2752,19 @@ export default function DemoHome() {
                 value={undervaluedSearchQuery}
                 onChange={(e) => setUndervaluedSearchQuery(e.target.value)}
                 placeholder="종목명 또는 티커 검색 (예: 삼성전자, AAPL)"
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-indigo-200"
               />
 
               {/* 시장 선택 */}
               <div>
-                <div className="text-xs text-gray-600 mb-2 font-semibold">시장</div>
-                <div className="flex gap-2">
+                <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">시장</div>
+                <div className="flex gap-1.5 sm:gap-2">
                   {(["전체", "US", "KR"] as const).map((market) => (
                     <button
                       key={market}
                       onClick={() => setUndervaluedMarket(market)}
                       className={classNames(
-                        "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                        "flex-1 sm:flex-initial rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                         undervaluedMarket === market
                           ? "bg-indigo-600 text-white shadow"
                           : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -2745,7 +2778,7 @@ export default function DemoHome() {
 
               {/* 카테고리 선택 */}
               <div>
-                <div className="text-xs text-gray-600 mb-2 font-semibold">GICS 섹터</div>
+                <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">GICS 섹터</div>
                 <CategoryChips
                   value={undervaluedCategory}
                   onChange={setUndervaluedCategory}
@@ -2756,14 +2789,14 @@ export default function DemoHome() {
               {/* 산업군 선택 */}
               {undervaluedCategory !== "전체" && SECTOR_INDUSTRIES[undervaluedCategory] && (
                 <div>
-                  <div className="text-xs text-gray-600 mb-2 font-semibold">산업군</div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">산업군</div>
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {SECTOR_INDUSTRIES[undervaluedCategory].map((industry) => (
                       <button
                         key={industry}
                         onClick={() => setUndervaluedIndustry(industry)}
                         className={classNames(
-                          "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                          "rounded-lg px-2.5 sm:px-4 py-1 sm:py-2 text-[10px] sm:text-sm font-semibold transition-all",
                           undervaluedIndustry === industry
                             ? "bg-indigo-600 text-white shadow"
                             : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -3053,19 +3086,19 @@ export default function DemoHome() {
                 value={filingsSearchQuery}
                 onChange={(e) => setFilingsSearchQuery(e.target.value)}
                 placeholder="종목명 또는 티커 검색 (예: 삼성전자, AAPL)"
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-indigo-200"
               />
 
               {/* 감정 필터 */}
               <div>
-                <div className="text-xs text-gray-600 mb-2 font-semibold">분석 결과</div>
-                <div className="flex gap-2">
+                <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">분석 결과</div>
+                <div className="flex gap-1.5 sm:gap-2">
                   {(["ALL", "POS", "NEG", "NEU"] as const).map((sentiment) => (
                     <button
                       key={sentiment}
                       onClick={() => setFilingsSentimentFilter(sentiment)}
                       className={classNames(
-                        "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                        "flex-1 sm:flex-initial rounded-lg px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                         filingsSentimentFilter === sentiment
                           ? "bg-indigo-600 text-white shadow"
                           : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -3079,12 +3112,12 @@ export default function DemoHome() {
 
               {/* 정렬 옵션 */}
               <div>
-                <div className="text-xs text-gray-600 mb-2 font-semibold">정렬</div>
-                <div className="flex gap-2">
+                <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">정렬</div>
+                <div className="flex gap-1.5 sm:gap-2">
                   <button
                     onClick={() => handleFilingsSort("company")}
                     className={classNames(
-                      "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                      "flex-1 rounded-lg px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                       filingsSortBy === "company"
                         ? "bg-indigo-600 text-white shadow"
                         : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -3095,7 +3128,7 @@ export default function DemoHome() {
                   <button
                     onClick={() => handleFilingsSort("aiScore")}
                     className={classNames(
-                      "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                      "flex-1 rounded-lg px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                       filingsSortBy === "aiScore"
                         ? "bg-indigo-600 text-white shadow"
                         : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -3108,14 +3141,14 @@ export default function DemoHome() {
 
               {/* 시장 선택 */}
               <div>
-                <div className="text-xs text-gray-600 mb-2 font-semibold">시장</div>
-                <div className="flex gap-2">
+                <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">시장</div>
+                <div className="flex gap-1.5 sm:gap-2">
                   {(["전체", "US", "KR"] as const).map((market) => (
                     <button
                       key={market}
                       onClick={() => setFilingsMarketFilter(market)}
                       className={classNames(
-                        "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                        "flex-1 sm:flex-initial rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                         filingsMarketFilter === market
                           ? "bg-indigo-600 text-white shadow"
                           : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -3129,21 +3162,21 @@ export default function DemoHome() {
 
               {/* 카테고리 선택 */}
               <div>
-                <div className="text-xs text-gray-600 mb-2 font-semibold">GICS 섹터</div>
+                <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">GICS 섹터</div>
                 <CategoryChips value={filingsCategory} onChange={setFilingsCategory} categories={[...CATEGORIES]} />
               </div>
 
               {/* 산업군 선택 */}
               {filingsCategory !== "전체" && SECTOR_INDUSTRIES[filingsCategory] && (
                 <div>
-                  <div className="text-xs text-gray-600 mb-2 font-semibold">산업군</div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">산업군</div>
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {SECTOR_INDUSTRIES[filingsCategory].map((industry) => (
                       <button
                         key={industry}
                         onClick={() => setFilingsIndustry(industry)}
                         className={classNames(
-                          "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                          "rounded-lg px-2.5 sm:px-4 py-1 sm:py-2 text-[10px] sm:text-sm font-semibold transition-all",
                           filingsIndustry === industry
                             ? "bg-indigo-600 text-white shadow"
                             : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -3467,8 +3500,191 @@ export default function DemoHome() {
           )}
         >
           {(() => {
-            if (!detailSymbol) return null;
+            // ✅ 종목이 선택되지 않은 경우: 첫 화면 표시
+            if (!detailSymbol) {
+              // 저평가 우량주 최신 3개
+              const latestUndervalued = mockUndervalued
+                .sort((a, b) => (b.aiScore || 0) - (a.aiScore || 0))
+                .slice(0, 3);
 
+              // 공시분석 최신 3개
+              const latestFilings = mockFilings
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .slice(0, 3);
+
+              // 최근 본 종목 데이터
+              const recentStocksList = recentStocks
+                .map(symbol => mockUndervalued.find(s => s.symbol === symbol))
+                .filter(Boolean)
+                .slice(0, 5);
+
+              return (
+                <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
+                  {/* 안내 문구 */}
+                  <div className="text-center mb-8">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+                      어떤 종목을 살펴보시겠어요?
+                    </h1>
+                    <p className="text-sm sm:text-base text-gray-600">
+                      아래 섹션에서 종목을 선택하거나, 저평가/공시 탭에서 종목을 클릭해보세요
+                    </p>
+                  </div>
+
+                  {/* 저평가 우량주 섹션 */}
+                  <div className="mb-8">
+                    <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-4 sm:p-6 shadow-lg">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">💎 저평가 우량주</h2>
+                        <button
+                          onClick={() => switchTab("undervalued")}
+                          className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
+                        >
+                          전체 보기 →
+                        </button>
+                      </div>
+
+                      {latestUndervalued.length > 0 ? (
+                        <div className="grid gap-3 sm:gap-4">
+                          {latestUndervalued.map(stock => (
+                            <div
+                              key={stock.symbol}
+                              onClick={() => {
+                                setDetailSymbol(stock.symbol);
+                                setDetailTab("info");
+                              }}
+                              className="rounded-xl bg-white p-3 sm:p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                            >
+                              <div className="flex items-center gap-3">
+                                {stock.logoUrl && (
+                                  <img
+                                    src={stock.logoUrl}
+                                    alt={stock.name}
+                                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold text-sm sm:text-base text-gray-900 truncate">{stock.name}</div>
+                                  <div className="text-xs sm:text-sm text-gray-500">{stock.symbol} · {stock.sector}</div>
+                                </div>
+                                {stock.aiScore && (
+                                  <div className="flex-shrink-0">
+                                    <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="sm" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 text-sm">데이터가 없습니다</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 공시분석 섹션 */}
+                  <div className="mb-8">
+                    <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-4 sm:p-6 shadow-lg">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">📊 공시분석 기준</h2>
+                        <button
+                          onClick={() => switchTab("filings")}
+                          className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-semibold"
+                        >
+                          전체 보기 →
+                        </button>
+                      </div>
+
+                      {latestFilings.length > 0 ? (
+                        <div className="grid gap-3 sm:gap-4">
+                          {latestFilings.map(filing => {
+                            const stock = mockUndervalued.find(s => s.symbol === filing.symbol);
+                            return (
+                              <div
+                                key={filing.id}
+                                onClick={() => {
+                                  setDetailSymbol(filing.symbol);
+                                  setDetailTab("filings");
+                                }}
+                                className="rounded-xl bg-white p-3 sm:p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                              >
+                                <div className="flex items-start gap-3">
+                                  {stock?.logoUrl && (
+                                    <img
+                                      src={stock.logoUrl}
+                                      alt={stock.name}
+                                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200"
+                                    />
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-bold text-sm sm:text-base text-gray-900">{filing.symbol}</span>
+                                      <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full font-semibold">
+                                        {filing.formType}
+                                      </span>
+                                    </div>
+                                    <div className="text-xs sm:text-sm text-gray-700 line-clamp-1">{filing.summary}</div>
+                                    <div className="text-xs text-gray-500 mt-1">{filing.date}</div>
+                                  </div>
+                                  {filing.aiScore && (
+                                    <div className="flex-shrink-0">
+                                      <AIScoreGauge score={filing.aiScore} sentiment={filing.sentiment} size="sm" />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 text-sm">데이터가 없습니다</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 최근 본 종목 섹션 */}
+                  {recentStocksList.length > 0 && (
+                    <div className="mb-8">
+                      <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-lg">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">🕒 최근 본 종목</h2>
+                        <div className="grid gap-3 sm:gap-4">
+                          {recentStocksList.map(stock => (
+                            <div
+                              key={stock.symbol}
+                              onClick={() => {
+                                setDetailSymbol(stock.symbol);
+                                setDetailTab("info");
+                              }}
+                              className="rounded-xl bg-gray-50 p-3 sm:p-4 border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer"
+                            >
+                              <div className="flex items-center gap-3">
+                                {stock.logoUrl && (
+                                  <img
+                                    src={stock.logoUrl}
+                                    alt={stock.name}
+                                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold text-sm sm:text-base text-gray-900 truncate">{stock.name}</div>
+                                  <div className="text-xs sm:text-sm text-gray-500">{stock.symbol} · {stock.sector}</div>
+                                </div>
+                                {stock.aiScore && (
+                                  <div className="flex-shrink-0">
+                                    <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="sm" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </main>
+              );
+            }
+
+            // ✅ 종목이 선택된 경우: 상세 정보 표시
             const stockDetail = mockStockDetails[detailSymbol];
             const stockInfo = mockUndervalued.find(s => s.symbol === detailSymbol);
             const stockFilings = mockFilings.filter(f => f.symbol === detailSymbol);
@@ -3477,37 +3693,48 @@ export default function DemoHome() {
 
             return (
               <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
+                {/* ✅ 뒤로가기 버튼 */}
+                <div className="mb-4">
+                  <button
+                    onClick={() => setDetailSymbol("")}
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                  >
+                    <span>←</span>
+                    <span>목록으로</span>
+                  </button>
+                </div>
                 {/* 히어로 섹션 */}
-                <div className="mb-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-8 text-white shadow-xl">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-6">
+                <div className="mb-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-6 md:p-8 text-white shadow-xl">
+                  <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
+                    <div className="flex items-start gap-3 sm:gap-6 flex-1">
                       {stockInfo?.logoUrl && (
                         <img
                           src={stockInfo.logoUrl}
                           alt={stockDetail.Name}
-                          className="h-20 w-20 rounded-2xl bg-white p-2 shadow-lg"
+                          className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-xl sm:rounded-2xl bg-white p-1.5 sm:p-2 shadow-lg flex-shrink-0"
                         />
                       )}
-                      <div>
-                        <h1 className="text-4xl font-extrabold mb-2">{stockDetail.Name}</h1>
-                        <p className="text-xl text-indigo-100 mb-3">
-                          {stockDetail.Ticker} · {stockDetail.Sector} · {stockDetail.Industry}
+                      <div className="min-w-0">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold mb-1 sm:mb-2 truncate">{stockDetail.Name}</h1>
+                        <p className="text-sm sm:text-base md:text-xl text-indigo-100 mb-2 sm:mb-3 truncate">
+                          {stockDetail.Ticker} · {stockDetail.Sector}
                         </p>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                           <div>
-                            <div className="text-sm text-indigo-200">현재가</div>
-                            <div className="text-3xl font-bold">${stockDetail.Price?.toLocaleString()}</div>
+                            <div className="text-xs sm:text-sm text-indigo-200">현재가</div>
+                            <div className="text-lg sm:text-2xl md:text-3xl font-bold">${stockDetail.Price?.toLocaleString()}</div>
                           </div>
                           <div>
-                            <div className="text-sm text-indigo-200">시가총액</div>
-                            <div className="text-2xl font-bold">${stockDetail.MktCap?.toLocaleString()}B</div>
+                            <div className="text-xs sm:text-sm text-indigo-200">시가총액</div>
+                            <div className="text-base sm:text-xl md:text-2xl font-bold">${stockDetail.MktCap?.toLocaleString()}B</div>
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right sm:text-center self-center">
                       {stockInfo && (
-                        <div className="inline-block">
+                        <div className="inline-block bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/20 shadow-lg">
+                          <div className="text-xs text-indigo-100 mb-2 font-semibold text-center">AI 종합 점수</div>
                           <AIScoreGauge score={stockInfo.aiScore} sentiment={stockInfo.sentiment} size="lg" />
                         </div>
                       )}
@@ -3520,24 +3747,26 @@ export default function DemoHome() {
                   <button
                     onClick={() => setDetailTab("info")}
                     className={classNames(
-                      "rounded-lg px-6 py-3 text-sm font-semibold transition-all",
+                      "flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold transition-all",
                       detailTab === "info"
                         ? "bg-indigo-600 text-white shadow-lg"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     )}
                   >
-                    📊 종목 정보
+                    <span className="hidden sm:inline">📊 종목 정보</span>
+                    <span className="sm:hidden">📊 정보</span>
                   </button>
                   <button
                     onClick={() => setDetailTab("filings")}
                     className={classNames(
-                      "rounded-lg px-6 py-3 text-sm font-semibold transition-all",
+                      "flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold transition-all",
                       detailTab === "filings"
                         ? "bg-indigo-600 text-white shadow-lg"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     )}
                   >
-                    📈 공시 분석 요약
+                    <span className="hidden sm:inline">📈 공시 분석 요약</span>
+                    <span className="sm:hidden">📈 공시</span>
                   </button>
                 </div>
 
