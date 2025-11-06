@@ -804,6 +804,9 @@ export default function DemoHome() {
   const [detailTab, setDetailTab] = useState<"info" | "filings">("info");
   const [detailLogoError, setDetailLogoError] = useState(false);
 
+  // 저평가/관심 탭 로고 에러 상태
+  const [logoErrors, setLogoErrors] = useState<Record<string, boolean>>({});
+
   // ✅ 최근 본 종목 (최대 5개, localStorage 활용)
   const [recentStocks, setRecentStocks] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
@@ -1425,8 +1428,13 @@ export default function DemoHome() {
                           <td className="px-4 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
                               <div className="relative">
-                                {stock.logoUrl ? (
-                                  <img src={stock.logoUrl} alt={stock.name} className="h-10 w-10 rounded-lg" />
+                                {stock.logoUrl && !logoErrors[stock.symbol] ? (
+                                  <img
+                                    src={stock.logoUrl}
+                                    alt={stock.name}
+                                    className="h-10 w-10 rounded-lg"
+                                    onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
+                                  />
                                 ) : (
                                   <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
                                     <span className="text-lg text-gray-400">?</span>
@@ -1892,22 +1900,31 @@ export default function DemoHome() {
                               >
                                 <td className="px-4 py-4 whitespace-nowrap">
                                   <div className="flex items-center gap-3">
-                                    {stock.logoUrl && (
-                                      <div className="relative">
-                                        <img src={stock.logoUrl} alt={stock.name} className="h-10 w-10 rounded-lg" />
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            toggleFavorite(stock.symbol);
-                                          }}
-                                          className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
-                                        >
-                                          <span className="text-xs">
-                                            {favorites[stock.symbol] ? '❤️' : '🤍'}
-                                          </span>
-                                        </button>
-                                      </div>
-                                    )}
+                                    <div className="relative">
+                                      {stock.logoUrl && !logoErrors[stock.symbol] ? (
+                                        <img
+                                          src={stock.logoUrl}
+                                          alt={stock.name}
+                                          className="h-10 w-10 rounded-lg"
+                                          onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
+                                        />
+                                      ) : (
+                                        <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                                          <span className="text-lg text-gray-400">?</span>
+                                        </div>
+                                      )}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleFavorite(stock.symbol);
+                                        }}
+                                        className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
+                                      >
+                                        <span className="text-xs">
+                                          {favorites[stock.symbol] ? '❤️' : '🤍'}
+                                        </span>
+                                      </button>
+                                    </div>
                                     <div>
                                       <div className="text-sm font-bold text-gray-900">{stock.name}</div>
                                       <div className="text-xs text-gray-500">
@@ -2277,10 +2294,13 @@ export default function DemoHome() {
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         {["GrowthScore", "QualityScore", "ValueScore", "MomentumScore", "TotalScore"].map(key => (
                           <div key={key} className="text-center p-4 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
-                            <div className="text-xs text-gray-600 mb-2">
-                              {key.replace("Score", "")}
-                              {METRIC_DESCRIPTIONS[key] && <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]} />}
-                            </div>
+                            {METRIC_DESCRIPTIONS[key] ? (
+                              <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
+                                <div className="text-xs text-gray-600 mb-2">{key.replace("Score", "")}</div>
+                              </MetricTooltip>
+                            ) : (
+                              <div className="text-xs text-gray-600 mb-2">{key.replace("Score", "")}</div>
+                            )}
                             <div className={classNames("text-3xl font-bold", getMetricColor(key, stockDetail[key]))}>
                               {stockDetail[key]}
                             </div>
@@ -2301,10 +2321,13 @@ export default function DemoHome() {
                           const colorClass = typeof value === "number" ? getMetricColor(key, value) : "text-gray-900";
                           return (
                             <div key={key} className="p-4 rounded-lg bg-gray-50">
-                              <div className="text-xs text-gray-600 mb-1">
-                                {key.replace(/_/g, " ")}
-                                {METRIC_DESCRIPTIONS[key] && <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]} />}
-                              </div>
+                              {METRIC_DESCRIPTIONS[key] ? (
+                                <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
+                                  <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                </MetricTooltip>
+                              ) : (
+                                <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                              )}
                               <div className={classNames("text-xl font-bold", colorClass)}>{displayValue}</div>
                             </div>
                           );
@@ -2324,10 +2347,13 @@ export default function DemoHome() {
                             const colorClass = getMetricColor(key, value);
                             return (
                               <div key={key} className="p-4 rounded-lg bg-gray-50">
-                                <div className="text-xs text-gray-600 mb-1">
-                                  {key.replace(/_/g, " ")}
-                                  {METRIC_DESCRIPTIONS[key] && <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]} />}
-                                </div>
+                                {METRIC_DESCRIPTIONS[key] ? (
+                                  <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
+                                    <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                  </MetricTooltip>
+                                ) : (
+                                  <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                )}
                                 <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
                               </div>
                             );
@@ -2345,10 +2371,13 @@ export default function DemoHome() {
                             const colorClass = getMetricColor(key, value);
                             return (
                               <div key={key} className="p-4 rounded-lg bg-gray-50">
-                                <div className="text-xs text-gray-600 mb-1">
-                                  {key.replace(/_/g, " ")}
-                                  {METRIC_DESCRIPTIONS[key] && <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]} />}
-                                </div>
+                                {METRIC_DESCRIPTIONS[key] ? (
+                                  <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
+                                    <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                  </MetricTooltip>
+                                ) : (
+                                  <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                )}
                                 <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
                               </div>
                             );
@@ -2386,10 +2415,13 @@ export default function DemoHome() {
 
                           return (
                             <div key={key} className="p-4 rounded-lg bg-gray-50">
-                              <div className="text-xs text-gray-600 mb-1">
-                                {key.replace(/_/g, " ")}
-                                {METRIC_DESCRIPTIONS[key] && <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]} />}
-                              </div>
+                              {METRIC_DESCRIPTIONS[key] ? (
+                                <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
+                                  <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                </MetricTooltip>
+                              ) : (
+                                <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                              )}
                               <div className={classNames("text-lg font-bold", colorClass)}>{displayValue}</div>
                             </div>
                           );
@@ -2404,6 +2436,19 @@ export default function DemoHome() {
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
+                              {/* 로고 추가 */}
+                              {filing.logoUrl && !logoErrors[filing.symbol] ? (
+                                <img
+                                  src={filing.logoUrl}
+                                  alt={filing.company}
+                                  className="h-8 w-8 rounded-lg flex-shrink-0"
+                                  onError={() => setLogoErrors(prev => ({ ...prev, [filing.symbol]: true }))}
+                                />
+                              ) : (
+                                <div className="h-8 w-8 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-sm text-gray-400">?</span>
+                                </div>
+                              )}
                               <span className="inline-flex items-center rounded-lg bg-indigo-100 px-3 py-1.5 text-sm font-semibold text-indigo-700">
                                 {filing.formType}
                               </span>
