@@ -17,18 +17,19 @@ export default function QuickActionsBar() {
 
   return (
     <>
-      <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+      <div className="rounded-2xl border border-gray-200 bg-white p-2 sm:p-3 shadow-sm">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-gray-600">빠른 기능</span>
-          <div className="flex gap-2">
+          <span className="text-[10px] sm:text-xs font-semibold text-gray-600">빠른 기능</span>
+          <div className="flex gap-1.5 sm:gap-2">
             {actions.map((action, idx) => (
               <button
                 key={idx}
                 onClick={action.onClick}
-                className="flex flex-col items-center gap-1 rounded-xl bg-gray-50 px-3 py-2 text-xs hover:bg-gray-100 transition-colors"
+                className="flex flex-col items-center gap-0.5 sm:gap-1 rounded-lg sm:rounded-xl bg-gray-50 px-2 sm:px-3 py-1.5 sm:py-2 text-xs hover:bg-gray-100 transition-colors"
+                title={action.label}
               >
-                <span className="text-lg">{action.icon}</span>
-                <span className="text-[10px] text-gray-600">{action.label}</span>
+                <span className="text-base sm:text-lg">{action.icon}</span>
+                <span className="hidden sm:block text-[10px] text-gray-600 whitespace-nowrap">{action.label}</span>
               </button>
             ))}
           </div>

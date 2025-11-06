@@ -17,15 +17,15 @@ export default function AnalysisStatusBadge({ sentiment, confidence }: AnalysisS
 
   return (
     <div className={classNames(
-      "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold ring-1",
+      "inline-flex items-center gap-1 sm:gap-1.5 rounded-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-bold ring-1",
       s.bg,
       s.text,
       s.ring
     )}>
-      <span>{s.emoji}</span>
+      <span className="text-xs sm:text-sm">{s.emoji}</span>
       <span>{s.label}</span>
       {confidence !== undefined && (
-        <span className="text-xs opacity-75">({(confidence * 100).toFixed(0)}%)</span>
+        <span className="hidden sm:inline text-xs opacity-75">({(confidence * 100).toFixed(0)}%)</span>
       )}
     </div>
   );

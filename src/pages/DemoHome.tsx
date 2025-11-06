@@ -964,89 +964,92 @@ export default function DemoHome() {
             activeTab === "home" ? "block" : "hidden"
           )}
         >
-          <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 pb-24">
+          <main className="mx-auto max-w-7xl space-y-4 sm:space-y-6 px-3 sm:px-4 py-4 sm:py-6 pb-24">
             {/* Hero Section - AI 분석 플랫폼 소개 */}
-            <div className="rounded-3xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-8 text-white shadow-xl">
-              <div className="mb-3">
-                <h1 className="text-2xl font-extrabold">AI 기업 분석 플랫폼</h1>
-                <p className="text-sm text-indigo-100 mt-1">저평가 우량주 발굴 · 공시 분석 · 투자 기회 탐색</p>
+            <div className="rounded-2xl sm:rounded-3xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 sm:p-8 text-white shadow-xl">
+              <div className="mb-2 sm:mb-3">
+                <h1 className="text-lg sm:text-2xl font-extrabold">AI 기업 분석 플랫폼</h1>
+                <p className="text-xs sm:text-sm text-indigo-100 mt-1">저평가 우량주 발굴 · 공시 분석 · 투자 기회 탐색</p>
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+              <div className="mt-3 sm:mt-4 grid grid-cols-3 gap-2 sm:gap-4 text-center">
                 <button
                   onClick={scrollToFeaturedSection}
-                  className="rounded-xl bg-white/20 backdrop-blur p-3 hover:bg-white/30 transition-all cursor-pointer"
+                  className="rounded-lg sm:rounded-xl bg-white/20 backdrop-blur p-2 sm:p-3 hover:bg-white/30 transition-all cursor-pointer"
                 >
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-2xl font-bold">{mockFeaturedStocks.length}</span>
-                    <div className="flex items-center gap-1">
+                  <div className="flex items-center justify-center gap-1 sm:gap-2">
+                    <span className="text-lg sm:text-2xl font-bold">{mockFeaturedStocks.length}</span>
+                    <div className="hidden sm:flex items-center gap-1">
                       <span className="text-red-400 text-lg">↑</span>
                       <span className="text-sm font-bold text-red-300">+5</span>
                     </div>
                   </div>
-                  <div className="text-xs text-indigo-100">오늘의 주목 종목</div>
+                  <div className="text-[10px] sm:text-xs text-indigo-100 mt-1">주목 종목</div>
                 </button>
                 <button
                   onClick={() => switchTab("filings")}
-                  className="rounded-xl bg-white/20 backdrop-blur p-3 hover:bg-white/30 transition-all cursor-pointer"
+                  className="rounded-lg sm:rounded-xl bg-white/20 backdrop-blur p-2 sm:p-3 hover:bg-white/30 transition-all cursor-pointer"
                 >
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-2xl font-bold">{mockFilings.length}</span>
-                    <div className="flex items-center gap-1">
+                  <div className="flex items-center justify-center gap-1 sm:gap-2">
+                    <span className="text-lg sm:text-2xl font-bold">{mockFilings.length}</span>
+                    <div className="hidden sm:flex items-center gap-1">
                       <span className="text-red-400 text-lg">↑</span>
                       <span className="text-sm font-bold text-red-300">+12</span>
                     </div>
                   </div>
-                  <div className="text-xs text-indigo-100">최근 공시 분석</div>
+                  <div className="text-[10px] sm:text-xs text-indigo-100 mt-1">공시 분석</div>
                 </button>
                 <button
                   onClick={() => switchTab("undervalued")}
-                  className="rounded-xl bg-white/20 backdrop-blur p-3 hover:bg-white/30 transition-all cursor-pointer"
+                  className="rounded-lg sm:rounded-xl bg-white/20 backdrop-blur p-2 sm:p-3 hover:bg-white/30 transition-all cursor-pointer"
                 >
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-2xl font-bold">{mockUndervalued.length}</span>
-                    <div className="flex items-center gap-1">
+                  <div className="flex items-center justify-center gap-1 sm:gap-2">
+                    <span className="text-lg sm:text-2xl font-bold">{mockUndervalued.length}</span>
+                    <div className="hidden sm:flex items-center gap-1">
                       <span className="text-red-400 text-lg">↑</span>
                       <span className="text-sm font-bold text-red-300">+8</span>
                     </div>
                   </div>
-                  <div className="text-xs text-indigo-100">저평가 우량주</div>
+                  <div className="text-[10px] sm:text-xs text-indigo-100 mt-1">저평가주</div>
                 </button>
               </div>
             </div>
 
             {/* 오늘의 주목 저평가주 */}
             <section ref={featuredSectionRef}>
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
-                    💎 오늘의 주목 저평가주
+              <div className="mb-3 sm:mb-4">
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <h2 className="text-base sm:text-xl font-extrabold text-gray-900 flex items-center gap-1 sm:gap-2">
+                    <span className="text-lg sm:text-2xl">💎</span>
+                    <span className="hidden sm:inline">오늘의 주목 저평가주</span>
+                    <span className="sm:hidden">주목 저평가주</span>
                   </h2>
                   <button
                     onClick={() => switchTab("undervalued")}
-                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                    className="rounded-lg bg-indigo-600 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:bg-indigo-700 whitespace-nowrap"
                   >
-                    전체 보기 →
+                    <span className="hidden sm:inline">전체 보기 →</span>
+                    <span className="sm:hidden">전체</span>
                   </button>
                 </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-600">AI가 선정한 투자 가치가 높은 종목</p>
-                  <div className="rounded-full border border-gray-200 bg-gray-50 p-1 flex gap-1">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <p className="text-xs sm:text-sm text-gray-600">AI가 선정한 투자 가치가 높은 종목</p>
+                  <div className="rounded-full border border-gray-200 bg-gray-50 p-0.5 sm:p-1 flex gap-0.5 sm:gap-1">
                     <button
                       onClick={() => setFeaturedMarket("US")}
-                      className={classNames("rounded-full px-3 py-1 text-xs font-semibold transition-all", featuredMarket === "US" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                      className={classNames("rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap", featuredMarket === "US" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
                     >
                       🇺🇸 미국
                     </button>
                     <button
                       onClick={() => setFeaturedMarket("KR")}
-                      className={classNames("rounded-full px-3 py-1 text-xs font-semibold transition-all", featuredMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                      className={classNames("rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap", featuredMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
                     >
                       🇰🇷 한국
                     </button>
                   </div>
                 </div>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {mockFeaturedStocks.filter(s => s.market === featuredMarket).map((stock) => (
                   <FeaturedStockCard key={stock.id} stock={stock} onClick={() => openStockDetail(stock.symbol, "info")} />
                 ))}
@@ -1055,37 +1058,40 @@ export default function DemoHome() {
 
             {/* 최근 공시 분석 */}
             <section>
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
-                    📊 최근 공시 분석
+              <div className="mb-3 sm:mb-4">
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <h2 className="text-base sm:text-xl font-extrabold text-gray-900 flex items-center gap-1 sm:gap-2">
+                    <span className="text-lg sm:text-2xl">📊</span>
+                    <span className="hidden sm:inline">최근 공시 분석</span>
+                    <span className="sm:hidden">공시 분석</span>
                   </h2>
                   <button
                     onClick={() => switchTab("filings")}
-                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                    className="rounded-lg bg-indigo-600 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:bg-indigo-700 whitespace-nowrap"
                   >
-                    전체 보기 →
+                    <span className="hidden sm:inline">전체 보기 →</span>
+                    <span className="sm:hidden">전체</span>
                   </button>
                 </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-600">AI가 분석한 최신 기업 공시 및 보고서</p>
-                  <div className="rounded-full border border-gray-200 bg-gray-50 p-1 flex gap-1">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <p className="text-xs sm:text-sm text-gray-600">AI가 분석한 최신 기업 공시 및 보고서</p>
+                  <div className="rounded-full border border-gray-200 bg-gray-50 p-0.5 sm:p-1 flex gap-0.5 sm:gap-1">
                     <button
                       onClick={() => setFilingsMarket("US")}
-                      className={classNames("rounded-full px-3 py-1 text-xs font-semibold transition-all", filingsMarket === "US" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                      className={classNames("rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap", filingsMarket === "US" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
                     >
                       🇺🇸 미국
                     </button>
                     <button
                       onClick={() => setFilingsMarket("KR")}
-                      className={classNames("rounded-full px-3 py-1 text-xs font-semibold transition-all", filingsMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                      className={classNames("rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap", filingsMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
                     >
                       🇰🇷 한국
                     </button>
                   </div>
                 </div>
               </div>
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-2 sm:gap-3 md:grid-cols-2">
                 {mockFilings.filter(f => f.market === filingsMarket).slice(0, 4).map((filing) => (
                   <FilingAnalysisCard
                     key={filing.id}
