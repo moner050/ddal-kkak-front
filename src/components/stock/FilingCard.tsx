@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { classNames } from '../../utils/format';
 
 interface FilingCardItem {
@@ -24,6 +24,8 @@ export default function FilingCard({
   isFavorite,
   onToggleFavorite
 }: FilingCardProps) {
+  const [logoError, setLogoError] = useState(false);
+
   return (
     <div
       role="button"
@@ -31,10 +33,17 @@ export default function FilingCard({
       className="group w-full text-left rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
     >
       <div className="flex items-start gap-3">
-        {item.logoUrl ? (
-          <img src={item.logoUrl} alt="logo" className="h-8 w-8 rounded" />
+        {item.logoUrl && !logoError ? (
+          <img
+            src={item.logoUrl}
+            alt="logo"
+            className="h-8 w-8 rounded object-contain"
+            onError={() => setLogoError(true)}
+          />
         ) : (
-          <div className="h-8 w-8 rounded bg-gray-200" />
+          <div className="h-8 w-8 rounded bg-gray-200 flex items-center justify-center">
+            <span className="text-xs text-gray-400">?</span>
+          </div>
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-sm text-gray-500">

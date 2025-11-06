@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AIScoreGauge from './AIScoreGauge';
 import AnalysisStatusBadge from './AnalysisStatusBadge';
 
@@ -13,6 +13,7 @@ interface Filing {
   sentiment: "POS" | "NEG" | "NEU";
   confidence: number;
   previousScores?: number[];
+  logoUrl?: string;
 }
 
 interface FilingAnalysisCardProps {
@@ -28,6 +29,8 @@ export default function FilingAnalysisCard({
   favorites,
   toggleFavorite
 }: FilingAnalysisCardProps) {
+  const [logoError, setLogoError] = useState(false);
+
   const getSentiment = (s: number): "POS" | "NEG" | "NEU" => {
     if (s >= 70) return "POS";
     if (s < 50) return "NEG";
@@ -82,6 +85,19 @@ export default function FilingAnalysisCard({
             <span className="text-xs text-gray-400">{filing.date}</span>
           </div>
           <div className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+            {/* 로고 이미지 */}
+            {filing.logoUrl && !logoError ? (
+              <img
+                src={filing.logoUrl}
+                alt={filing.company}
+                className="h-5 w-5 rounded object-contain"
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <div className="h-5 w-5 rounded bg-gray-200 flex items-center justify-center">
+                <span className="text-[10px] text-gray-400">?</span>
+              </div>
+            )}
             <span>{filing.symbol} · {filing.company}</span>
             {toggleFavorite && (
               <button

@@ -746,6 +746,7 @@ export default function DemoHome() {
   // 종목 상세 페이지 상태
   const [detailSymbol, setDetailSymbol] = useState<string>("");
   const [detailTab, setDetailTab] = useState<"info" | "filings">("info");
+  const [detailLogoError, setDetailLogoError] = useState(false);
 
   // ✅ 최근 본 종목 (최대 5개, localStorage 활용)
   const [recentStocks, setRecentStocks] = useState<string[]>(() => {
@@ -761,6 +762,9 @@ export default function DemoHome() {
   // detailSymbol이 변경될 때마다 최근 본 종목에 추가
   useEffect(() => {
     if (!detailSymbol) return;
+
+    // 로고 에러 상태 초기화
+    setDetailLogoError(false);
 
     setRecentStocks(prev => {
       // 중복 제거하고 최신 항목을 맨 앞에 추가
@@ -948,7 +952,7 @@ export default function DemoHome() {
     // ✅ 전체 레이아웃: 헤더 / (탭별 개별 스크롤 영역) / 고정 하단 네비
     <div className="h-screen w-full bg-gray-50 flex flex-col overflow-hidden">
       {/* 상단 고정 헤더 */}
-      <Header />
+      <Header onLogoClick={() => switchTab("home")} />
 
       {/* ✅ 중앙: 탭별 개별 스크롤 컨테이너들 (겹쳐 놓고, active만 표시) */}
       <div className="relative flex-1 overflow-hidden">
@@ -2130,12 +2134,17 @@ export default function DemoHome() {
                 <div className="mb-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-6 md:p-8 text-white shadow-xl">
                   <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
                     <div className="flex items-start gap-3 sm:gap-6 flex-1">
-                      {stockInfo?.logoUrl && (
+                      {stockInfo?.logoUrl && !detailLogoError ? (
                         <img
                           src={stockInfo.logoUrl}
                           alt={stockDetail.Name}
                           className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-xl sm:rounded-2xl bg-white p-1.5 sm:p-2 shadow-lg flex-shrink-0"
+                          onError={() => setDetailLogoError(true)}
                         />
+                      ) : (
+                        <div className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-xl sm:rounded-2xl bg-gray-200 flex items-center justify-center shadow-lg flex-shrink-0">
+                          <span className="text-xl sm:text-2xl md:text-3xl text-gray-400">?</span>
+                        </div>
                       )}
                       <div className="min-w-0">
                         <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold mb-1 sm:mb-2 truncate">{stockDetail.Name}</h1>
@@ -2156,8 +2165,8 @@ export default function DemoHome() {
                     </div>
                     <div className="text-right sm:text-center self-center">
                       {stockInfo && (
-                        <div className="inline-block bg-white/20 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-4 border-2 border-white/40 shadow-2xl ring-2 ring-white/20">
-                          <div className="text-xs text-white mb-2 font-bold text-center bg-white/10 rounded-lg px-2 py-1">AI 종합 점수</div>
+                        <div className="inline-block bg-white/40 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-4 border-2 border-white/60 shadow-2xl ring-2 ring-white/30">
+                          <div className="text-xs text-gray-800 mb-2 font-bold text-center bg-white/70 rounded-lg px-2 py-1 shadow-sm">AI 종합 점수</div>
                           <AIScoreGauge score={stockInfo.aiScore} sentiment={stockInfo.sentiment} size="lg" />
                         </div>
                       )}

@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import LoginModal from '../modals/LoginModal';
 import SignupModal from '../modals/SignupModal';
 
-export default function Header() {
+interface HeaderProps {
+  onLogoClick?: () => void;
+}
+
+export default function Header({ onLogoClick }: HeaderProps) {
   const [loginOpen, setLoginOpen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
 
@@ -12,12 +16,15 @@ export default function Header() {
         <div className="mx-auto max-w-7xl px-3 sm:px-4 py-2 sm:py-3">
           <div className="flex items-center justify-between gap-2 sm:gap-3">
             <div className="flex items-center gap-2">
-              <div>
+              <button
+                onClick={onLogoClick}
+                className="text-left hover:opacity-80 transition-opacity cursor-pointer"
+              >
                 <div className="text-base sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                   DDalKKak
                 </div>
                 <div className="text-[8px] sm:text-[9px] text-gray-500 font-medium">AI 기업 분석 플랫폼</div>
-              </div>
+              </button>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2">
               <button
