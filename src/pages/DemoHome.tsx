@@ -8,120 +8,55 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
    - Header / FilingsSectionByMarket / RankingSectionByMarket / BottomNav 포함
 ------------------------------------------------------------ */
 
-function classNames(...args: Array<string | false | null | undefined>) {
-  return args.filter(Boolean).join(" ");
-}
+// Import utilities
+import { classNames, formatNumber, getRelativeTime, formatAsOf } from "../utils/format";
+import { setCookie, getCookie } from "../utils/cookies";
+import { setQueryParams, getQueryParam } from "../utils/queryParams";
 
-// 숫자 포맷팅 유틸리티
-function formatNumber(num: number, options?: { compact?: boolean; decimals?: number }): string {
-  const { compact = false, decimals = 2 } = options || {};
+// Import constants
+import { CATEGORIES, SECTOR_INDUSTRIES, SECTOR_THEMES } from "../constants/categories";
 
-  if (compact && Math.abs(num) >= 1000000) {
-    return (num / 1000000).toFixed(decimals) + "M";
-  } else if (compact && Math.abs(num) >= 1000) {
-    return (num / 1000).toFixed(decimals) + "K";
-  }
+// Import types
+import { TabKey, Sentiment } from "../types";
 
-  return num.toLocaleString("ko-KR", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: decimals
-  });
-}
+// Import chart components
+import FearGreedCard from "../components/charts/FearGreedCard";
+import Sparkline from "../components/charts/Sparkline";
+import LineChartCard from "../components/charts/LineChartCard";
+import BuffettCard from "../components/charts/BuffettCard";
+import CategoryHeatmapCard from "../components/charts/CategoryHeatmapCard";
+import DashboardSummaryCard from "../components/charts/DashboardSummaryCard";
 
-// 상대 시간 표시 (예: "5분 전", "2시간 전")
-function getRelativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
+// Import stock components
+import AIScoreGauge from "../components/stock/AIScoreGauge";
+import AnalysisStatusBadge from "../components/stock/AnalysisStatusBadge";
+import ImpactBadge from "../components/stock/ImpactBadge";
+import FeaturedStockCard from "../components/stock/FeaturedStockCard";
+import FilingAnalysisCard from "../components/stock/FilingAnalysisCard";
+import FilingCard from "../components/stock/FilingCard";
 
-  if (diffSec < 60) return "방금 전";
-  if (diffMin < 60) return `${diffMin}분 전`;
-  if (diffHour < 24) return `${diffHour}시간 전`;
-  if (diffDay < 7) return `${diffDay}일 전`;
-  return formatAsOf(date);
-}
+// Import news components
+import NewsImportanceBadge from "../components/news/NewsImportanceBadge";
+import NewsModal from "../components/news/NewsModal";
+import NewsCard from "../components/news/NewsCard";
+import CategoryPager from "../components/news/CategoryPager";
 
-// URL 쿼리 유틸
-function setQueryParams(updates: Record<string, string | null | undefined>) {
-  if (typeof window === "undefined") return;
-  const url = new URL(window.location.href);
-  Object.entries(updates).forEach(([k, v]) => {
-    if (v === undefined || v === null || v === "" || v === "전체" || v === "ALL") url.searchParams.delete(k);
-    else url.searchParams.set(k, v);
-  });
-  window.history.replaceState({}, "", url);
-}
-function getQueryParam(key: string) {
-  if (typeof window === "undefined") return null;
-  return new URL(window.location.href).searchParams.get(key);
-}
+// Import common components
+import Header from "../components/common/Header";
+import BottomNav from "../components/common/BottomNav";
+import CategoryChips from "../components/common/CategoryChips";
+import Pagination from "../components/common/Pagination";
 
-// 미국 GICS 섹터 (한국어)
-const CATEGORIES = [
-  "전체",
-  "정보기술",
-  "커뮤니케이션 서비스",
-  "경기소비재",
-  "필수소비재",
-  "헬스케어",
-  "금융",
-  "산업재",
-  "소재",
-  "에너지",
-  "유틸리티",
-  "부동산",
-] as const;
+// Import modal components
+import LoginModal from "../components/modals/LoginModal";
+import SignupModal from "../components/modals/SignupModal";
 
-// 섹터별 산업군 매핑
-const SECTOR_INDUSTRIES: Record<string, string[]> = {
-  "정보기술": ["전체", "반도체", "소프트웨어", "전자기기", "IT 서비스", "하드웨어"],
-  "커뮤니케이션 서비스": ["전체", "미디어", "엔터테인먼트", "통신", "게임"],
-  "경기소비재": ["전체", "자동차", "의류", "호텔·레저", "소매", "가전"],
-  "필수소비재": ["전체", "식품", "음료", "생활용품", "슈퍼마켓"],
-  "헬스케어": ["전체", "제약", "바이오의약품", "의료기기", "의료서비스"],
-  "금융": ["전체", "은행", "보험", "증권", "자산운용"],
-  "산업재": ["전체", "건설", "항공우주", "운송", "기계"],
-  "소재": ["전체", "화학", "금속", "건축자재", "용기·포장재"],
-  "에너지": ["전체", "석유·가스", "신재생에너지", "에너지설비"],
-  "유틸리티": ["전체", "전력", "수도", "가스"],
-  "부동산": ["전체", "부동산 개발", "리츠", "부동산 서비스"],
-};
-
-// Cookie helpers for storing favorites
-const setCookie = (name: string, value: string, days: number = 365) => {
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
-};
-
-const getCookie = (name: string): string | null => {
-  const nameEQ = name + "=";
-  const ca = document.cookie.split(';');
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-  }
-  return null;
-};
-
-// 섹터별 관련 테마 맵 (툴팁용)
-const SECTOR_THEMES: Record<string, string[]> = {
-  정보기술: ["AI 인프라·소프트웨어", "반도체", "클라우드/SaaS", "사이버보안", "IT서비스/컨설팅", "전자부품/EMS", "데이터센터 하드웨어"],
-  "커뮤니케이션 서비스": ["소셜미디어/인터넷 플랫폼", "디지털광고", "스트리밍", "게임", "통신사", "생성형 AI 플랫폼"],
-  경기소비재: ["전기차/자율주행", "이커머스", "온라인여행·레저", "가전/콘솔", "의류·럭셔리", "교육서비스"],
-  필수소비재: ["식음료(주류·음료·가공식품)", "유통(마트/약국)", "담배", "생활·개인용품"],
-  헬스케어: ["바이오텍·신약", "제약", "의료기기", "원격의료/헬스케어 IT", "진단·리서치 툴"],
-  금융: ["은행", "보험", "자산운용·거래소/데이터", "핀테크·결제", "소비자금융·모기지", "REITs(금융 섹터 소속)"],
-  산업재: ["방산/우주", "로봇·자동화", "전력장비", "공작·산업기계", "건설·인프라", "물류/항공·철도", "환경/설비", "아웃소싱/컨설팅"],
-  소재: ["원자재(구리·리튬·니켈·철강·알루미늄·금/은)", "배터리 소재(양극/음극/전해질)", "화학(범용·정밀)", "시멘트", "포장재", "제지·임업"],
-  에너지: ["석유·가스(E&P, 정유·마케팅)", "파이프라인·저장", "석탄", "오일서비스(시추·장비)"],
-  유틸리티: ["전력·가스·수도", "멀티유틸리티", "독립발전/재생에너지 발전사(태양광·풍력 발전사업자 포함)"],
-  부동산: ["데이터센터 REITs", "타워 REITs", "물류·창고", "리테일/오피스/주거", "호텔·리조트 REITs", "개발/운영사"],
-};
+// Import utility components
+import { LoadingSkeleton, CardSkeleton } from "../components/utils/LoadingSkeleton";
+import ErrorCard from "../components/utils/ErrorCard";
+import EmptyState from "../components/utils/EmptyState";
+import QuickActionsBar from "../components/utils/QuickActionsBar";
+import TooltipHeader from "../components/utils/TooltipHeader";
 
 // 모의 데이터: 섹터별 등락(%) — 미국/한국 분리
 const mockCategoryMovesUS = [
