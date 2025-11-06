@@ -1843,8 +1843,8 @@ function Header() {
   );
 }
 
-function BottomNav({ active = "home", onChange, showDetail = false }: { active?: TabKey; onChange: (k: TabKey) => void; showDetail?: boolean }) {
-  // ✅ 탭 순서: 홈 | 저평가 | 공시 | 상세 | 관심 (detail 탭 항상 표시)
+function BottomNav({ active = "home", onChange }: { active?: TabKey; onChange: (k: TabKey) => void }) {
+  // ✅ 탭 순서: 홈 | 저평가 | 공시 | 상세 | 관심 (5개 탭 항상 표시)
   const items = [
     { key: "home" as TabKey, icon: "🏠", label: "홈" },
     { key: "undervalued" as TabKey, icon: "💎", label: "저평가" },
@@ -2430,6 +2430,9 @@ export default function DemoHome() {
   const watchlistRef = useRef<HTMLDivElement>(null);
   const detailRef = useRef<HTMLDivElement>(null);
 
+  // ✅ 홈 페이지 내 섹션 ref
+  const featuredSectionRef = useRef<HTMLDivElement>(null);
+
   // 2) ⬇️ 여기 타입을 RefObject<HTMLDivElement> → MutableRefObject<HTMLDivElement | null> 로 수정
   const refMap: Record<TabKey, React.MutableRefObject<HTMLDivElement | null>> = {
     home: homeRef,
@@ -2451,6 +2454,14 @@ export default function DemoHome() {
       const nextEl = refMap[next].current;
       if (nextEl) nextEl.scrollTo({ top: scrollPositions.current[next] || 0 });
     });
+  };
+
+  // ✅ 홈 페이지 내 섹션으로 스크롤 이동
+  const scrollToFeaturedSection = () => {
+    if (featuredSectionRef.current && homeRef.current) {
+      const sectionTop = featuredSectionRef.current.offsetTop;
+      homeRef.current.scrollTo({ top: sectionTop - 20, behavior: 'smooth' });
+    }
   };
 
   // 시그널 섹션 카테고리(미국/한국) + 감성
@@ -2592,31 +2603,49 @@ export default function DemoHome() {
               </div>
               <div className="mt-4 grid grid-cols-3 gap-4 text-center">
                 <button
-                  onClick={() => switchTab("home")}
+                  onClick={scrollToFeaturedSection}
                   className="rounded-xl bg-white/20 backdrop-blur p-3 hover:bg-white/30 transition-all cursor-pointer"
                 >
-                  <div className="text-2xl font-bold">{mockFeaturedStocks.length}</div>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-2xl font-bold">{mockFeaturedStocks.length}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-red-400 text-lg">↑</span>
+                      <span className="text-sm font-bold text-red-300">+5</span>
+                    </div>
+                  </div>
                   <div className="text-xs text-indigo-100">오늘의 주목 종목</div>
                 </button>
                 <button
                   onClick={() => switchTab("filings")}
                   className="rounded-xl bg-white/20 backdrop-blur p-3 hover:bg-white/30 transition-all cursor-pointer"
                 >
-                  <div className="text-2xl font-bold">{mockFilings.length}</div>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-2xl font-bold">{mockFilings.length}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-red-400 text-lg">↑</span>
+                      <span className="text-sm font-bold text-red-300">+12</span>
+                    </div>
+                  </div>
                   <div className="text-xs text-indigo-100">최근 공시 분석</div>
                 </button>
                 <button
                   onClick={() => switchTab("undervalued")}
                   className="rounded-xl bg-white/20 backdrop-blur p-3 hover:bg-white/30 transition-all cursor-pointer"
                 >
-                  <div className="text-2xl font-bold">{mockUndervalued.length}</div>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-2xl font-bold">{mockUndervalued.length}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-red-400 text-lg">↑</span>
+                      <span className="text-sm font-bold text-red-300">+8</span>
+                    </div>
+                  </div>
                   <div className="text-xs text-indigo-100">저평가 우량주</div>
                 </button>
               </div>
             </div>
 
             {/* 오늘의 주목 저평가주 */}
-            <section>
+            <section ref={featuredSectionRef}>
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
@@ -3689,7 +3718,35 @@ export default function DemoHome() {
             const stockInfo = mockUndervalued.find(s => s.symbol === detailSymbol);
             const stockFilings = mockFilings.filter(f => f.symbol === detailSymbol);
 
-            if (!stockDetail) return null;
+            // ✅ 종목 정보가 없을 때 안내 메시지 표시
+            if (!stockDetail) {
+              return (
+                <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
+                  <div className="mb-4">
+                    <button
+                      onClick={() => setDetailSymbol("")}
+                      className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                    >
+                      <span>←</span>
+                      <span>목록으로</span>
+                    </button>
+                  </div>
+                  <div className="text-center py-24 bg-white rounded-2xl shadow-md border border-gray-200">
+                    <div className="text-8xl mb-6">📊</div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-3">종목 정보가 없습니다</h2>
+                    <p className="text-gray-600 mb-6">
+                      선택하신 종목 <span className="font-semibold text-indigo-600">{detailSymbol}</span>의 상세 정보를 찾을 수 없습니다.
+                    </p>
+                    <button
+                      onClick={() => setDetailSymbol("")}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+                    >
+                      목록으로 돌아가기
+                    </button>
+                  </div>
+                </main>
+              );
+            }
 
             return (
               <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
@@ -3733,8 +3790,8 @@ export default function DemoHome() {
                     </div>
                     <div className="text-right sm:text-center self-center">
                       {stockInfo && (
-                        <div className="inline-block bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/20 shadow-lg">
-                          <div className="text-xs text-indigo-100 mb-2 font-semibold text-center">AI 종합 점수</div>
+                        <div className="inline-block bg-white/20 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-4 border-2 border-white/40 shadow-2xl ring-2 ring-white/20">
+                          <div className="text-xs text-white mb-2 font-bold text-center bg-white/10 rounded-lg px-2 py-1">AI 종합 점수</div>
                           <AIScoreGauge score={stockInfo.aiScore} sentiment={stockInfo.sentiment} size="lg" />
                         </div>
                       )}
@@ -3933,7 +3990,7 @@ export default function DemoHome() {
       </div>
 
       {/* 하단 고정 네비 */}
-      <BottomNav active={activeTab} onChange={switchTab} showDetail={!!detailSymbol} />
+      <BottomNav active={activeTab} onChange={switchTab} />
     </div>
   );
 }
