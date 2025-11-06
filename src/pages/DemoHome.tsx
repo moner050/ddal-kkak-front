@@ -57,6 +57,7 @@ import ErrorCard from "../components/utils/ErrorCard";
 import EmptyState from "../components/utils/EmptyState";
 import QuickActionsBar from "../components/utils/QuickActionsBar";
 import TooltipHeader from "../components/utils/TooltipHeader";
+import MetricTooltip from "../components/utils/MetricTooltip";
 
 // 모의 데이터: 섹터별 등락(%) — 미국/한국 분리
 const mockCategoryMovesUS = [
@@ -703,6 +704,61 @@ function getMetricColor(key: string, value: number): string {
   // 기본값: 중립 (가격, 시가총액, 거래량 등)
   return "text-gray-900";
 }
+
+// 메트릭 설명 매핑
+const METRIC_DESCRIPTIONS: Record<string, string> = {
+  "Ticker": "티커 심볼",
+  "Name": "회사명",
+  "Sector": "섹터",
+  "Industry": "산업군",
+  "Price": "현재 주가",
+  "MktCap": "시가총액 (10억 달러)",
+  "DollarVol": "일평균 거래대금 (백만 달러)",
+  "FairValue": "적정가치 (PE, PB, PEG, FCF 기반 계산)",
+  "Discount": "할인율 (적정가치 대비 현재가 할인 정도)",
+  "PE": "PER (주가수익비율) - 낮을수록 저평가",
+  "PEG": "PEG 비율 (PER/성장률) - 1 이하 매력적",
+  "PB": "PBR (주가순자산비율) - 낮을수록 저평가",
+  "PS": "PSR (주가매출비율) - 낮을수록 저평가",
+  "EV_EBITDA": "EV/EBITDA 배수",
+  "ROE": "자기자본이익률 - 높을수록 우수",
+  "ROA": "총자산이익률 - 높을수록 우수",
+  "OpMarginTTM": "영업이익률 (TTM) - 높을수록 우수",
+  "OperatingMargins": "영업이익률 (info)",
+  "RevYoY": "매출 YoY 성장률",
+  "EPS_Growth_3Y": "3년 EPS 성장률 (CAGR)",
+  "Revenue_Growth_3Y": "3년 매출 성장률 (CAGR)",
+  "EBITDA_Growth_3Y": "3년 EBITDA 성장률",
+  "FCF_Yield": "FCF 수익률 (현금 창출 능력)",
+  "DivYield": "배당수익률",
+  "PayoutRatio": "배당성향",
+  "Beta": "베타 (시장 대비 변동성)",
+  "ShortPercent": "공매도 비율",
+  "InsiderOwnership": "내부자 지분율",
+  "InstitutionOwnership": "기관 투자자 지분율",
+  "RVOL": "상대 거래량 (평균 대비)",
+  "RSI_14": "RSI 14일 (30 이하 과매도, 70 이상 과매수)",
+  "ATR_PCT": "ATR 퍼센트 (변동성)",
+  "Volatility_21D": "21일 변동성",
+  "RET5": "5일 수익률",
+  "RET20": "20일 수익률",
+  "RET63": "3개월 수익률",
+  "SMA20": "20일 이동평균",
+  "SMA50": "50일 이동평균",
+  "SMA200": "200일 이동평균",
+  "MACD": "MACD 선",
+  "MACD_Signal": "MACD 시그널 선",
+  "MACD_Histogram": "MACD 히스토그램 (양수 = 상승 추세)",
+  "BB_Position": "볼린저밴드 위치 (0-1, 0.5 중앙)",
+  "High_52W_Ratio": "52주 고가 대비 비율",
+  "Low_52W_Ratio": "52주 저가 대비 비율",
+  "Momentum_12M": "12개월 모멘텀",
+  "GrowthScore": "성장 점수 (0-100%)",
+  "QualityScore": "품질 점수 (0-100%)",
+  "ValueScore": "가치 점수 (0-100%)",
+  "MomentumScore": "모멘텀 점수 (0-100%)",
+  "TotalScore": "종합 점수 (0-100점)"
+};
 
 export default function DemoHome() {
   const fearGreedUS = usFearGreedSeries[usFearGreedSeries.length - 1];
@@ -1368,22 +1424,26 @@ export default function DemoHome() {
                         >
                           <td className="px-4 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
-                              {stock.logoUrl && (
-                                <div className="relative">
+                              <div className="relative">
+                                {stock.logoUrl ? (
                                   <img src={stock.logoUrl} alt={stock.name} className="h-10 w-10 rounded-lg" />
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      toggleFavorite(stock.symbol);
-                                    }}
-                                    className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
-                                  >
-                                    <span className="text-xs">
-                                      {favorites[stock.symbol] ? '❤️' : '🤍'}
-                                    </span>
-                                  </button>
-                                </div>
-                              )}
+                                ) : (
+                                  <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                                    <span className="text-lg text-gray-400">?</span>
+                                  </div>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleFavorite(stock.symbol);
+                                  }}
+                                  className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
+                                >
+                                  <span className="text-xs">
+                                    {favorites[stock.symbol] ? '❤️' : '🤍'}
+                                  </span>
+                                </button>
+                              </div>
                               <div>
                                 <div className="text-sm font-bold text-gray-900">{stock.name}</div>
                                 <div className="text-xs text-gray-500">
@@ -2217,7 +2277,10 @@ export default function DemoHome() {
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         {["GrowthScore", "QualityScore", "ValueScore", "MomentumScore", "TotalScore"].map(key => (
                           <div key={key} className="text-center p-4 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
-                            <div className="text-xs text-gray-600 mb-2">{key.replace("Score", "")}</div>
+                            <div className="text-xs text-gray-600 mb-2">
+                              {key.replace("Score", "")}
+                              {METRIC_DESCRIPTIONS[key] && <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]} />}
+                            </div>
                             <div className={classNames("text-3xl font-bold", getMetricColor(key, stockDetail[key]))}>
                               {stockDetail[key]}
                             </div>
@@ -2238,7 +2301,10 @@ export default function DemoHome() {
                           const colorClass = typeof value === "number" ? getMetricColor(key, value) : "text-gray-900";
                           return (
                             <div key={key} className="p-4 rounded-lg bg-gray-50">
-                              <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                              <div className="text-xs text-gray-600 mb-1">
+                                {key.replace(/_/g, " ")}
+                                {METRIC_DESCRIPTIONS[key] && <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]} />}
+                              </div>
                               <div className={classNames("text-xl font-bold", colorClass)}>{displayValue}</div>
                             </div>
                           );
@@ -2258,7 +2324,10 @@ export default function DemoHome() {
                             const colorClass = getMetricColor(key, value);
                             return (
                               <div key={key} className="p-4 rounded-lg bg-gray-50">
-                                <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                <div className="text-xs text-gray-600 mb-1">
+                                  {key.replace(/_/g, " ")}
+                                  {METRIC_DESCRIPTIONS[key] && <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]} />}
+                                </div>
                                 <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
                               </div>
                             );
@@ -2276,7 +2345,10 @@ export default function DemoHome() {
                             const colorClass = getMetricColor(key, value);
                             return (
                               <div key={key} className="p-4 rounded-lg bg-gray-50">
-                                <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                <div className="text-xs text-gray-600 mb-1">
+                                  {key.replace(/_/g, " ")}
+                                  {METRIC_DESCRIPTIONS[key] && <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]} />}
+                                </div>
                                 <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
                               </div>
                             );
@@ -2314,7 +2386,10 @@ export default function DemoHome() {
 
                           return (
                             <div key={key} className="p-4 rounded-lg bg-gray-50">
-                              <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                              <div className="text-xs text-gray-600 mb-1">
+                                {key.replace(/_/g, " ")}
+                                {METRIC_DESCRIPTIONS[key] && <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]} />}
+                              </div>
                               <div className={classNames("text-lg font-bold", colorClass)}>{displayValue}</div>
                             </div>
                           );
