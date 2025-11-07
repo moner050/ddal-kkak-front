@@ -8,120 +8,56 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
    - Header / FilingsSectionByMarket / RankingSectionByMarket / BottomNav 포함
 ------------------------------------------------------------ */
 
-function classNames(...args: Array<string | false | null | undefined>) {
-  return args.filter(Boolean).join(" ");
-}
+// Import utilities
+import { classNames, formatNumber, getRelativeTime, formatAsOf } from "../utils/format";
+import { setCookie, getCookie } from "../utils/cookies";
+import { setQueryParams, getQueryParam } from "../utils/queryParams";
 
-// 숫자 포맷팅 유틸리티
-function formatNumber(num: number, options?: { compact?: boolean; decimals?: number }): string {
-  const { compact = false, decimals = 2 } = options || {};
+// Import constants
+import { CATEGORIES, SECTOR_INDUSTRIES, SECTOR_THEMES } from "../constants/categories";
 
-  if (compact && Math.abs(num) >= 1000000) {
-    return (num / 1000000).toFixed(decimals) + "M";
-  } else if (compact && Math.abs(num) >= 1000) {
-    return (num / 1000).toFixed(decimals) + "K";
-  }
+// Import types
+import { TabKey, Sentiment } from "../types";
 
-  return num.toLocaleString("ko-KR", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: decimals
-  });
-}
+// Import chart components
+import FearGreedCard from "../components/charts/FearGreedCard";
+import Sparkline from "../components/charts/Sparkline";
+import LineChartCard from "../components/charts/LineChartCard";
+import BuffettCard from "../components/charts/BuffettCard";
+import CategoryHeatmapCard from "../components/charts/CategoryHeatmapCard";
+import DashboardSummaryCard from "../components/charts/DashboardSummaryCard";
 
-// 상대 시간 표시 (예: "5분 전", "2시간 전")
-function getRelativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
+// Import stock components
+import AIScoreGauge from "../components/stock/AIScoreGauge";
+import AnalysisStatusBadge from "../components/stock/AnalysisStatusBadge";
+import ImpactBadge from "../components/stock/ImpactBadge";
+import FeaturedStockCard from "../components/stock/FeaturedStockCard";
+import FilingAnalysisCard from "../components/stock/FilingAnalysisCard";
+import FilingCard from "../components/stock/FilingCard";
 
-  if (diffSec < 60) return "방금 전";
-  if (diffMin < 60) return `${diffMin}분 전`;
-  if (diffHour < 24) return `${diffHour}시간 전`;
-  if (diffDay < 7) return `${diffDay}일 전`;
-  return formatAsOf(date);
-}
+// Import news components
+import NewsImportanceBadge from "../components/news/NewsImportanceBadge";
+import NewsModal from "../components/news/NewsModal";
+import NewsCard from "../components/news/NewsCard";
+import CategoryPager from "../components/news/CategoryPager";
 
-// URL 쿼리 유틸
-function setQueryParams(updates: Record<string, string | null | undefined>) {
-  if (typeof window === "undefined") return;
-  const url = new URL(window.location.href);
-  Object.entries(updates).forEach(([k, v]) => {
-    if (v === undefined || v === null || v === "" || v === "전체" || v === "ALL") url.searchParams.delete(k);
-    else url.searchParams.set(k, v);
-  });
-  window.history.replaceState({}, "", url);
-}
-function getQueryParam(key: string) {
-  if (typeof window === "undefined") return null;
-  return new URL(window.location.href).searchParams.get(key);
-}
+// Import common components
+import Header from "../components/common/Header";
+import BottomNav from "../components/common/BottomNav";
+import CategoryChips from "../components/common/CategoryChips";
+import Pagination from "../components/common/Pagination";
 
-// 미국 GICS 섹터 (한국어)
-const CATEGORIES = [
-  "전체",
-  "정보기술",
-  "커뮤니케이션 서비스",
-  "경기소비재",
-  "필수소비재",
-  "헬스케어",
-  "금융",
-  "산업재",
-  "소재",
-  "에너지",
-  "유틸리티",
-  "부동산",
-] as const;
+// Import modal components
+import LoginModal from "../components/modals/LoginModal";
+import SignupModal from "../components/modals/SignupModal";
 
-// 섹터별 산업군 매핑
-const SECTOR_INDUSTRIES: Record<string, string[]> = {
-  "정보기술": ["전체", "반도체", "소프트웨어", "전자기기", "IT 서비스", "하드웨어"],
-  "커뮤니케이션 서비스": ["전체", "미디어", "엔터테인먼트", "통신", "게임"],
-  "경기소비재": ["전체", "자동차", "의류", "호텔·레저", "소매", "가전"],
-  "필수소비재": ["전체", "식품", "음료", "생활용품", "슈퍼마켓"],
-  "헬스케어": ["전체", "제약", "바이오의약품", "의료기기", "의료서비스"],
-  "금융": ["전체", "은행", "보험", "증권", "자산운용"],
-  "산업재": ["전체", "건설", "항공우주", "운송", "기계"],
-  "소재": ["전체", "화학", "금속", "건축자재", "용기·포장재"],
-  "에너지": ["전체", "석유·가스", "신재생에너지", "에너지설비"],
-  "유틸리티": ["전체", "전력", "수도", "가스"],
-  "부동산": ["전체", "부동산 개발", "리츠", "부동산 서비스"],
-};
-
-// Cookie helpers for storing favorites
-const setCookie = (name: string, value: string, days: number = 365) => {
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
-};
-
-const getCookie = (name: string): string | null => {
-  const nameEQ = name + "=";
-  const ca = document.cookie.split(';');
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-  }
-  return null;
-};
-
-// 섹터별 관련 테마 맵 (툴팁용)
-const SECTOR_THEMES: Record<string, string[]> = {
-  정보기술: ["AI 인프라·소프트웨어", "반도체", "클라우드/SaaS", "사이버보안", "IT서비스/컨설팅", "전자부품/EMS", "데이터센터 하드웨어"],
-  "커뮤니케이션 서비스": ["소셜미디어/인터넷 플랫폼", "디지털광고", "스트리밍", "게임", "통신사", "생성형 AI 플랫폼"],
-  경기소비재: ["전기차/자율주행", "이커머스", "온라인여행·레저", "가전/콘솔", "의류·럭셔리", "교육서비스"],
-  필수소비재: ["식음료(주류·음료·가공식품)", "유통(마트/약국)", "담배", "생활·개인용품"],
-  헬스케어: ["바이오텍·신약", "제약", "의료기기", "원격의료/헬스케어 IT", "진단·리서치 툴"],
-  금융: ["은행", "보험", "자산운용·거래소/데이터", "핀테크·결제", "소비자금융·모기지", "REITs(금융 섹터 소속)"],
-  산업재: ["방산/우주", "로봇·자동화", "전력장비", "공작·산업기계", "건설·인프라", "물류/항공·철도", "환경/설비", "아웃소싱/컨설팅"],
-  소재: ["원자재(구리·리튬·니켈·철강·알루미늄·금/은)", "배터리 소재(양극/음극/전해질)", "화학(범용·정밀)", "시멘트", "포장재", "제지·임업"],
-  에너지: ["석유·가스(E&P, 정유·마케팅)", "파이프라인·저장", "석탄", "오일서비스(시추·장비)"],
-  유틸리티: ["전력·가스·수도", "멀티유틸리티", "독립발전/재생에너지 발전사(태양광·풍력 발전사업자 포함)"],
-  부동산: ["데이터센터 REITs", "타워 REITs", "물류·창고", "리테일/오피스/주거", "호텔·리조트 REITs", "개발/운영사"],
-};
+// Import utility components
+import { LoadingSkeleton, CardSkeleton } from "../components/utils/LoadingSkeleton";
+import ErrorCard from "../components/utils/ErrorCard";
+import EmptyState from "../components/utils/EmptyState";
+import QuickActionsBar from "../components/utils/QuickActionsBar";
+import TooltipHeader from "../components/utils/TooltipHeader";
+import MetricTooltip from "../components/utils/MetricTooltip";
 
 // 모의 데이터: 섹터별 등락(%) — 미국/한국 분리
 const mockCategoryMovesUS = [
@@ -163,880 +99,8 @@ const krFearGreedSeries = [48, 50, 52, 51, 53, 54, 55, 54, 56, 57, 55, 54, 56, 5
 const usBuffettSeries = [1.55, 1.58, 1.57, 1.59, 1.61, 1.6, 1.62, 1.63, 1.61, 1.6, 1.62, 1.64];
 const krBuffettSeries = [0.97, 0.98, 1.0, 0.99, 1.02, 1.01, 1.03, 1.05, 1.04, 1.03, 1.05, 1.06];
 
-// 색상 매핑(히트맵)
-function heatColor(pct: number) {
-  if (pct <= -3) return { bg: "#1e3a8a", text: "#ffffff" };
-  if (pct < -0.3) return { bg: "#3b82f6", text: "#ffffff" };
-  if (pct <= 0.3) return { bg: "#e5e7eb", text: "#111827" };
-  if (pct < 3) return { bg: "#fecaca", text: "#7f1d1d" };
-  return { bg: "#b91c1c", text: "#ffffff" };
-}
-function pctStr(x: number) {
-  const sign = x > 0 ? "+" : x < 0 ? "" : "";
-  return `${sign}${x.toFixed(1)}%`;
-}
-
-// 공포·탐욕 지수
-function formatAsOf(d: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const MM = pad(d.getMonth() + 1);
-  const dd = pad(d.getDate());
-  const HH = pad(d.getHours());
-  const mm = pad(d.getMinutes());
-  const SS = pad(d.getSeconds());
-  return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${SS}`;
-}
-function classifyFG(index: number, variant: "US" | "KR" = "US") {
-  const t = variant === "KR" ? { greed: 65, fear: 35 } : { greed: 70, fear: 40 };
-  if (index >= t.greed) return { label: "탐욕", cls: "bg-emerald-50 text-emerald-700 ring-emerald-200" };
-  if (index < t.fear) return { label: "공포", cls: "bg-blue-50 text-blue-700 ring-blue-200" };
-  return { label: "중립", cls: "bg-gray-100 text-gray-700 ring-gray-300" };
-}
-function calcDeltaAndMA(series: number[], window = 7) {
-  if (!series || series.length < 2) return { delta: 0, ma: series?.[series.length - 1] ?? 0 };
-  const delta = series[series.length - 1] - series[series.length - 2];
-  const start = Math.max(0, series.length - window);
-  const arr = series.slice(start);
-  const ma = arr.reduce((a, b) => a + b, 0) / arr.length;
-  return { delta, ma };
-}
-// 핵심 지표 대시보드 요약 카드
-function DashboardSummaryCard({
-  usdkrw,
-  gold,
-  fearGreedUS,
-  fearGreedKR,
-  lastUpdate
-}: {
-  usdkrw: number;
-  gold: number;
-  fearGreedUS: number;
-  fearGreedKR: number;
-  lastUpdate: Date;
-}) {
-  const metrics = [
-    { label: "USD/KRW", value: formatNumber(usdkrw, { decimals: 2 }), unit: "원", change: 0 },
-    { label: "금 시세", value: formatNumber(gold, { decimals: 2 }), unit: "$/oz", change: 0 },
-    { label: "US 공포·탐욕", value: fearGreedUS, unit: "", sentiment: classifyFG(fearGreedUS, "US").label },
-    { label: "KR 공포·탐욕", value: fearGreedKR, unit: "", sentiment: classifyFG(fearGreedKR, "KR").label }
-  ];
-
-  return (
-    <div className="rounded-3xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-5 shadow-lg">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-extrabold text-gray-900">📊 시장 현황 요약</h2>
-        <span className="text-xs text-gray-600 flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          {getRelativeTime(lastUpdate)}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {metrics.map((m, idx) => (
-          <div key={idx} className="rounded-xl bg-white/80 backdrop-blur p-3 border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="text-xs text-gray-600 mb-1">{m.label}</div>
-            <div className="flex items-end gap-1">
-              <div className="text-xl font-extrabold text-gray-900">
-                {typeof m.value === "number" ? formatNumber(m.value) : m.value}
-              </div>
-              {m.unit && <div className="text-xs text-gray-500 pb-0.5">{m.unit}</div>}
-            </div>
-            {m.sentiment && (
-              <div className="mt-1 text-xs text-gray-600">
-                {m.sentiment}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function FearGreedCard({ title = "공포·탐욕 지수", index = 62, asOf, variant = "US", series }: { title?: string; index?: number; asOf?: string; variant?: "US" | "KR"; series: number[] }) {
-  const { label, cls } = classifyFG(index, variant);
-  const barPct = Math.max(0, Math.min(100, index));
-  const { delta, ma } = calcDeltaAndMA(series || [index]);
-  const sign = delta > 0 ? "+" : delta < 0 ? "" : "";
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="text-sm text-gray-600">
-        {title} {asOf ? <span className="ml-1 text-xs text-gray-400">({asOf})</span> : null}
-      </div>
-      <div className="mt-2 flex items-end justify-between">
-        <div className="text-4xl font-extrabold text-gray-900">{index}</div>
-        <div className={classNames("rounded-full border px-2 py-1 text-xs font-semibold ring-1", cls)}>
-          {label}
-          {variant === "KR" && <span className="ml-1 text-[11px] text-gray-500">KOSPI 심리</span>}
-        </div>
-      </div>
-      <div className="mt-3 h-2 w-full rounded-full bg-gray-100">
-        <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 via-yellow-400 to-red-600" style={{ width: `${barPct}%` }} />
-      </div>
-      <div className="mt-2 flex justify-between text-[11px] text-gray-500">
-        <span>공포</span>
-        <span>중립</span>
-        <span>탐욕</span>
-      </div>
-      <div className="mt-3 flex items-center gap-2 text-[11px]">
-        <span className={classNames("rounded-full px-2 py-0.5 ring-1", delta >= 0 ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-red-50 text-red-700 ring-red-200")}>
-          Δ {sign}
-          {delta.toFixed(1)}
-        </span>
-        <span className="rounded-full bg-gray-50 px-2 py-0.5 text-gray-700 ring-1 ring-gray-200">MA(7) {ma.toFixed(1)}</span>
-      </div>
-    </div>
-  );
-}
-
-// 간단 스파크라인 차트 (SVG) - 인터랙티브 툴팁 포함
-function Sparkline({ data = [], height = 120, stroke = "#4338ca", fill = "rgba(99,102,241,0.15)", showTooltip = false, unit = "" }: { data: number[]; height?: number; stroke?: string; fill?: string; showTooltip?: boolean; unit?: string }) {
-  const width = 500;
-  const n = data.length;
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
-
-  if (n === 0) return null;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const y = (v: number) => {
-    if (max === min) return height / 2;
-    return height - ((v - min) / (max - min)) * height;
-  };
-  const x = (i: number) => (i / (n - 1)) * width;
-  const d = data.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(v)}`).join(" ");
-  const area = `${d} L ${width} ${height} L 0 ${height} Z`;
-
-  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!showTooltip) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const relX = e.clientX - rect.left;
-    const pct = relX / rect.width;
-    const idx = Math.round(pct * (n - 1));
-    const clampedIdx = Math.max(0, Math.min(n - 1, idx));
-    setHoveredIndex(clampedIdx);
-    setTooltipPos({ x: relX, y: e.clientY - rect.top });
-  };
-
-  const handleMouseLeave = () => {
-    setHoveredIndex(null);
-  };
-
-  return (
-    <div className="relative">
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        preserveAspectRatio="none"
-        className="h-28 w-full"
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-      >
-        <path d={area} fill={fill} />
-        <path d={d} fill="none" stroke={stroke} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-        {showTooltip && hoveredIndex !== null && (
-          <>
-            <line x1={x(hoveredIndex)} y1={0} x2={x(hoveredIndex)} y2={height} stroke="#6b7280" strokeWidth={1} strokeDasharray="4 2" />
-            <circle cx={x(hoveredIndex)} cy={y(data[hoveredIndex])} r={4} fill={stroke} stroke="white" strokeWidth={2} />
-          </>
-        )}
-      </svg>
-      {showTooltip && hoveredIndex !== null && (
-        <div
-          className="absolute z-10 rounded-lg bg-gray-900 px-2 py-1 text-xs text-white shadow-lg pointer-events-none"
-          style={{
-            left: tooltipPos.x,
-            top: tooltipPos.y - 30,
-            transform: "translateX(-50%)"
-          }}
-        >
-          {formatNumber(data[hoveredIndex], { decimals: 2 })} {unit}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function LineChartCard({ title, unit, asOf, data }: { title: string; unit: string; asOf?: string; data: number[] }) {
-  const last = data[data.length - 1];
-  const first = data[0];
-  const diff = last - first;
-  const pct = first ? (diff / first) * 100 : 0;
-  const up = diff >= 0;
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
-          {title} <span className="ml-1 text-xs text-gray-400">({getRelativeTime(new Date())})</span>
-        </div>
-        <div className={classNames("rounded-full px-2 py-0.5 text-xs font-semibold ring-1", up ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-red-50 text-red-700 ring-red-200")}>
-          {up ? "+" : ""}
-          {pct.toFixed(2)}%
-        </div>
-      </div>
-      <div className="mt-2 flex items-end justify-between">
-        <div className="text-2xl font-extrabold text-gray-900">
-          {formatNumber(last, { decimals: 2 })} <span className="text-sm font-semibold text-gray-500">{unit}</span>
-        </div>
-      </div>
-      <div className="mt-2">
-        <Sparkline data={data} showTooltip={true} unit={unit} />
-      </div>
-    </div>
-  );
-}
-
-function BuffettCard({ title, asOf, data }: { title: string; asOf?: string; data: number[] }) {
-  const last = data[data.length - 1];
-  const pct = last * 100;
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
-          {title} <span className="ml-1 text-xs text-gray-400">({getRelativeTime(new Date())})</span>
-        </div>
-        <div className={classNames("rounded-full px-2 py-0.5 text-xs font-semibold ring-1", pct >= 100 ? "bg-amber-50 text-amber-800 ring-amber-200" : "bg-emerald-50 text-emerald-700 ring-emerald-200")}>{pct.toFixed(0)}%</div>
-      </div>
-      <div className="mt-2">
-        <Sparkline data={data} stroke="#0f766e" fill="rgba(16,185,129,0.15)" showTooltip={true} unit="%" />
-      </div>
-      <div className="mt-1 text-[11px] text-gray-500">(총시가총액 / GDP 비율, 100% 초과 시 상대적 고평가 경향)</div>
-    </div>
-  );
-}
-
-// 클릭 토글 팝오버(오버플로 방지)
-function DelayedTooltip({ id, activeId, setActiveId, content, children }: { id: string; activeId: string | null; setActiveId: (v: string | null) => void; content: React.ReactNode; children: React.ReactNode }) {
-  const [pos, setPos] = useState({ top: 0, left: 0, width: 320 });
-  const anchorRef = useRef<HTMLDivElement | null>(null);
-  const WIDTH = 320;
-  const open = activeId === id;
-  const place = () => {
-    const el = anchorRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const vw = window.innerWidth || document.documentElement.clientWidth;
-    const left = Math.min(Math.max(8, rect.left + rect.width / 2 - WIDTH / 2), vw - WIDTH - 8);
-    const top = rect.bottom + 8;
-    setPos({ top, left, width: WIDTH });
-  };
-  const onClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    place();
-    setActiveId(open ? null : id);
-  };
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      // @ts-ignore
-      onClick(e as any);
-    }
-  };
-  return (
-    <div ref={anchorRef} className="relative" onClick={onClick} onKeyDown={onKeyDown} role="button" tabIndex={0}>
-      {children}
-      {open && (
-        <div className="z-[999] rounded-xl border border-gray-200 bg-white p-3 text-xs shadow-2xl" style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, maxWidth: "calc(100vw - 16px)" }}>
-          {content}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CategoryHeatmapCard({ movesUS = mockCategoryMovesUS, movesKR = mockCategoryMovesKR, asOf }: { movesUS?: typeof mockCategoryMovesUS; movesKR?: typeof mockCategoryMovesKR; asOf?: string }) {
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [marketView, setMarketView] = useState<"US" | "KR">("US");
-  const moves = marketView === "US" ? movesUS : movesKR;
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
-          카테고리 등락 <span className="ml-1 text-xs text-gray-400">({asOf})</span>
-          <span className="ml-2 text-xs text-gray-400">{marketView === "US" ? "2025 미국 GICS 기준" : "한국: KRX/테마 매핑(준)"}</span>
-        </div>
-        <div className="rounded-full border border-gray-200 bg-gray-50 p-1">
-          <button className={classNames("rounded-full px-3 py-1 text-xs font-semibold", marketView === "US" ? "bg-white shadow" : "text-gray-700")} onClick={() => setMarketView("US")}>
-            미국
-          </button>
-          <button className={classNames("rounded-full px-3 py-1 text-xs font-semibold", marketView === "KR" ? "bg-white shadow" : "text-gray-700")} onClick={() => setMarketView("KR")}>
-            한국
-          </button>
-        </div>
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4">
-        {moves.map((m) => {
-          const { bg, text } = heatColor(m.pct);
-          const themes = SECTOR_THEMES[m.name] || [];
-          const tooltip = (
-            <div>
-              <div className="mb-1 font-semibold text-gray-900">{m.name}</div>
-              <div className="flex flex-wrap gap-1">
-                {themes.map((t) => (
-                  <span key={t} className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700 ring-1 ring-gray-200">
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </div>
-          );
-          return (
-            <DelayedTooltip key={`${marketView}-${m.name}`} id={`${marketView}-${m.name}`} activeId={activeId} setActiveId={setActiveId} content={tooltip}>
-              <div className="rounded-xl p-3 text-center shadow-sm ring-1 ring-gray-200 flex flex-col items-center justify-center h-24 leading-tight cursor-pointer" style={{ backgroundColor: bg, color: text }}>
-                <div className="text-sm font-bold">{m.name}</div>
-                <div className="text-xs opacity-90">{pctStr(m.pct)}</div>
-              </div>
-            </DelayedTooltip>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-export function ImpactBadge({ direction, confidence = 0.7 }: { direction: "POS" | "NEG" | "NEU"; confidence?: number }) {
-  const map = {
-    POS: { label: "긍정", ring: "ring-green-500/30", bg: "bg-green-50", text: "text-green-700" },
-    NEG: { label: "부정", ring: "ring-red-500/30", bg: "bg-red-50", text: "text-red-700" },
-    NEU: { label: "횡보", ring: "ring-gray-500/30", bg: "bg-gray-50", text: "text-gray-700" },
-  } as const;
-  const s = map[direction] || map.NEU;
-  return (
-    <span className={classNames("inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ring-1", s.bg, s.text, s.ring)}>
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {s.label} · {(confidence * 100).toFixed(0)}%
-    </span>
-  );
-}
-
-// ✅ 공용 카테고리 칩 (오버플로우 없이 줄바꿈)
-// 로딩 스켈레톤 컴포넌트
-function LoadingSkeleton({ className = "" }: { className?: string }) {
-  return (
-    <div className={classNames("animate-pulse rounded-2xl bg-gray-200", className)}>
-      <div className="h-full w-full" />
-    </div>
-  );
-}
-
-function CardSkeleton() {
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="animate-pulse space-y-3">
-        <div className="h-4 w-1/3 rounded bg-gray-200" />
-        <div className="h-8 w-1/2 rounded bg-gray-200" />
-        <div className="h-24 w-full rounded bg-gray-200" />
-      </div>
-    </div>
-  );
-}
-
-// 에러 표시 컴포넌트
-function ErrorCard({ message = "데이터를 불러오는 중 오류가 발생했습니다.", onRetry }: { message?: string; onRetry?: () => void }) {
-  return (
-    <div className="rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm text-center">
-      <div className="text-4xl mb-3">⚠️</div>
-      <div className="text-sm font-semibold text-red-800 mb-2">{message}</div>
-      {onRetry && (
-        <button
-          onClick={onRetry}
-          className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-        >
-          다시 시도
-        </button>
-      )}
-    </div>
-  );
-}
-
-// 빈 상태 표시 컴포넌트
-function EmptyState({ message = "표시할 데이터가 없습니다.", icon = "📭" }: { message?: string; icon?: string }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
-      <div className="text-5xl mb-3">{icon}</div>
-      <div className="text-sm text-gray-600">{message}</div>
-    </div>
-  );
-}
-
-// ================== AI 분석 스코어 컴포넌트 ==================
-
-// AI 분석 점수 게이지 (0-100점)
-function AIScoreGauge({ score, sentiment, size = "md" }: { score: number; sentiment: "POS" | "NEG" | "NEU"; size?: "sm" | "md" | "lg" }) {
-  const sizeMap = {
-    sm: { container: "h-16 w-16", text: "text-lg", label: "text-[9px]" },
-    md: { container: "h-24 w-24", text: "text-2xl", label: "text-xs" },
-    lg: { container: "h-32 w-32", text: "text-3xl", label: "text-sm" }
-  };
-  const s = sizeMap[size];
-
-  const colorMap = {
-    POS: { stroke: "#10b981", bg: "#d1fae5", text: "text-emerald-700" },
-    NEG: { stroke: "#ef4444", bg: "#fee2e2", text: "text-red-700" },
-    NEU: { stroke: "#6b7280", bg: "#f3f4f6", text: "text-gray-700" }
-  };
-  const color = colorMap[sentiment];
-
-  const radius = 45;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
-
-  return (
-    <div className={classNames("relative", s.container)}>
-      <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
-        {/* 배경 원 */}
-        <circle cx="50" cy="50" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="8" />
-        {/* 점수 원 */}
-        <circle
-          cx="50"
-          cy="50"
-          r={radius}
-          fill="none"
-          stroke={color.stroke}
-          strokeWidth="8"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className="transition-all duration-1000 ease-out"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className={classNames("font-extrabold", color.text, s.text)}>{score}</div>
-        <div className={classNames("text-gray-500", s.label)}>점</div>
-      </div>
-    </div>
-  );
-}
-
-// 분석 상태 배지
-function AnalysisStatusBadge({ sentiment, confidence }: { sentiment: "POS" | "NEG" | "NEU"; confidence?: number }) {
-  const map = {
-    POS: { label: "긍정", emoji: "📈", bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200" },
-    NEG: { label: "부정", emoji: "📉", bg: "bg-red-50", text: "text-red-700", ring: "ring-red-200" },
-    NEU: { label: "중립", emoji: "➡️", bg: "bg-gray-50", text: "text-gray-700", ring: "ring-gray-200" }
-  };
-  const s = map[sentiment];
-
-  return (
-    <div className={classNames("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold ring-1", s.bg, s.text, s.ring)}>
-      <span>{s.emoji}</span>
-      <span>{s.label}</span>
-      {confidence !== undefined && <span className="text-xs opacity-75">({(confidence * 100).toFixed(0)}%)</span>}
-    </div>
-  );
-}
-
-// 오늘의 주목 종목 카드
-function FeaturedStockCard({ stock, onClick }: { stock: any; onClick: () => void }) {
-  return (
-    <div
-      onClick={onClick}
-      className="group cursor-pointer rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-5 shadow-md hover:shadow-xl transition-all"
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            {stock.logoUrl && <img src={stock.logoUrl} alt={stock.name} className="h-10 w-10 rounded-lg" />}
-            <div>
-              <div className="text-sm text-gray-600">{stock.symbol}</div>
-              <div className="text-lg font-bold text-gray-900">{stock.name}</div>
-            </div>
-          </div>
-          <p className="mt-3 text-sm text-gray-700 line-clamp-2">{stock.reason}</p>
-          <div className="mt-3 flex items-center gap-2">
-            <AnalysisStatusBadge sentiment={stock.sentiment} confidence={stock.confidence} />
-            <span className="text-xs text-gray-500">{stock.category}</span>
-          </div>
-        </div>
-        <div className="flex flex-col items-center gap-2">
-          <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="md" />
-          <div className="text-xs text-gray-600 font-semibold">AI 분석</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// 공시 분석 리포트 카드
-function FilingAnalysisCard({ filing, onClick, favorites, toggleFavorite }: { filing: any; onClick: () => void; favorites?: Record<string, boolean>; toggleFavorite?: (symbol: string) => void }) {
-  return (
-    <div
-      onClick={onClick}
-      className="cursor-pointer rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
-    >
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 flex items-center gap-2">
-          {filing.previousScores && filing.previousScores.length > 0 && (
-            <div className="flex items-center gap-1.5">
-              {filing.previousScores.map((score: number, idx: number) => {
-                const getSentiment = (s: number): "POS" | "NEG" | "NEU" => {
-                  if (s >= 70) return "POS";
-                  if (s < 50) return "NEG";
-                  return "NEU";
-                };
-                return (
-                  <div key={idx} className="relative" style={{ width: '32px', height: '32px' }}>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-[10px] font-bold text-gray-400">{score}</div>
-                    </div>
-                    <svg className="w-full h-full -rotate-90 opacity-40" viewBox="0 0 36 36">
-                      <circle
-                        cx="18"
-                        cy="18"
-                        r="14"
-                        fill="none"
-                        stroke={getSentiment(score) === "POS" ? "#10b981" : getSentiment(score) === "NEG" ? "#ef4444" : "#f59e0b"}
-                        strokeWidth="3"
-                        strokeDasharray={`${(score / 100) * 88} 88`}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </div>
-                );
-              })}
-              <div className="text-gray-400 text-xs">→</div>
-            </div>
-          )}
-          <AIScoreGauge score={filing.aiScore} sentiment={filing.sentiment} size="sm" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium">
-              {filing.formType}
-            </span>
-            <span className="text-xs text-gray-500">{filing.market}</span>
-            <span className="text-xs text-gray-400">{filing.date}</span>
-          </div>
-          <div className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
-            <span>{filing.symbol} · {filing.company}</span>
-            {toggleFavorite && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleFavorite(filing.symbol);
-                }}
-                className="flex-shrink-0 hover:scale-110 transition-transform"
-              >
-                <span className="text-sm">
-                  {favorites && favorites[filing.symbol] ? '❤️' : '🤍'}
-                </span>
-              </button>
-            )}
-          </div>
-          <p className="text-sm text-gray-600 line-clamp-2 mb-2">{filing.summary}</p>
-          <div className="flex items-center gap-2">
-            <AnalysisStatusBadge sentiment={filing.sentiment} confidence={filing.confidence} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Quick Actions 바
-function QuickActionsBar() {
-  const [calcModalOpen, setCalcModalOpen] = useState(false);
-  const [amount, setAmount] = useState("1000");
-  const [rate] = useState(mockUSDKRW[mockUSDKRW.length - 1]);
-
-  const actions = [
-    { icon: "🔄", label: "새로고침", onClick: () => window.location.reload() },
-    { icon: "💱", label: "환율 계산", onClick: () => setCalcModalOpen(true) },
-    { icon: "🔔", label: "알림 설정", onClick: () => alert("알림 설정 기능은 곧 출시됩니다!") },
-    { icon: "📊", label: "보고서", onClick: () => alert("보고서 기능은 곧 출시됩니다!") }
-  ];
-
-  return (
-    <>
-      <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-gray-600">빠른 기능</span>
-          <div className="flex gap-2">
-            {actions.map((action, idx) => (
-              <button
-                key={idx}
-                onClick={action.onClick}
-                className="flex flex-col items-center gap-1 rounded-xl bg-gray-50 px-3 py-2 text-xs hover:bg-gray-100 transition-colors"
-              >
-                <span className="text-lg">{action.icon}</span>
-                <span className="text-[10px] text-gray-600">{action.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 환율 계산기 모달 */}
-      {calcModalOpen && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setCalcModalOpen(false)} />
-          <div className="relative z-[1001] w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-gray-200 m-3">
-            <h3 className="text-base font-bold text-gray-900">💱 환율 계산기</h3>
-            <p className="mt-1 text-xs text-gray-500">현재 환율: {formatNumber(rate, { decimals: 2 })} KRW/USD</p>
-
-            <div className="mt-4 space-y-3">
-              <div>
-                <label className="text-sm text-gray-600">금액 (USD)</label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-                  placeholder="금액 입력"
-                />
-              </div>
-
-              <div className="rounded-lg bg-indigo-50 p-3">
-                <div className="text-xs text-gray-600">환산 금액 (KRW)</div>
-                <div className="text-2xl font-bold text-indigo-700">
-                  {formatNumber(parseFloat(amount || "0") * rate, { decimals: 0 })} 원
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setCalcModalOpen(false)}
-                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-50"
-              >
-                닫기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-export function CategoryChips({ value, onChange, categories = CATEGORIES as unknown as string[] }: { value: string; onChange: (v: string) => void; categories?: string[] }) {
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {categories.map((c) => (
-        <button
-          key={c}
-          type="button"
-          onClick={() => onChange && onChange(c)}
-          className={classNames("rounded-full px-2.5 py-1 text-xs font-semibold ring-1", value === c ? "bg-gray-900 text-white ring-gray-900" : "bg-gray-50 text-gray-700 ring-gray-200 hover:bg-gray-100")}
-          aria-pressed={value === c}
-        >
-          {c}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-export function Pagination({ currentPage, totalPages, onPageChange }: { currentPage: number; totalPages: number; onPageChange: (page: number) => void }) {
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = [];
-    const maxVisible = 5;
-
-    if (totalPages <= maxVisible) {
-      // Show all pages if total is less than or equal to max visible
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      // Always show first page
-      pages.push(1);
-
-      // Calculate range around current page
-      let start = Math.max(2, currentPage - 1);
-      let end = Math.min(totalPages - 1, currentPage + 1);
-
-      // Adjust if we're near the beginning
-      if (currentPage <= 3) {
-        end = 4;
-      }
-
-      // Adjust if we're near the end
-      if (currentPage >= totalPages - 2) {
-        start = totalPages - 3;
-      }
-
-      // Add ellipsis after first page if needed
-      if (start > 2) {
-        pages.push('...');
-      }
-
-      // Add middle pages
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-
-      // Add ellipsis before last page if needed
-      if (end < totalPages - 1) {
-        pages.push('...');
-      }
-
-      // Always show last page
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
-
-  return (
-    <div className="flex items-center justify-center gap-2 mt-6">
-      <button
-        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-        disabled={currentPage === 1}
-        className="px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        &lt;
-      </button>
-
-      {getPageNumbers().map((page, idx) => (
-        typeof page === 'number' ? (
-          <button
-            key={idx}
-            onClick={() => onPageChange(page)}
-            className={classNames(
-              "px-4 py-2 text-sm font-semibold rounded-lg transition-colors",
-              currentPage === page
-                ? "bg-indigo-600 text-white"
-                : "text-gray-700 hover:bg-gray-100"
-            )}
-          >
-            {page}
-          </button>
-        ) : (
-          <span key={idx} className="px-2 text-gray-500">
-            {page}
-          </span>
-        )
-      ))}
-
-      <button
-        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-        disabled={currentPage === totalPages}
-        className="px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        &gt;
-      </button>
-    </div>
-  );
-}
-
-// Tooltip component for table headers
-export function TooltipHeader({ label, tooltip, sortKey, currentSortKey, sortDirection, onSort }: {
-  label: string;
-  tooltip?: string;
-  sortKey?: string;
-  currentSortKey: string | null;
-  sortDirection: "asc" | "desc";
-  onSort?: (key: string) => void;
-}) {
-  const [showTooltip, setShowTooltip] = useState(false);
-  const isSorted = currentSortKey === sortKey;
-
-  return (
-    <div className="flex items-center justify-center gap-1 relative group">
-      <button
-        className={classNames(
-          "font-semibold uppercase tracking-wider transition-colors",
-          sortKey && onSort ? "hover:text-indigo-600 cursor-pointer" : "",
-          isSorted ? "text-indigo-600" : "text-gray-600"
-        )}
-        onClick={() => sortKey && onSort && onSort(sortKey)}
-      >
-        {label}
-        {isSorted && (
-          <span className="ml-1">{sortDirection === "asc" ? "↑" : "↓"}</span>
-        )}
-      </button>
-      {tooltip && (
-        <>
-          <button
-            className="text-gray-400 hover:text-gray-600"
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-            onClick={() => setShowTooltip(!showTooltip)}
-          >
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-          </button>
-          {showTooltip && (
-            <div className="absolute top-full mt-1 z-50 w-48 p-2 text-xs text-white bg-gray-900 rounded shadow-lg whitespace-normal left-1/2 transform -translate-x-1/2">
-              {tooltip}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-export function FilingCard({ item, onClick, isFavorite, onToggleFavorite }: { item: any; onClick: () => void; isFavorite?: boolean; onToggleFavorite?: () => void }) {
-  return (
-    <div role="button" onClick={onClick} className="group w-full text-left rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md">
-      <div className="flex items-start gap-3">
-        {item.logoUrl ? <img src={item.logoUrl} alt="logo" className="h-8 w-8 rounded" /> : <div className="h-8 w-8 rounded bg-gray-200" />}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium">{item.formType}</span>
-            <span>{item.market}</span>
-            <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200">{item.category}</span>
-          </div>
-          <div className="mt-1 flex items-center gap-2 truncate">
-            <div className="truncate text-base font-semibold text-gray-900">
-              {item.symbol} · {item.company}
-            </div>
-            <button
-              aria-label={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleFavorite && onToggleFavorite();
-              }}
-              className={classNames("shrink-0 rounded-full border px-2 py-1 text-xs font-semibold", isFavorite ? "border-yellow-300 bg-yellow-50 text-yellow-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50")}
-            >
-              {isFavorite ? "★" : "☆"}
-            </button>
-          </div>
-          <p className="mt-2 line-clamp-2 text-sm text-gray-700">{item.summary}</p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <ImpactBadge direction={item.direction} confidence={item.confidence} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function UndervaluedRow({ item, isFavorite, onToggleFavorite, onClick }: { item: any; isFavorite?: boolean; onToggleFavorite: () => void; onClick: () => void }) {
-  const perfColor100 = item.perf100d >= 0 ? "text-emerald-600" : "text-red-600";
-  return (
-    <tr className="hover:bg-gray-50">
-      <td className="whitespace-nowrap px-3 py-3 text-sm font-semibold text-gray-900">#{item.rank}</td>
-      <td className="px-3 py-3">
-        <div className="flex items-center gap-3">
-          {item.logoUrl ? <img src={item.logoUrl} alt="logo" className="h-6 w-6 rounded" /> : <div className="h-6 w-6 rounded bg-gray-200" />}
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <button onClick={onClick} className="text-left">
-                <div className="text-sm font-semibold text-gray-900">
-                  {item.symbol} · {item.name}
-                </div>
-              </button>
-              <button aria-label={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"} onClick={onToggleFavorite} className={classNames("rounded-full border px-2 py-1 text-xs font-semibold", isFavorite ? "border-yellow-300 bg-yellow-50 text-yellow-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50")}>
-                {isFavorite ? "★" : "☆"}
-              </button>
-            </div>
-            <div className="text-xs text-gray-500">{item.category}</div>
-          </div>
-        </div>
-      </td>
-      <td className={classNames("whitespace-nowrap px-3 py-3 text-sm font-semibold", perfColor100)}>{(item.perf100d * 100).toFixed(1)}%</td>
-      <td className="whitespace-nowrap px-3 py-3 text-sm text-gray-700">{item.score?.toFixed ? item.score.toFixed(1) : item.score}</td>
-    </tr>
-  );
-}
-
 // ------------------------------------------------------------------
-// MOCK DATA (AI 분석 점수 포함)
+// Mock Data
 // ------------------------------------------------------------------
 
 // 오늘의 주목 저평가주 (Featured)
@@ -1218,7 +282,7 @@ const mockUndervalued = [
   },
 ];
 
-// 종목 상세 정보 (포괄적인 재무/기술적 지표 포함)
+// 종목 상세 정보 (포괄적인 재무/기술적 지표 포함) - 일부만 표시
 const mockStockDetails: Record<string, any> = {
   "NVDA": {
     Ticker: "NVDA",
@@ -1273,69 +337,16 @@ const mockStockDetails: Record<string, any> = {
     MomentumScore: 82,
     TotalScore: 92
   },
-  "MSFT": {
-    Ticker: "MSFT",
-    Name: "Microsoft",
-    Sector: "정보기술",
-    Industry: "소프트웨어",
-    Price: 378.85,
-    MktCap: 2850.3,
-    DollarVol: 2200.5,
-    FairValue: 395.00,
-    Discount: 4.1,
-    PE: 32.5,
-    PEG: 0.95,
-    PB: 10.5,
-    PS: 11.2,
-    EV_EBITDA: 25.8,
-    ROE: 42.3,
-    ROA: 22.5,
-    OpMarginTTM: 42.5,
-    OperatingMargins: 42.1,
-    RevYoY: 16.8,
-    EPS_Growth_3Y: 34.2,
-    Revenue_Growth_3Y: 18.5,
-    EBITDA_Growth_3Y: 22.3,
-    FCF_Yield: 3.5,
-    DivYield: 0.82,
-    PayoutRatio: 0.28,
-    Beta: 0.92,
-    ShortPercent: 0.8,
-    InsiderOwnership: 0.1,
-    InstitutionOwnership: 73.2,
-    RVOL: 0.95,
-    RSI_14: 58.2,
-    ATR_PCT: 2.1,
-    Volatility_21D: 1.9,
-    RET5: 1.2,
-    RET20: 5.8,
-    RET63: 13.2,
-    SMA20: 375.20,
-    SMA50: 368.50,
-    SMA200: 355.80,
-    MACD: 3.5,
-    MACD_Signal: 2.8,
-    MACD_Histogram: 0.7,
-    BB_Position: 0.62,
-    High_52W_Ratio: 0.98,
-    Low_52W_Ratio: 1.42,
-    Momentum_12M: 32.5,
-    GrowthScore: 82,
-    QualityScore: 95,
-    ValueScore: 72,
-    MomentumScore: 75,
-    TotalScore: 88
-  },
   "005930.KS": {
     Ticker: "005930.KS",
     Name: "삼성전자",
     Sector: "정보기술",
     Industry: "전자기기",
-    Price: 72500,
-    MktCap: 432.5,
-    DollarVol: 850.3,
-    FairValue: 78000,
-    Discount: 7.1,
+    Price: 73500,
+    MktCap: 450.2,
+    DollarVol: 1200.5,
+    FairValue: 85000,
+    Discount: 13.5,
     PE: 18.5,
     PEG: 0.88,
     PB: 1.8,
@@ -1347,548 +358,42 @@ const mockStockDetails: Record<string, any> = {
     OperatingMargins: 14.2,
     RevYoY: 12.3,
     EPS_Growth_3Y: 21.0,
-    Revenue_Growth_3Y: 8.5,
-    EBITDA_Growth_3Y: 15.2,
+    Revenue_Growth_3Y: 18.5,
+    EBITDA_Growth_3Y: 20.2,
     FCF_Yield: 4.2,
-    DivYield: 2.3,
+    DivYield: 2.1,
     PayoutRatio: 0.35,
     Beta: 1.15,
-    ShortPercent: 1.5,
-    InsiderOwnership: 21.2,
-    InstitutionOwnership: 45.8,
-    RVOL: 1.05,
-    RSI_14: 52.8,
-    ATR_PCT: 2.5,
-    Volatility_21D: 2.2,
-    RET5: 1.5,
-    RET20: 6.2,
+    ShortPercent: 0.8,
+    InsiderOwnership: 18.5,
+    InstitutionOwnership: 45.2,
+    RVOL: 0.95,
+    RSI_14: 58.5,
+    ATR_PCT: 2.1,
+    Volatility_21D: 1.9,
+    RET5: 1.2,
+    RET20: 5.8,
     RET63: 11.2,
-    SMA20: 71200,
-    SMA50: 69800,
-    SMA200: 67500,
-    MACD: 850,
-    MACD_Signal: 620,
-    MACD_Histogram: 230,
-    BB_Position: 0.68,
+    SMA20: 72000,
+    SMA50: 70500,
+    SMA200: 68000,
+    MACD: 2.1,
+    MACD_Signal: 1.8,
+    MACD_Histogram: 0.3,
+    BB_Position: 0.65,
     High_52W_Ratio: 0.91,
-    Low_52W_Ratio: 1.35,
-    Momentum_12M: 18.5,
-    GrowthScore: 75,
-    QualityScore: 82,
+    Low_52W_Ratio: 1.52,
+    Momentum_12M: 89.2,
+    GrowthScore: 82,
+    QualityScore: 85,
     ValueScore: 88,
-    MomentumScore: 68,
+    MomentumScore: 75,
     TotalScore: 85
   }
 };
 
-// ------------------------------------------------------------------
-// 섹션: 최근 공시/보고서 시그널 (시장별)
-// ------------------------------------------------------------------
-function FilingsSectionByMarket({
-  market,
-  selectedCategory,
-  setSelectedCategory,
-  favorites,
-  toggleFavorite,
-  asOf,
-  sentiment,
-  setSentiment,
-}: {
-  market: "US" | "KR";
-  selectedCategory: string;
-  setSelectedCategory: (v: string) => void;
-  favorites: Record<string, boolean>;
-  toggleFavorite: (s: string) => void;
-  asOf?: string;
-  sentiment: "ALL" | "POS" | "NEG" | "NEU";
-  setSentiment: (v: "ALL" | "POS" | "NEG" | "NEU") => void;
-}) {
-  const baseItems = useMemo(() => {
-    return mockFilings.filter((f) => f.market === market && (selectedCategory === "전체" || f.category === selectedCategory));
-  }, [market, selectedCategory]);
-
-  const items = useMemo(() => {
-    if (sentiment === "ALL") return baseItems;
-    return baseItems.filter((f) => f.direction === sentiment);
-  }, [baseItems, sentiment]);
-
-  const counts = useMemo(() => {
-    return baseItems.reduce(
-      (acc, it) => {
-        acc[it.direction as "POS" | "NEG" | "NEU"] = (acc[it.direction as "POS" | "NEG" | "NEU"] || 0) + 1;
-        return acc;
-      },
-      { POS: 0, NEG: 0, NEU: 0 } as Record<"POS" | "NEG" | "NEU", number>
-    );
-  }, [baseItems]);
-  const total = baseItems.length;
-
-  return (
-    <section className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
-      <div className="mb-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-gray-900 md:text-xl">
-            최근 공시/보고서 시그널 — {market === "US" ? "미국" : "한국"} <span className="ml-2 text-xs text-gray-400">({asOf})</span>
-          </h2>
-          <button className="inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200 bg-indigo-50 hover:bg-indigo-100">
-            자세히 보기<span aria-hidden="true">→</span>
-          </button>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-gray-500">필터 결과:</span>
-            <button className={classNames("rounded-full px-2.5 py-1 font-semibold ring-1", sentiment === "ALL" ? "bg-gray-900 text-white ring-gray-900" : "bg-gray-50 text-gray-700 ring-gray-200 hover:bg-gray-100")} onClick={() => setSentiment("ALL")}>
-              전체 {total}
-            </button>
-            <button className={classNames("rounded-full px-2.5 py-1 font-semibold ring-1", sentiment === "POS" ? "bg-emerald-600 text-white ring-emerald-600" : "bg-gray-50 text-gray-700 ring-gray-200 hover:bg-gray-100")} onClick={() => setSentiment("POS")}>
-              긍정 {counts.POS}
-            </button>
-            <button className={classNames("rounded-full px-2.5 py-1 font-semibold ring-1", sentiment === "NEG" ? "bg-red-600 text-white ring-red-600" : "bg-gray-50 text-gray-700 ring-gray-200 hover:bg-gray-100")} onClick={() => setSentiment("NEG")}>
-              부정 {counts.NEG}
-            </button>
-            <button className={classNames("rounded-full px-2.5 py-1 font-semibold ring-1", sentiment === "NEU" ? "bg-gray-700 text-white ring-gray-700" : "bg-gray-50 text-gray-700 ring-gray-200 hover:bg-gray-100")} onClick={() => setSentiment("NEU")}>
-              횡보 {counts.NEU}
-            </button>
-          </div>
-          <CategoryChips value={selectedCategory} onChange={setSelectedCategory} categories={[...CATEGORIES]} />
-        </div>
-      </div>
-
-      <div className="grid gap-3">
-        {items.map((it) => (
-          <FilingCard key={it.id} item={it} onClick={() => {}} isFavorite={!!favorites[it.symbol]} onToggleFavorite={() => toggleFavorite(it.symbol)} />
-        ))}
-        {items.length === 0 && <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">해당 카테고리에 대한 공시/보고서 시그널이 없습니다.</div>}
-      </div>
-    </section>
-  );
-}
-
-// ------------------------------------------------------------------
-// 섹션: 저평가 우량주 랭킹 (시장별, 100일 수익률, 즐겨찾기)
-// ------------------------------------------------------------------
-function RankingSectionByMarket({
-  market,
-  selectedCategory,
-  setSelectedCategory,
-  favorites,
-  toggleFavorite,
-  asOf,
-}: {
-  market: "US" | "KR";
-  selectedCategory: string;
-  setSelectedCategory: (v: string) => void;
-  favorites: Record<string, boolean>;
-  toggleFavorite: (s: string) => void;
-  asOf?: string;
-}) {
-  const rows = useMemo(() => {
-    return mockUndervalued.filter((r) => r.market === market && (selectedCategory === "전체" || r.category === selectedCategory));
-  }, [market, selectedCategory]);
-
-  return (
-    <section className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
-      <div className="mb-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-gray-900 md:text-xl">
-            저평가 우량주 랭킹 — {market === "US" ? "미국" : "한국"} <span className="ml-2 text-xs text-gray-400">({asOf})</span>
-          </h2>
-          <button className="inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200 bg-indigo-50 hover:bg-indigo-100">
-            자세히 보기<span aria-hidden="true">→</span>
-          </button>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs text-gray-500">
-            이름 · 카테고리 · 순위 · <b>100일 수익률</b>
-          </p>
-          <CategoryChips value={selectedCategory} onChange={setSelectedCategory} categories={[...CATEGORIES]} />
-        </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead>
-            <tr className="text-left text-xs uppercase tracking-wider text-gray-500">
-              <th className="px-3 py-2">순위</th>
-              <th className="px-3 py-2">종목</th>
-              <th className="px-3 py-2">100일 수익률</th>
-              <th className="px-3 py-2">스코어</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {rows.map((r) => (
-              <UndervaluedRow key={r.symbol} item={r} isFavorite={!!favorites[r.symbol]} onToggleFavorite={() => toggleFavorite(r.symbol)} onClick={() => {}} />
-            ))}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-3 py-6 text-center text-sm text-gray-500">
-                  해당 카테고리에 대한 저평가 우량주가 없습니다.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
-}
-
-// ------------------------------------------------------------------
-// 로그인/회원가입 모달
-// ------------------------------------------------------------------
-function LoginModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [id, setId] = useState('');
-  const [password, setPassword] = useState('');
-
-  if (!open) return null;
-
-  const handleLogin = () => {
-    // TODO: Implement login logic
-    console.log('Login with ID:', id);
-  };
-
-  return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative z-[1001] w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-200 m-3">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">로그인</h2>
-
-        <div className="space-y-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">아이디</label>
-            <input
-              type="text"
-              value={id}
-              onChange={(e) => setId(e.target.value)}
-              placeholder="아이디를 입력하세요"
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">비밀번호</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="비밀번호를 입력하세요"
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors"
-            />
-          </div>
-          <button
-            onClick={handleLogin}
-            className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition-colors"
-          >
-            로그인
-          </button>
-        </div>
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-gray-500">또는</span>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold hover:bg-gray-50 transition-colors">
-            <img src="https://www.google.com/favicon.ico" alt="Google" className="h-5 w-5" />
-            Google로 로그인
-          </button>
-
-          <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-yellow-400 bg-yellow-300 px-4 py-3 text-sm font-semibold hover:bg-yellow-400 transition-colors">
-            <span className="text-lg">💬</span>
-            카카오로 로그인
-          </button>
-
-          <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-green-500 bg-green-500 px-4 py-3 text-sm font-semibold text-white hover:bg-green-600 transition-colors">
-            <span className="text-lg font-bold">N</span>
-            네이버로 로그인
-          </button>
-        </div>
-
-        <div className="mt-6 text-center">
-          <button onClick={onClose} className="text-sm text-gray-600 hover:text-gray-900">
-            닫기
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SignupModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [id, setId] = useState('');
-  const [password, setPassword] = useState('');
-  const [email, setEmail] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [isCodeSent, setIsCodeSent] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
-  const [timer, setTimer] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (timer > 0) {
-      timerRef.current = setTimeout(() => setTimer(timer - 1), 1000);
-    }
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [timer]);
-
-  useEffect(() => {
-    // Reset state when modal closes
-    if (!open) {
-      setId('');
-      setPassword('');
-      setEmail('');
-      setVerificationCode('');
-      setIsCodeSent(false);
-      setIsVerified(false);
-      setTimer(0);
-      if (timerRef.current) clearTimeout(timerRef.current);
-    }
-  }, [open]);
-
-  if (!open) return null;
-
-  const handleSendCode = () => {
-    // TODO: Implement send verification code logic
-    console.log('Sending verification code to:', email);
-    setIsCodeSent(true);
-    setTimer(300); // 5 minutes = 300 seconds
-  };
-
-  const handleVerify = () => {
-    // TODO: Implement verification logic
-    console.log('Verifying code:', verificationCode);
-    setIsVerified(true);
-    setTimer(0);
-    if (timerRef.current) clearTimeout(timerRef.current);
-  };
-
-  const handleSignup = () => {
-    // TODO: Implement signup logic
-    console.log('Signup with ID:', id);
-  };
-
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center overflow-y-auto">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative z-[1001] w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-200 m-3 my-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">회원가입</h2>
-        <p className="text-sm text-gray-600 mb-6">AI 기업 분석을 무료로 시작하세요</p>
-
-        <div className="space-y-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">아이디</label>
-            <input
-              type="text"
-              value={id}
-              onChange={(e) => setId(e.target.value)}
-              placeholder="아이디를 입력하세요"
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">비밀번호</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="비밀번호를 입력하세요"
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">이메일</label>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="이메일을 입력하세요"
-                disabled={isCodeSent}
-                className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors disabled:bg-gray-100"
-              />
-              <button
-                onClick={handleSendCode}
-                disabled={!email || isCodeSent}
-                className="px-4 py-3 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                인증번호 발송
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              인증번호
-              {timer > 0 && <span className="ml-2 text-red-600 font-bold">{formatTimer(timer)}</span>}
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value)}
-                placeholder="인증번호를 입력하세요"
-                disabled={!isCodeSent || isVerified}
-                className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors disabled:bg-gray-100"
-              />
-              <button
-                onClick={handleVerify}
-                disabled={!isCodeSent || !verificationCode || isVerified}
-                className="px-4 py-3 bg-green-600 text-white text-sm font-semibold rounded-xl hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                {isVerified ? '인증완료' : '인증'}
-              </button>
-            </div>
-          </div>
-
-          <button
-            onClick={handleSignup}
-            disabled={!isVerified}
-            className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            회원가입
-          </button>
-        </div>
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-gray-500">또는</span>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold hover:bg-gray-50 transition-colors">
-            <img src="https://www.google.com/favicon.ico" alt="Google" className="h-5 w-5" />
-            Google로 시작하기
-          </button>
-
-          <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-yellow-400 bg-yellow-300 px-4 py-3 text-sm font-semibold hover:bg-yellow-400 transition-colors">
-            <span className="text-lg">💬</span>
-            카카오로 시작하기
-          </button>
-
-          <button className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-green-500 bg-green-500 px-4 py-3 text-sm font-semibold text-white hover:bg-green-600 transition-colors">
-            <span className="text-lg font-bold">N</span>
-            네이버로 시작하기
-          </button>
-        </div>
-
-        <div className="mt-6 text-center">
-          <button onClick={onClose} className="text-sm text-gray-600 hover:text-gray-900">
-            닫기
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ------------------------------------------------------------------
-// 헤더 + 하단 네비
-// ------------------------------------------------------------------
-function Header() {
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [signupOpen, setSignupOpen] = useState(false);
-
-  return (
-    <>
-      <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur-lg shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <div>
-                <div className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  DDalKKak
-                </div>
-                <div className="text-[9px] text-gray-500 font-medium">AI 기업 분석 플랫폼</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setLoginOpen(true)}
-                className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold hover:bg-gray-50 transition-colors"
-              >
-                로그인
-              </button>
-              <button
-                onClick={() => setSignupOpen(true)}
-                className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 text-sm font-semibold text-white hover:from-indigo-700 hover:to-purple-700 transition-all"
-              >
-                회원가입
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
-      <SignupModal open={signupOpen} onClose={() => setSignupOpen(false)} />
-    </>
-  );
-}
-
-function BottomNav({ active = "home", onChange, showDetail = false }: { active?: TabKey; onChange: (k: TabKey) => void; showDetail?: boolean }) {
-  const baseItems = [
-    { key: "home" as TabKey, icon: "🏠", label: "홈" },
-    { key: "undervalued" as TabKey, icon: "💎", label: "저평가 발굴" },
-    { key: "filings" as TabKey, icon: "📊", label: "공시 분석" },
-    { key: "watchlist" as TabKey, icon: "⭐", label: "관심 종목" }
-  ];
-
-  const items = showDetail
-    ? [...baseItems, { key: "detail" as TabKey, icon: "📈", label: "종목 상세" }]
-    : baseItems;
-
-  const itemCls = (key: TabKey) => classNames(
-    "flex flex-col items-center justify-center w-full h-16 py-2 text-xs font-semibold touch-manipulation transition-colors",
-    key === active ? "text-indigo-700 bg-indigo-50" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-  );
-
-  const click = (key: TabKey) => (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    onChange && onChange(key);
-  };
-
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-lg shadow-lg">
-      <div className="mx-auto max-w-7xl">
-        <ul className="grid grid-cols-4">
-          {items.map((item) => (
-            <li key={item.key}>
-              <button
-                className={itemCls(item.key)}
-                onClick={click(item.key)}
-                aria-current={active === item.key ? "page" : undefined}
-              >
-                <span className="text-xl mb-1">{item.icon}</span>
-                <span className="text-[10px]">{item.label}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </nav>
-  );
-}
-
 // ----------------------------
-// 뉴스 요약 (카테고리·정렬·날짜·모달 포함) — 이전 대화 버전 그대로
+// 뉴스 요약 (카테고리·정렬·날짜·모달 포함)
 // ----------------------------
 const NEWS_CATEGORIES = ["전체", "거시경제", "금융시장", "기업/산업", "부동산", "소비/고용", "정책/제도", "정치"];
 
@@ -1901,150 +406,12 @@ const mockNews = [
   { id: "n6", date: "2025-10-11", category: "정치", title: "미-중 정상 통화, 통상 이슈 완화 시사", body: "...", summary: "관세 이슈 일부 진전 가능성.", link: "#", importance: 7, reason: "대외 불확실성 완화" },
   { id: "n7", date: "2025-10-15", category: "소비/고용", title: "9월 고용, 예상치 하회", body: "...", summary: "임금 상승률도 둔화.", link: "#", importance: 8, reason: "소비 사이클 전환 신호" },
   { id: "n8", date: "2025-10-10", category: "기업/산업", title: "테슬라, FSD 구독가 인하", body: "...", summary: "시장 점유율 확대 전략 분석.", link: "#", importance: 6, reason: "경쟁 구도 변화" },
-  // 추가 더미 (초 단위 포함, .000000 제거)
   { id: "n9", date: "2025-10-16 12:00:45", category: "거시경제", title: '트럼프, 다음달 관세 재판에 "현장 방청할 생각"…美 대통령 최초 사례 되나', summary: "트럼프 美 대통령, 관세 부과 적법성 심리하는 연방대법원 재판(다음달 5일) 현장 방청 의사 밝힘. 하급심은 IEEPA 근거 관세 부과 위법 판결. 대법원서 하급심 유지 시 美 유효 관세율 16.3%의 절반 이하로 하락 및 수백억 달러 환급 가능성.", link: "https://www.hankyung.com/article/2025101626227", importance: 8, reason: "IEEPA 근거 관세 부과 적법성 여부가 결정됨. 관세는 무역·물가 등 거시경제에 직접적이고 광범위한 영향을 미치는 중대 사안이며, 수백억 달러 환급 가능성도 있음." },
   { id: "n10", date: "2025-10-16 07:23:33", category: "거시경제", title: "'10일 내' 무역협상 타결 기대감…'3500억달러 패키지' 운명은", summary: "한미 무역협상이 최종 타결 단계에 근접, 미국 베선트 재무부 장관이 10일 내 협상 결과 예상. 주요 쟁점은 3500억 달러 대미 투자 패키지 구성 및 한미 통화스와프 등 외환시장 안정장치. 양측이 세부 사항 조율 중이며, 한국 외환시장 안전장치 마련에 긍정적 언급 나옴.", link: "https://www.hankyung.com/article/2025101615667", importance: 8, reason: "무역 협상 타결 임박 소식은 관세 및 대규모 대미 투자의 확정으로 이어져 거시경제 및 무역에 직접적 영향. 외환시장 안전장치는 금융시장 변동성 완화에 중요." },
-  { id: "n11", date: "2025-10-16 05:26:38", category: "거시경제", title: '베선트 "한미 관세협상, 열흘 내 어떤 결과 나올 것" [이상은의 워싱턴나우]', summary: '베선트 美 재무장관 "한미 관세협상, APEC 정상회담 전 열흘 내 결과 나올 것" 언급. 한국 측 3500억 달러 일시 투자 및 외환시장 영향 우려 관련 양측 의견 좁혀. 협상 마무리 단계, 구체적 투자 방식(펀드 등)이 최종 타결의 관건 예상.', link: "https://www.hankyung.com/article/202510161460i", importance: 8, reason: "한미 간 대규모 관세협상 및 투자 관련 논의가 마무리 단계에 진입, 외환시장 및 무역 환경 등 거시경제 지표에 즉각적이고 중요한 영향을 미칠 가능성 높음." },
+  { id: "n11", date: "2025-10-16 05:26:38", category: "거시경제", title: '베선트 "한미 관세협상, 열흘 내 어떤 결과 나올 것" [이상은의 워싱턴나우]', summary: '베선트 美 재무장관 "한미 관세협상, APEC 정상회담 전 열흘 내 결과 나올 것" 언급. 한국 측 3500억 달러 일시 투자 및 외환시장 영향 우려 관련 양측 의견 좁혀. 협상 마무리 단계, 구체적 투자 방식(펀드 등) 및 최종 타결의 관건 예상.', link: "https://www.hankyung.com/article/202510161460i", importance: 8, reason: "한미 간 대규모 관세협상 및 투자 관련 논의가 마무리 단계에 진입, 외환시장 및 무역 환경 등 거시경제 지표에 즉각적이고 중요한 영향을 미칠 가능성 높음." },
   { id: "n12", date: "2025-10-16 11:30:06", category: "거시경제", title: "韓협상단, 내일 美백악관 예산국 방문…관세 협상 막바지", summary: "한미 관세 협상 막바지로, 韓 협상단 내일(17일 새벽) 美 백악관 관리예산국 방문 예정. 협상 최종 문구 조율 관측 속, 美 요구 투자액($3500억) 조달 방식(통화스와프, 외평채 등)이 외환보유액 및 국가부채에 미칠 영향이 핵심 쟁점.", link: "https://www.hankyung.com/article/2025101625437", importance: 7, reason: "한미 관세 협상의 최종 단계, $3500억 대미 투자금 조달 방식은 외환보유액, 통화스와프 등 거시경제 핵심 변수에 직접적 영향 예상." },
   { id: "n13", date: "2025-10-16 11:19:29", category: "거시경제", title: `트럼프 "한국 '3500억달러 선불' 합의" 또 다시 거론 [HK영상]`, summary: `트럼프 美 대통령, 백악관 기자회견서 한국이 무역 합의 일환으로 대미 투자금 3500억 달러(약 500조 원)를 '선불(up front)' 지급하기로 했다고 재차 주장.`, link: "https://www.hankyung.com/article/202510162536i", importance: 7, reason: "한국의 3500억 달러 대미 투자금 관련, 지급 방식(선불 여부)에 대한 미국 대통령의 직접적 압박 발언으로 거시경제 변수(무역/환율)에 잠재적 불확실성 증폭." },
 ];
-
-function NewsImportanceBadge({ score }: { score: number }) {
-  const tone = score >= 8 ? { c: "bg-rose-50 text-rose-700 ring-rose-200" } : score >= 5 ? { c: "bg-amber-50 text-amber-800 ring-amber-200" } : { c: "bg-gray-50 text-gray-700 ring-gray-200" };
-  return <span className={classNames("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1", tone.c)}>중요도 {score}/10</span>;
-}
-
-// ✅ 모달(정중앙) — 제목/업로드일자/요약/닫기/원문보기(새탭)
-function NewsModal({ open, onClose, item }: { open: boolean; onClose: () => void; item: any | null }) {
-  if (!open || !item) return null;
-  return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative z-[1001] w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-gray-200 m-3">
-        <h3 className="text-base font-bold text-gray-900">
-          {item.title}
-          <span className="ml-2 text-sm font-normal text-gray-500">{item.date}</span>
-        </h3>
-        <p className="mt-3 text-sm text-gray-700 whitespace-pre-wrap">{item.summary}</p>
-        <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm">
-            닫기
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const url = item.link;
-              if (url && url !== "#") {
-                if (typeof window !== "undefined") window.open(String(url), "_blank", "noopener,noreferrer");
-              }
-            }}
-            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700"
-          >
-            원문보기
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// 카드 포맷
-function NewsCard({ item, onOpen }: { item: any; onOpen: (it: any) => void }) {
-  return (
-    <article className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm cursor-pointer hover:shadow-md" onClick={() => onOpen && onOpen(item)}>
-      <div className="flex items-start gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-[11px] text-gray-500">
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 ring-1 ring-gray-200">{item.category}</span>
-            <span>{item.date}</span>
-            <NewsImportanceBadge score={item.importance} />
-          </div>
-          <h3 className="mt-1 truncate text-sm font-semibold text-gray-900">
-            <span className="hover:underline">{item.title}</span>
-          </h3>
-          <p className="mt-1 text-[11px] text-gray-500">{item.reason}</p>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-// 카테고리별 페이지네이션(4개/페이지) + 드래그 스와이프 + 버튼
-function CategoryPager({ items, onOpen }: { items: any[]; onOpen: (n: any) => void }) {
-  const PAGE_SIZE = 4;
-  const [page, setPage] = useState(0);
-  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-
-  useEffect(() => {
-    setPage((p) => Math.min(p, Math.max(0, totalPages - 1)));
-  }, [items.length, totalPages]);
-
-  const start = page * PAGE_SIZE;
-  const slice = items.slice(start, start + PAGE_SIZE);
-  const canPrev = page > 0;
-  const canNext = page < totalPages - 1;
-
-  const next = () => {
-    if (canNext) setPage((p) => p + 1);
-  };
-  const prev = () => {
-    if (canPrev) setPage((p) => p - 1);
-  };
-
-  // 드래그
-  const dragRef = useRef<{ x: number; y: number } | null>(null);
-  const onStart = (e: React.TouchEvent | React.MouseEvent) => {
-    const pt = "touches" in e ? e.touches[0] : (e as React.MouseEvent);
-    dragRef.current = { x: pt.clientX, y: pt.clientY };
-  };
-  const onEnd = (e: React.TouchEvent | React.MouseEvent) => {
-    const pt = "changedTouches" in e ? e.changedTouches[0] : (e as React.MouseEvent);
-    if (!dragRef.current) return;
-    const dx = pt.clientX - dragRef.current.x;
-    const dy = pt.clientY - dragRef.current.y;
-    dragRef.current = null;
-    if (Math.abs(dx) > 40 && Math.abs(dy) < 60) {
-      if (dx < 0) next();
-      else prev();
-    }
-  };
-
-  return (
-    <div className="relative" onTouchStart={onStart} onTouchEnd={onEnd} onMouseDown={onStart as any} onMouseUp={onEnd as any}>
-      <div className="grid gap-3 md:grid-cols-2">
-        {slice.map((n) => (
-          <div key={n.id} role="button" onClick={() => onOpen(n)}>
-            <NewsCard item={n} onOpen={onOpen} />
-          </div>
-        ))}
-      </div>
-
-      {items.length > PAGE_SIZE && (
-        <>
-          <button
-            type="button"
-            aria-label="이전 페이지"
-            onClick={prev}
-            className={classNames("absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white/70 ring-1 ring-gray-300 h-16 w-8 md:h-20 md:w-10 p-0 flex items-center justify-center transition-opacity", canPrev ? "opacity-40 hover:opacity-100" : "opacity-0 pointer-events-none")}
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            aria-label="다음 페이지"
-            onClick={next}
-            className={classNames("absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white/70 ring-1 ring-gray-300 h-16 w-8 md:h-20 md:w-10 p-0 flex items-center justify-center transition-opacity", canNext ? "opacity-40 hover:opacity-100" : "opacity-0 pointer-events-none")}
-          >
-            ›
-          </button>
-          <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 text-[11px] text-gray-400">
-            {page + 1} / {totalPages}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 
 function inDateRange(iso: string, startDate?: string, endDate?: string) {
   if (!startDate && !endDate) return true;
@@ -2338,6 +705,61 @@ function getMetricColor(key: string, value: number): string {
   return "text-gray-900";
 }
 
+// 메트릭 설명 매핑
+const METRIC_DESCRIPTIONS: Record<string, string> = {
+  "Ticker": "티커 심볼",
+  "Name": "회사명",
+  "Sector": "섹터",
+  "Industry": "산업군",
+  "Price": "현재 주가",
+  "MktCap": "시가총액 (10억 달러)",
+  "DollarVol": "일평균 거래대금 (백만 달러)",
+  "FairValue": "적정가치 (PE, PB, PEG, FCF 기반 계산)",
+  "Discount": "할인율 (적정가치 대비 현재가 할인 정도)",
+  "PE": "PER (주가수익비율) - 낮을수록 저평가",
+  "PEG": "PEG 비율 (PER/성장률) - 1 이하 매력적",
+  "PB": "PBR (주가순자산비율) - 낮을수록 저평가",
+  "PS": "PSR (주가매출비율) - 낮을수록 저평가",
+  "EV_EBITDA": "EV/EBITDA 배수",
+  "ROE": "자기자본이익률 - 높을수록 우수",
+  "ROA": "총자산이익률 - 높을수록 우수",
+  "OpMarginTTM": "영업이익률 (TTM) - 높을수록 우수",
+  "OperatingMargins": "영업이익률 (info)",
+  "RevYoY": "매출 YoY 성장률",
+  "EPS_Growth_3Y": "3년 EPS 성장률 (CAGR)",
+  "Revenue_Growth_3Y": "3년 매출 성장률 (CAGR)",
+  "EBITDA_Growth_3Y": "3년 EBITDA 성장률",
+  "FCF_Yield": "FCF 수익률 (현금 창출 능력)",
+  "DivYield": "배당수익률",
+  "PayoutRatio": "배당성향",
+  "Beta": "베타 (시장 대비 변동성)",
+  "ShortPercent": "공매도 비율",
+  "InsiderOwnership": "내부자 지분율",
+  "InstitutionOwnership": "기관 투자자 지분율",
+  "RVOL": "상대 거래량 (평균 대비)",
+  "RSI_14": "RSI 14일 (30 이하 과매도, 70 이상 과매수)",
+  "ATR_PCT": "ATR 퍼센트 (변동성)",
+  "Volatility_21D": "21일 변동성",
+  "RET5": "5일 수익률",
+  "RET20": "20일 수익률",
+  "RET63": "3개월 수익률",
+  "SMA20": "20일 이동평균",
+  "SMA50": "50일 이동평균",
+  "SMA200": "200일 이동평균",
+  "MACD": "MACD 선",
+  "MACD_Signal": "MACD 시그널 선",
+  "MACD_Histogram": "MACD 히스토그램 (양수 = 상승 추세)",
+  "BB_Position": "볼린저밴드 위치 (0-1, 0.5 중앙)",
+  "High_52W_Ratio": "52주 고가 대비 비율",
+  "Low_52W_Ratio": "52주 저가 대비 비율",
+  "Momentum_12M": "12개월 모멘텀",
+  "GrowthScore": "성장 점수 (0-100%)",
+  "QualityScore": "품질 점수 (0-100%)",
+  "ValueScore": "가치 점수 (0-100%)",
+  "MomentumScore": "모멘텀 점수 (0-100%)",
+  "TotalScore": "종합 점수 (0-100점)"
+};
+
 export default function DemoHome() {
   const fearGreedUS = usFearGreedSeries[usFearGreedSeries.length - 1];
   const fearGreedKR = krFearGreedSeries[krFearGreedSeries.length - 1];
@@ -2380,6 +802,46 @@ export default function DemoHome() {
   // 종목 상세 페이지 상태
   const [detailSymbol, setDetailSymbol] = useState<string>("");
   const [detailTab, setDetailTab] = useState<"info" | "filings">("info");
+  const [detailLogoError, setDetailLogoError] = useState(false);
+
+  // 저평가/관심 탭 로고 에러 상태
+  const [logoErrors, setLogoErrors] = useState<Record<string, boolean>>({});
+
+  // ✅ 최근 본 종목 (최대 5개, localStorage 활용)
+  const [recentStocks, setRecentStocks] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem("ddal-kkak-recent-stocks");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // detailSymbol이 변경될 때마다 최근 본 종목에 추가
+  useEffect(() => {
+    if (!detailSymbol) return;
+
+    // 로고 에러 상태 초기화
+    setDetailLogoError(false);
+
+    setRecentStocks(prev => {
+      // 중복 제거하고 최신 항목을 맨 앞에 추가
+      const filtered = prev.filter(s => s !== detailSymbol);
+      const updated = [detailSymbol, ...filtered].slice(0, 5);
+
+      // localStorage에 저장
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("ddal-kkak-recent-stocks", JSON.stringify(updated));
+        } catch (e) {
+          console.error("Failed to save recent stocks:", e);
+        }
+      }
+
+      return updated;
+    });
+  }, [detailSymbol]);
 
   // ✅ 탭별 스크롤 위치 저장용
   const scrollPositions = useRef<Record<TabKey, number>>({
@@ -2396,6 +858,9 @@ export default function DemoHome() {
   const filingsRef = useRef<HTMLDivElement>(null);
   const watchlistRef = useRef<HTMLDivElement>(null);
   const detailRef = useRef<HTMLDivElement>(null);
+
+  // ✅ 홈 페이지 내 섹션 ref
+  const featuredSectionRef = useRef<HTMLDivElement>(null);
 
   // 2) ⬇️ 여기 타입을 RefObject<HTMLDivElement> → MutableRefObject<HTMLDivElement | null> 로 수정
   const refMap: Record<TabKey, React.MutableRefObject<HTMLDivElement | null>> = {
@@ -2418,6 +883,14 @@ export default function DemoHome() {
       const nextEl = refMap[next].current;
       if (nextEl) nextEl.scrollTo({ top: scrollPositions.current[next] || 0 });
     });
+  };
+
+  // ✅ 홈 페이지 내 섹션으로 스크롤 이동
+  const scrollToFeaturedSection = () => {
+    if (featuredSectionRef.current && homeRef.current) {
+      const sectionTop = featuredSectionRef.current.offsetTop;
+      homeRef.current.scrollTo({ top: sectionTop - 20, behavior: 'smooth' });
+    }
   };
 
   // 시그널 섹션 카테고리(미국/한국) + 감성
@@ -2538,7 +1011,7 @@ export default function DemoHome() {
     // ✅ 전체 레이아웃: 헤더 / (탭별 개별 스크롤 영역) / 고정 하단 네비
     <div className="h-screen w-full bg-gray-50 flex flex-col overflow-hidden">
       {/* 상단 고정 헤더 */}
-      <Header />
+      <Header onLogoClick={() => switchTab("home")} />
 
       {/* ✅ 중앙: 탭별 개별 스크롤 컨테이너들 (겹쳐 놓고, active만 표시) */}
       <div className="relative flex-1 overflow-hidden">
@@ -2550,71 +1023,92 @@ export default function DemoHome() {
             activeTab === "home" ? "block" : "hidden"
           )}
         >
-          <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 pb-24">
+          <main className="mx-auto max-w-7xl space-y-4 sm:space-y-6 px-3 sm:px-4 py-4 sm:py-6 pb-24">
             {/* Hero Section - AI 분석 플랫폼 소개 */}
-            <div className="rounded-3xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-8 text-white shadow-xl">
-              <div className="mb-3">
-                <h1 className="text-2xl font-extrabold">AI 기업 분석 플랫폼</h1>
-                <p className="text-sm text-indigo-100 mt-1">저평가 우량주 발굴 · 공시 분석 · 투자 기회 탐색</p>
+            <div className="rounded-2xl sm:rounded-3xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 sm:p-8 text-white shadow-xl">
+              <div className="mb-2 sm:mb-3">
+                <h1 className="text-lg sm:text-2xl font-extrabold">AI 기업 분석 플랫폼</h1>
+                <p className="text-xs sm:text-sm text-indigo-100 mt-1">저평가 우량주 발굴 · 공시 분석 · 투자 기회 탐색</p>
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+              <div className="mt-3 sm:mt-4 grid grid-cols-3 gap-2 sm:gap-4 text-center">
                 <button
-                  onClick={() => switchTab("home")}
-                  className="rounded-xl bg-white/20 backdrop-blur p-3 hover:bg-white/30 transition-all cursor-pointer"
+                  onClick={scrollToFeaturedSection}
+                  className="rounded-lg sm:rounded-xl bg-white/20 backdrop-blur p-2 sm:p-3 hover:bg-white/30 transition-all cursor-pointer"
                 >
-                  <div className="text-2xl font-bold">{mockFeaturedStocks.length}</div>
-                  <div className="text-xs text-indigo-100">오늘의 주목 종목</div>
+                  <div className="flex items-center justify-center gap-1 sm:gap-2">
+                    <span className="text-lg sm:text-2xl font-bold">{mockFeaturedStocks.length}</span>
+                    <div className="hidden sm:flex items-center gap-1">
+                      <span className="text-red-400 text-lg">↑</span>
+                      <span className="text-sm font-bold text-red-300">+5</span>
+                    </div>
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-indigo-100 mt-1">주목 종목</div>
                 </button>
                 <button
                   onClick={() => switchTab("filings")}
-                  className="rounded-xl bg-white/20 backdrop-blur p-3 hover:bg-white/30 transition-all cursor-pointer"
+                  className="rounded-lg sm:rounded-xl bg-white/20 backdrop-blur p-2 sm:p-3 hover:bg-white/30 transition-all cursor-pointer"
                 >
-                  <div className="text-2xl font-bold">{mockFilings.length}</div>
-                  <div className="text-xs text-indigo-100">최근 공시 분석</div>
+                  <div className="flex items-center justify-center gap-1 sm:gap-2">
+                    <span className="text-lg sm:text-2xl font-bold">{mockFilings.length}</span>
+                    <div className="hidden sm:flex items-center gap-1">
+                      <span className="text-red-400 text-lg">↑</span>
+                      <span className="text-sm font-bold text-red-300">+12</span>
+                    </div>
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-indigo-100 mt-1">공시 분석</div>
                 </button>
                 <button
                   onClick={() => switchTab("undervalued")}
-                  className="rounded-xl bg-white/20 backdrop-blur p-3 hover:bg-white/30 transition-all cursor-pointer"
+                  className="rounded-lg sm:rounded-xl bg-white/20 backdrop-blur p-2 sm:p-3 hover:bg-white/30 transition-all cursor-pointer"
                 >
-                  <div className="text-2xl font-bold">{mockUndervalued.length}</div>
-                  <div className="text-xs text-indigo-100">저평가 우량주</div>
+                  <div className="flex items-center justify-center gap-1 sm:gap-2">
+                    <span className="text-lg sm:text-2xl font-bold">{mockUndervalued.length}</span>
+                    <div className="hidden sm:flex items-center gap-1">
+                      <span className="text-red-400 text-lg">↑</span>
+                      <span className="text-sm font-bold text-red-300">+8</span>
+                    </div>
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-indigo-100 mt-1">저평가주</div>
                 </button>
               </div>
             </div>
 
             {/* 오늘의 주목 저평가주 */}
-            <section>
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
-                    💎 오늘의 주목 저평가주
+            <section ref={featuredSectionRef}>
+              <div className="mb-3 sm:mb-4">
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <h2 className="text-base sm:text-xl font-extrabold text-gray-900 flex items-center gap-1 sm:gap-2">
+                    <span className="text-lg sm:text-2xl">💎</span>
+                    <span className="hidden sm:inline">오늘의 주목 저평가주</span>
+                    <span className="sm:hidden">주목 저평가주</span>
                   </h2>
                   <button
                     onClick={() => switchTab("undervalued")}
-                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                    className="rounded-lg bg-indigo-600 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:bg-indigo-700 whitespace-nowrap"
                   >
-                    전체 보기 →
+                    <span className="hidden sm:inline">전체 보기 →</span>
+                    <span className="sm:hidden">전체</span>
                   </button>
                 </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-600">AI가 선정한 투자 가치가 높은 종목</p>
-                  <div className="rounded-full border border-gray-200 bg-gray-50 p-1 flex gap-1">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <p className="text-xs sm:text-sm text-gray-600">AI가 선정한 투자 가치가 높은 종목</p>
+                  <div className="rounded-full border border-gray-200 bg-gray-50 p-0.5 sm:p-1 flex gap-0.5 sm:gap-1">
                     <button
                       onClick={() => setFeaturedMarket("US")}
-                      className={classNames("rounded-full px-3 py-1 text-xs font-semibold transition-all", featuredMarket === "US" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                      className={classNames("rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap", featuredMarket === "US" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
                     >
                       🇺🇸 미국
                     </button>
                     <button
                       onClick={() => setFeaturedMarket("KR")}
-                      className={classNames("rounded-full px-3 py-1 text-xs font-semibold transition-all", featuredMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                      className={classNames("rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap", featuredMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
                     >
                       🇰🇷 한국
                     </button>
                   </div>
                 </div>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {mockFeaturedStocks.filter(s => s.market === featuredMarket).map((stock) => (
                   <FeaturedStockCard key={stock.id} stock={stock} onClick={() => openStockDetail(stock.symbol, "info")} />
                 ))}
@@ -2623,37 +1117,40 @@ export default function DemoHome() {
 
             {/* 최근 공시 분석 */}
             <section>
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
-                    📊 최근 공시 분석
+              <div className="mb-3 sm:mb-4">
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <h2 className="text-base sm:text-xl font-extrabold text-gray-900 flex items-center gap-1 sm:gap-2">
+                    <span className="text-lg sm:text-2xl">📊</span>
+                    <span className="hidden sm:inline">최근 공시 분석</span>
+                    <span className="sm:hidden">공시 분석</span>
                   </h2>
                   <button
                     onClick={() => switchTab("filings")}
-                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                    className="rounded-lg bg-indigo-600 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:bg-indigo-700 whitespace-nowrap"
                   >
-                    전체 보기 →
+                    <span className="hidden sm:inline">전체 보기 →</span>
+                    <span className="sm:hidden">전체</span>
                   </button>
                 </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-600">AI가 분석한 최신 기업 공시 및 보고서</p>
-                  <div className="rounded-full border border-gray-200 bg-gray-50 p-1 flex gap-1">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <p className="text-xs sm:text-sm text-gray-600">AI가 분석한 최신 기업 공시 및 보고서</p>
+                  <div className="rounded-full border border-gray-200 bg-gray-50 p-0.5 sm:p-1 flex gap-0.5 sm:gap-1">
                     <button
                       onClick={() => setFilingsMarket("US")}
-                      className={classNames("rounded-full px-3 py-1 text-xs font-semibold transition-all", filingsMarket === "US" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                      className={classNames("rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap", filingsMarket === "US" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
                     >
                       🇺🇸 미국
                     </button>
                     <button
                       onClick={() => setFilingsMarket("KR")}
-                      className={classNames("rounded-full px-3 py-1 text-xs font-semibold transition-all", filingsMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
+                      className={classNames("rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap", filingsMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
                     >
                       🇰🇷 한국
                     </button>
                   </div>
                 </div>
               </div>
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-2 sm:gap-3 md:grid-cols-2">
                 {mockFilings.filter(f => f.market === filingsMarket).slice(0, 4).map((filing) => (
                   <FilingAnalysisCard
                     key={filing.id}
@@ -2719,19 +1216,19 @@ export default function DemoHome() {
                 value={undervaluedSearchQuery}
                 onChange={(e) => setUndervaluedSearchQuery(e.target.value)}
                 placeholder="종목명 또는 티커 검색 (예: 삼성전자, AAPL)"
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-indigo-200"
               />
 
               {/* 시장 선택 */}
               <div>
-                <div className="text-xs text-gray-600 mb-2 font-semibold">시장</div>
-                <div className="flex gap-2">
+                <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">시장</div>
+                <div className="flex gap-1.5 sm:gap-2">
                   {(["전체", "US", "KR"] as const).map((market) => (
                     <button
                       key={market}
                       onClick={() => setUndervaluedMarket(market)}
                       className={classNames(
-                        "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                        "flex-1 sm:flex-initial rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                         undervaluedMarket === market
                           ? "bg-indigo-600 text-white shadow"
                           : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -2745,7 +1242,7 @@ export default function DemoHome() {
 
               {/* 카테고리 선택 */}
               <div>
-                <div className="text-xs text-gray-600 mb-2 font-semibold">GICS 섹터</div>
+                <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">GICS 섹터</div>
                 <CategoryChips
                   value={undervaluedCategory}
                   onChange={setUndervaluedCategory}
@@ -2756,14 +1253,14 @@ export default function DemoHome() {
               {/* 산업군 선택 */}
               {undervaluedCategory !== "전체" && SECTOR_INDUSTRIES[undervaluedCategory] && (
                 <div>
-                  <div className="text-xs text-gray-600 mb-2 font-semibold">산업군</div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">산업군</div>
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {SECTOR_INDUSTRIES[undervaluedCategory].map((industry) => (
                       <button
                         key={industry}
                         onClick={() => setUndervaluedIndustry(industry)}
                         className={classNames(
-                          "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                          "rounded-lg px-2.5 sm:px-4 py-1 sm:py-2 text-[10px] sm:text-sm font-semibold transition-all",
                           undervaluedIndustry === industry
                             ? "bg-indigo-600 text-white shadow"
                             : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -2930,22 +1427,31 @@ export default function DemoHome() {
                         >
                           <td className="px-4 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
-                              {stock.logoUrl && (
-                                <div className="relative">
-                                  <img src={stock.logoUrl} alt={stock.name} className="h-10 w-10 rounded-lg" />
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      toggleFavorite(stock.symbol);
-                                    }}
-                                    className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
-                                  >
-                                    <span className="text-xs">
-                                      {favorites[stock.symbol] ? '❤️' : '🤍'}
-                                    </span>
-                                  </button>
-                                </div>
-                              )}
+                              <div className="relative">
+                                {stock.logoUrl && !logoErrors[stock.symbol] ? (
+                                  <img
+                                    src={stock.logoUrl}
+                                    alt={stock.name}
+                                    className="h-10 w-10 rounded-lg"
+                                    onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
+                                  />
+                                ) : (
+                                  <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                                    <span className="text-lg text-gray-400">?</span>
+                                  </div>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleFavorite(stock.symbol);
+                                  }}
+                                  className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
+                                >
+                                  <span className="text-xs">
+                                    {favorites[stock.symbol] ? '❤️' : '🤍'}
+                                  </span>
+                                </button>
+                              </div>
                               <div>
                                 <div className="text-sm font-bold text-gray-900">{stock.name}</div>
                                 <div className="text-xs text-gray-500">
@@ -3053,19 +1559,19 @@ export default function DemoHome() {
                 value={filingsSearchQuery}
                 onChange={(e) => setFilingsSearchQuery(e.target.value)}
                 placeholder="종목명 또는 티커 검색 (예: 삼성전자, AAPL)"
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-indigo-200"
               />
 
               {/* 감정 필터 */}
               <div>
-                <div className="text-xs text-gray-600 mb-2 font-semibold">분석 결과</div>
-                <div className="flex gap-2">
+                <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">분석 결과</div>
+                <div className="flex gap-1.5 sm:gap-2">
                   {(["ALL", "POS", "NEG", "NEU"] as const).map((sentiment) => (
                     <button
                       key={sentiment}
                       onClick={() => setFilingsSentimentFilter(sentiment)}
                       className={classNames(
-                        "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                        "flex-1 sm:flex-initial rounded-lg px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                         filingsSentimentFilter === sentiment
                           ? "bg-indigo-600 text-white shadow"
                           : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -3079,12 +1585,12 @@ export default function DemoHome() {
 
               {/* 정렬 옵션 */}
               <div>
-                <div className="text-xs text-gray-600 mb-2 font-semibold">정렬</div>
-                <div className="flex gap-2">
+                <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">정렬</div>
+                <div className="flex gap-1.5 sm:gap-2">
                   <button
                     onClick={() => handleFilingsSort("company")}
                     className={classNames(
-                      "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                      "flex-1 rounded-lg px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                       filingsSortBy === "company"
                         ? "bg-indigo-600 text-white shadow"
                         : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -3095,7 +1601,7 @@ export default function DemoHome() {
                   <button
                     onClick={() => handleFilingsSort("aiScore")}
                     className={classNames(
-                      "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                      "flex-1 rounded-lg px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                       filingsSortBy === "aiScore"
                         ? "bg-indigo-600 text-white shadow"
                         : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -3108,14 +1614,14 @@ export default function DemoHome() {
 
               {/* 시장 선택 */}
               <div>
-                <div className="text-xs text-gray-600 mb-2 font-semibold">시장</div>
-                <div className="flex gap-2">
+                <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">시장</div>
+                <div className="flex gap-1.5 sm:gap-2">
                   {(["전체", "US", "KR"] as const).map((market) => (
                     <button
                       key={market}
                       onClick={() => setFilingsMarketFilter(market)}
                       className={classNames(
-                        "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                        "flex-1 sm:flex-initial rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                         filingsMarketFilter === market
                           ? "bg-indigo-600 text-white shadow"
                           : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -3129,21 +1635,21 @@ export default function DemoHome() {
 
               {/* 카테고리 선택 */}
               <div>
-                <div className="text-xs text-gray-600 mb-2 font-semibold">GICS 섹터</div>
+                <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">GICS 섹터</div>
                 <CategoryChips value={filingsCategory} onChange={setFilingsCategory} categories={[...CATEGORIES]} />
               </div>
 
               {/* 산업군 선택 */}
               {filingsCategory !== "전체" && SECTOR_INDUSTRIES[filingsCategory] && (
                 <div>
-                  <div className="text-xs text-gray-600 mb-2 font-semibold">산업군</div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">산업군</div>
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {SECTOR_INDUSTRIES[filingsCategory].map((industry) => (
                       <button
                         key={industry}
                         onClick={() => setFilingsIndustry(industry)}
                         className={classNames(
-                          "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                          "rounded-lg px-2.5 sm:px-4 py-1 sm:py-2 text-[10px] sm:text-sm font-semibold transition-all",
                           filingsIndustry === industry
                             ? "bg-indigo-600 text-white shadow"
                             : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -3394,22 +1900,31 @@ export default function DemoHome() {
                               >
                                 <td className="px-4 py-4 whitespace-nowrap">
                                   <div className="flex items-center gap-3">
-                                    {stock.logoUrl && (
-                                      <div className="relative">
-                                        <img src={stock.logoUrl} alt={stock.name} className="h-10 w-10 rounded-lg" />
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            toggleFavorite(stock.symbol);
-                                          }}
-                                          className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
-                                        >
-                                          <span className="text-xs">
-                                            {favorites[stock.symbol] ? '❤️' : '🤍'}
-                                          </span>
-                                        </button>
-                                      </div>
-                                    )}
+                                    <div className="relative">
+                                      {stock.logoUrl && !logoErrors[stock.symbol] ? (
+                                        <img
+                                          src={stock.logoUrl}
+                                          alt={stock.name}
+                                          className="h-10 w-10 rounded-lg"
+                                          onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
+                                        />
+                                      ) : (
+                                        <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                                          <span className="text-lg text-gray-400">?</span>
+                                        </div>
+                                      )}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleFavorite(stock.symbol);
+                                        }}
+                                        className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
+                                      >
+                                        <span className="text-xs">
+                                          {favorites[stock.symbol] ? '❤️' : '🤍'}
+                                        </span>
+                                      </button>
+                                    </div>
                                     <div>
                                       <div className="text-sm font-bold text-gray-900">{stock.name}</div>
                                       <div className="text-xs text-gray-500">
@@ -3467,47 +1982,274 @@ export default function DemoHome() {
           )}
         >
           {(() => {
-            if (!detailSymbol) return null;
+            // ✅ 종목이 선택되지 않은 경우: 첫 화면 표시
+            if (!detailSymbol) {
+              // 저평가 우량주 최신 3개
+              const latestUndervalued = mockUndervalued
+                .sort((a, b) => (b.aiScore || 0) - (a.aiScore || 0))
+                .slice(0, 3);
 
+              // 공시분석 최신 3개
+              const latestFilings = mockFilings
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .slice(0, 3);
+
+              // 최근 본 종목 데이터
+              const recentStocksList = recentStocks
+                .map(symbol => mockUndervalued.find(s => s.symbol === symbol))
+                .filter(Boolean)
+                .slice(0, 5);
+
+              return (
+                <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
+                  {/* 안내 문구 */}
+                  <div className="text-center mb-8">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+                      어떤 종목을 살펴보시겠어요?
+                    </h1>
+                    <p className="text-sm sm:text-base text-gray-600">
+                      아래 섹션에서 종목을 선택하거나, 저평가/공시 탭에서 종목을 클릭해보세요
+                    </p>
+                  </div>
+
+                  {/* 저평가 우량주 섹션 */}
+                  <div className="mb-8">
+                    <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-4 sm:p-6 shadow-lg">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">💎 저평가 우량주</h2>
+                        <button
+                          onClick={() => switchTab("undervalued")}
+                          className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
+                        >
+                          전체 보기 →
+                        </button>
+                      </div>
+
+                      {latestUndervalued.length > 0 ? (
+                        <div className="grid gap-3 sm:gap-4">
+                          {latestUndervalued.map(stock => (
+                            <div
+                              key={stock.symbol}
+                              onClick={() => {
+                                setDetailSymbol(stock.symbol);
+                                setDetailTab("info");
+                              }}
+                              className="rounded-xl bg-white p-3 sm:p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                            >
+                              <div className="flex items-center gap-3">
+                                {stock.logoUrl && (
+                                  <img
+                                    src={stock.logoUrl}
+                                    alt={stock.name}
+                                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold text-sm sm:text-base text-gray-900 truncate">{stock.name}</div>
+                                  <div className="text-xs sm:text-sm text-gray-500">{stock.symbol} · {stock.sector}</div>
+                                </div>
+                                {stock.aiScore && (
+                                  <div className="flex-shrink-0">
+                                    <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="sm" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 text-sm">데이터가 없습니다</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 공시분석 섹션 */}
+                  <div className="mb-8">
+                    <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-4 sm:p-6 shadow-lg">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">📊 공시분석 기준</h2>
+                        <button
+                          onClick={() => switchTab("filings")}
+                          className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-semibold"
+                        >
+                          전체 보기 →
+                        </button>
+                      </div>
+
+                      {latestFilings.length > 0 ? (
+                        <div className="grid gap-3 sm:gap-4">
+                          {latestFilings.map(filing => {
+                            const stock = mockUndervalued.find(s => s.symbol === filing.symbol);
+                            return (
+                              <div
+                                key={filing.id}
+                                onClick={() => {
+                                  setDetailSymbol(filing.symbol);
+                                  setDetailTab("filings");
+                                }}
+                                className="rounded-xl bg-white p-3 sm:p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                              >
+                                <div className="flex items-start gap-3">
+                                  {stock?.logoUrl && (
+                                    <img
+                                      src={stock.logoUrl}
+                                      alt={stock.name}
+                                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200"
+                                    />
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-bold text-sm sm:text-base text-gray-900">{filing.symbol}</span>
+                                      <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full font-semibold">
+                                        {filing.formType}
+                                      </span>
+                                    </div>
+                                    <div className="text-xs sm:text-sm text-gray-700 line-clamp-1">{filing.summary}</div>
+                                    <div className="text-xs text-gray-500 mt-1">{filing.date}</div>
+                                  </div>
+                                  {filing.aiScore && (
+                                    <div className="flex-shrink-0">
+                                      <AIScoreGauge score={filing.aiScore} sentiment={filing.sentiment} size="sm" />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 text-sm">데이터가 없습니다</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 최근 본 종목 섹션 */}
+                  {recentStocksList.length > 0 && (
+                    <div className="mb-8">
+                      <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-lg">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">🕒 최근 본 종목</h2>
+                        <div className="grid gap-3 sm:gap-4">
+                          {recentStocksList.map(stock => (
+                            <div
+                              key={stock.symbol}
+                              onClick={() => {
+                                setDetailSymbol(stock.symbol);
+                                setDetailTab("info");
+                              }}
+                              className="rounded-xl bg-gray-50 p-3 sm:p-4 border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer"
+                            >
+                              <div className="flex items-center gap-3">
+                                {stock.logoUrl && (
+                                  <img
+                                    src={stock.logoUrl}
+                                    alt={stock.name}
+                                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold text-sm sm:text-base text-gray-900 truncate">{stock.name}</div>
+                                  <div className="text-xs sm:text-sm text-gray-500">{stock.symbol} · {stock.sector}</div>
+                                </div>
+                                {stock.aiScore && (
+                                  <div className="flex-shrink-0">
+                                    <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="sm" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </main>
+              );
+            }
+
+            // ✅ 종목이 선택된 경우: 상세 정보 표시
             const stockDetail = mockStockDetails[detailSymbol];
             const stockInfo = mockUndervalued.find(s => s.symbol === detailSymbol);
             const stockFilings = mockFilings.filter(f => f.symbol === detailSymbol);
 
-            if (!stockDetail) return null;
+            // ✅ 종목 정보가 없을 때 안내 메시지 표시
+            if (!stockDetail) {
+              return (
+                <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
+                  <div className="mb-4">
+                    <button
+                      onClick={() => setDetailSymbol("")}
+                      className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                    >
+                      <span>←</span>
+                      <span>목록으로</span>
+                    </button>
+                  </div>
+                  <div className="text-center py-24 bg-white rounded-2xl shadow-md border border-gray-200">
+                    <div className="text-8xl mb-6">📊</div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-3">종목 정보가 없습니다</h2>
+                    <p className="text-gray-600 mb-6">
+                      선택하신 종목 <span className="font-semibold text-indigo-600">{detailSymbol}</span>의 상세 정보를 찾을 수 없습니다.
+                    </p>
+                    <button
+                      onClick={() => setDetailSymbol("")}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+                    >
+                      목록으로 돌아가기
+                    </button>
+                  </div>
+                </main>
+              );
+            }
 
             return (
               <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
+                {/* ✅ 뒤로가기 버튼 */}
+                <div className="mb-4">
+                  <button
+                    onClick={() => setDetailSymbol("")}
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                  >
+                    <span>←</span>
+                    <span>목록으로</span>
+                  </button>
+                </div>
                 {/* 히어로 섹션 */}
-                <div className="mb-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-8 text-white shadow-xl">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-6">
-                      {stockInfo?.logoUrl && (
+                <div className="mb-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-6 md:p-8 text-white shadow-xl">
+                  <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
+                    <div className="flex items-start gap-3 sm:gap-6 flex-1">
+                      {stockInfo?.logoUrl && !detailLogoError ? (
                         <img
                           src={stockInfo.logoUrl}
                           alt={stockDetail.Name}
-                          className="h-20 w-20 rounded-2xl bg-white p-2 shadow-lg"
+                          className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-xl sm:rounded-2xl bg-white p-1.5 sm:p-2 shadow-lg flex-shrink-0"
+                          onError={() => setDetailLogoError(true)}
                         />
+                      ) : (
+                        <div className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-xl sm:rounded-2xl bg-gray-200 flex items-center justify-center shadow-lg flex-shrink-0">
+                          <span className="text-xl sm:text-2xl md:text-3xl text-gray-400">?</span>
+                        </div>
                       )}
-                      <div>
-                        <h1 className="text-4xl font-extrabold mb-2">{stockDetail.Name}</h1>
-                        <p className="text-xl text-indigo-100 mb-3">
-                          {stockDetail.Ticker} · {stockDetail.Sector} · {stockDetail.Industry}
+                      <div className="min-w-0">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold mb-1 sm:mb-2 truncate">{stockDetail.Name}</h1>
+                        <p className="text-sm sm:text-base md:text-xl text-indigo-100 mb-2 sm:mb-3 truncate">
+                          {stockDetail.Ticker} · {stockDetail.Sector}
                         </p>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                           <div>
-                            <div className="text-sm text-indigo-200">현재가</div>
-                            <div className="text-3xl font-bold">${stockDetail.Price?.toLocaleString()}</div>
+                            <div className="text-xs sm:text-sm text-indigo-200">현재가</div>
+                            <div className="text-lg sm:text-2xl md:text-3xl font-bold">${stockDetail.Price?.toLocaleString()}</div>
                           </div>
                           <div>
-                            <div className="text-sm text-indigo-200">시가총액</div>
-                            <div className="text-2xl font-bold">${stockDetail.MktCap?.toLocaleString()}B</div>
+                            <div className="text-xs sm:text-sm text-indigo-200">시가총액</div>
+                            <div className="text-base sm:text-xl md:text-2xl font-bold">${stockDetail.MktCap?.toLocaleString()}B</div>
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right sm:text-center self-center">
                       {stockInfo && (
-                        <div className="inline-block">
+                        <div className="inline-block bg-white/40 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-4 border-2 border-white/60 shadow-2xl ring-2 ring-white/30">
+                          <div className="text-xs text-gray-800 mb-2 font-bold text-center bg-white/70 rounded-lg px-2 py-1 shadow-sm">AI 종합 점수</div>
                           <AIScoreGauge score={stockInfo.aiScore} sentiment={stockInfo.sentiment} size="lg" />
                         </div>
                       )}
@@ -3520,24 +2262,26 @@ export default function DemoHome() {
                   <button
                     onClick={() => setDetailTab("info")}
                     className={classNames(
-                      "rounded-lg px-6 py-3 text-sm font-semibold transition-all",
+                      "flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold transition-all",
                       detailTab === "info"
                         ? "bg-indigo-600 text-white shadow-lg"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     )}
                   >
-                    📊 종목 정보
+                    <span className="hidden sm:inline">📊 종목 정보</span>
+                    <span className="sm:hidden">📊 정보</span>
                   </button>
                   <button
                     onClick={() => setDetailTab("filings")}
                     className={classNames(
-                      "rounded-lg px-6 py-3 text-sm font-semibold transition-all",
+                      "flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold transition-all",
                       detailTab === "filings"
                         ? "bg-indigo-600 text-white shadow-lg"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     )}
                   >
-                    📈 공시 분석 요약
+                    <span className="hidden sm:inline">📈 공시 분석 요약</span>
+                    <span className="sm:hidden">📈 공시</span>
                   </button>
                 </div>
 
@@ -3550,7 +2294,13 @@ export default function DemoHome() {
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         {["GrowthScore", "QualityScore", "ValueScore", "MomentumScore", "TotalScore"].map(key => (
                           <div key={key} className="text-center p-4 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
-                            <div className="text-xs text-gray-600 mb-2">{key.replace("Score", "")}</div>
+                            {METRIC_DESCRIPTIONS[key] ? (
+                              <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
+                                <div className="text-xs text-gray-600 mb-2">{key.replace("Score", "")}</div>
+                              </MetricTooltip>
+                            ) : (
+                              <div className="text-xs text-gray-600 mb-2">{key.replace("Score", "")}</div>
+                            )}
                             <div className={classNames("text-3xl font-bold", getMetricColor(key, stockDetail[key]))}>
                               {stockDetail[key]}
                             </div>
@@ -3571,7 +2321,13 @@ export default function DemoHome() {
                           const colorClass = typeof value === "number" ? getMetricColor(key, value) : "text-gray-900";
                           return (
                             <div key={key} className="p-4 rounded-lg bg-gray-50">
-                              <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                              {METRIC_DESCRIPTIONS[key] ? (
+                                <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
+                                  <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                </MetricTooltip>
+                              ) : (
+                                <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                              )}
                               <div className={classNames("text-xl font-bold", colorClass)}>{displayValue}</div>
                             </div>
                           );
@@ -3591,7 +2347,13 @@ export default function DemoHome() {
                             const colorClass = getMetricColor(key, value);
                             return (
                               <div key={key} className="p-4 rounded-lg bg-gray-50">
-                                <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                {METRIC_DESCRIPTIONS[key] ? (
+                                  <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
+                                    <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                  </MetricTooltip>
+                                ) : (
+                                  <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                )}
                                 <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
                               </div>
                             );
@@ -3609,7 +2371,13 @@ export default function DemoHome() {
                             const colorClass = getMetricColor(key, value);
                             return (
                               <div key={key} className="p-4 rounded-lg bg-gray-50">
-                                <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                {METRIC_DESCRIPTIONS[key] ? (
+                                  <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
+                                    <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                  </MetricTooltip>
+                                ) : (
+                                  <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                )}
                                 <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
                               </div>
                             );
@@ -3647,7 +2415,13 @@ export default function DemoHome() {
 
                           return (
                             <div key={key} className="p-4 rounded-lg bg-gray-50">
-                              <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                              {METRIC_DESCRIPTIONS[key] ? (
+                                <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
+                                  <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                </MetricTooltip>
+                              ) : (
+                                <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                              )}
                               <div className={classNames("text-lg font-bold", colorClass)}>{displayValue}</div>
                             </div>
                           );
@@ -3662,6 +2436,19 @@ export default function DemoHome() {
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
+                              {/* 로고 추가 */}
+                              {filing.logoUrl && !logoErrors[filing.symbol] ? (
+                                <img
+                                  src={filing.logoUrl}
+                                  alt={filing.company}
+                                  className="h-8 w-8 rounded-lg flex-shrink-0"
+                                  onError={() => setLogoErrors(prev => ({ ...prev, [filing.symbol]: true }))}
+                                />
+                              ) : (
+                                <div className="h-8 w-8 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-sm text-gray-400">?</span>
+                                </div>
+                              )}
                               <span className="inline-flex items-center rounded-lg bg-indigo-100 px-3 py-1.5 text-sm font-semibold text-indigo-700">
                                 {filing.formType}
                               </span>
@@ -3704,7 +2491,7 @@ export default function DemoHome() {
       </div>
 
       {/* 하단 고정 네비 */}
-      <BottomNav active={activeTab} onChange={switchTab} showDetail={!!detailSymbol} />
+      <BottomNav active={activeTab} onChange={switchTab} />
     </div>
   );
 }
