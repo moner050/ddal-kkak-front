@@ -1,0 +1,227 @@
+# ============================================================
+# Kubernetes CronJob for Data Collection
+# Docker/K8s 환경에서 사용하는 경우
+# ============================================================
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ddalkkak-data-collection
+  namespace: default
+spec:
+  # 스케줄: 매일 오전 7시 (UTC 기준이므로 한국시간 -9시간 = 22:00 UTC)
+  schedule: "0 22 * * *"  # "0 7 * * *" 한국시간 기준이면 이것 사용
+
+  # 동시 실행 정책
+  concurrencyPolicy: Forbid  # 이전 작업이 완료되기 전까지 새 작업 시작 안함
+
+  # 성공/실패 히스토리 보관 개수
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+
+  # 시작 기한 (초과시 건너뜀)
+  startingDeadlineSeconds: 300
+
+  jobTemplate:
+    spec:
+      # 재시도 횟수
+      backoffLimit: 2
+
+      # 타임아웃 (2시간)
+      activeDeadlineSeconds: 7200
+
+      template:
+        metadata:
+          labels:
+            app: ddalkkak-data-collection
+        spec:
+          restartPolicy: OnFailure
+
+          # Init Container: 데이터베이스 연결 확인
+          initContainers:
+          - name: wait-for-postgres
+            image: postgres:15-alpine
+            command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h $DB_HOST -p $DB_PORT -U $DB_USER; do
+                echo "Waiting for PostgreSQL..."
+                sleep 2
+              done
+              echo "PostgreSQL is ready!"
+            env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: ddalkkak-db-secret
+                  key: host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: ddalkkak-db-secret
+                  key: port
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ddalkkak-db-secret
+                  key: username
+
+          # Main Container: 데이터 수집 실행
+          containers:
+          - name: data-collector
+            image: ddalkkak/data-collector:latest  # 커스텀 Docker 이미지
+            imagePullPolicy: Always
+
+            command:
+            - /bin/bash
+            - -c
+            - |
+              echo "Starting data collection..."
+              cd /app
+
+              # 1단계: 데이터 수집
+              python data_collector_with_db.py
+
+              # 2단계: 스크리닝
+              python stock_screener_with_db.py --profile all
+
+              echo "Data collection completed!"
+
+            env:
+            # 데이터베이스 연결 정보
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: ddalkkak-db-secret
+                  key: host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: ddalkkak-db-secret
+                  key: port
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: ddalkkak-db-secret
+                  key: database
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ddalkkak-db-secret
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ddalkkak-db-secret
+                  key: password
+
+            # 애플리케이션 설정
+            - name: ENVIRONMENT
+              value: "production"
+            - name: LOG_LEVEL
+              value: "INFO"
+
+            # 리소스 제한
+            resources:
+              requests:
+                memory: "2Gi"
+                cpu: "1000m"
+              limits:
+                memory: "4Gi"
+                cpu: "2000m"
+
+            # 볼륨 마운트 (로그, 백업)
+            volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+            - name: backup
+              mountPath: /app/backup
+
+          # 볼륨 정의
+          volumes:
+          - name: logs
+            persistentVolumeClaim:
+              claimName: ddalkkak-logs-pvc
+          - name: backup
+            persistentVolumeClaim:
+              claimName: ddalkkak-backup-pvc
+
+---
+# ============================================================
+# Secret for Database Credentials
+# ============================================================
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ddalkkak-db-secret
+  namespace: default
+type: Opaque
+stringData:
+  host: "postgres-service.default.svc.cluster.local"
+  port: "5432"
+  database: "ddal_kkak"
+  username: "postgres"
+  password: "your-secure-password-here"
+
+---
+# ============================================================
+# PersistentVolumeClaim for Logs
+# ============================================================
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ddalkkak-logs-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+
+---
+# ============================================================
+# PersistentVolumeClaim for Backup
+# ============================================================
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ddalkkak-backup-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: standard
+
+---
+# ============================================================
+# Deployment Instructions:
+# ============================================================
+# 1. Secret 수정:
+#    kubectl edit secret ddalkkak-db-secret
+#
+# 2. CronJob 배포:
+#    kubectl apply -f cronjob.yaml
+#
+# 3. CronJob 확인:
+#    kubectl get cronjobs
+#    kubectl get jobs
+#    kubectl get pods
+#
+# 4. 로그 확인:
+#    kubectl logs <pod-name>
+#
+# 5. 수동 실행 (테스트):
+#    kubectl create job --from=cronjob/ddalkkak-data-collection manual-run-1
+#
+# 6. CronJob 삭제:
+#    kubectl delete cronjob ddalkkak-data-collection
+# ============================================================
