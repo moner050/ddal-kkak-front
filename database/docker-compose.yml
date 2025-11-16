@@ -1,0 +1,84 @@
+# ============================================================
+# Docker Compose for DDalKKak Backend
+# PostgreSQL Database + PgAdmin
+# ============================================================
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ddalkkak-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ddal_kkak
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+      TZ: "Asia/Seoul"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema:/docker-entrypoint-initdb.d  # 초기 스키마 자동 실행
+    networks:
+      - ddalkkak-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PgAdmin (웹 기반 PostgreSQL 관리 도구)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ddalkkak-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@ddalkkak.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - ddalkkak-network
+    depends_on:
+      - postgres
+
+  # (선택사항) Redis for Caching
+  redis:
+    image: redis:7-alpine
+    container_name: ddalkkak-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ddalkkak-network
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  ddalkkak-network:
+    driver: bridge
+
+# ============================================================
+# 사용법:
+# ============================================================
+# 1. 시작: docker-compose up -d
+# 2. 중지: docker-compose down
+# 3. 로그 확인: docker-compose logs -f postgres
+# 4. PostgreSQL 접속: psql -h localhost -p 5432 -U postgres -d ddal_kkak
+# 5. PgAdmin 접속: http://localhost:5050 (admin@ddalkkak.com / admin)
+# ============================================================
