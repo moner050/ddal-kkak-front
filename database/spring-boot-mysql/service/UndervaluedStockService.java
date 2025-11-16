@@ -5,6 +5,8 @@ import com.ddalkkak.backend.entity.UndervaluedStock;
 import com.ddalkkak.backend.repository.UndervaluedStockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -178,7 +180,7 @@ public class UndervaluedStockService {
     /**
      * 특정 날짜의 특정 프로필 종목 조회 (페이징)
      */
-    public List<UndervaluedStockDto> getStocksByProfileWithPaging(
+    public Page<UndervaluedStockDto> getStocksByProfileWithPaging(
         String profile,
         LocalDate date,
         int page,
@@ -195,7 +197,10 @@ public class UndervaluedStockService {
             date, profileJson, size, offset
         );
 
-        return toDtoList(stocks);
+        Long totalCount = repository.countByDataDateAndProfile(date, profileJson);
+        Pageable pageable = PageRequest.of(page, size);
+
+        return new PageImpl<>(toDtoList(stocks), pageable, totalCount);
     }
 
     // ============================================================
@@ -270,7 +275,7 @@ public class UndervaluedStockService {
     /**
      * 다중 조건 필터링 (프로필, 섹터, 최소 점수)
      */
-    public List<UndervaluedStockDto> getStocksWithFilters(
+    public Page<UndervaluedStockDto> getStocksWithFilters(
         String profile,
         String sector,
         BigDecimal minScore,
@@ -289,7 +294,10 @@ public class UndervaluedStockService {
             date, profileJson, sector, minScore, size, offset
         );
 
-        return toDtoList(stocks);
+        Long totalCount = repository.countWithFilters(date, profileJson, sector, minScore);
+        Pageable pageable = PageRequest.of(page, size);
+
+        return new PageImpl<>(toDtoList(stocks), pageable, totalCount);
     }
 
     // ============================================================
