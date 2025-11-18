@@ -92,6 +92,14 @@ const mockCategoryMovesKR = [
 const mockUSDKRW = [1380, 1375, 1372, 1368, 1360, 1355, 1362, 1368, 1359, 1355, 1351, 1348, 1340, 1335, 1332, 1328, 1330, 1338, 1342, 1336, 1331, 1327, 1325, 1322, 1318, 1315, 1317, 1313, 1311, 1314];
 const mockGoldUSD = [2400, 2408, 2412, 2420, 2417, 2410, 2405, 2416, 2424, 2432, 2426, 2420, 2414, 2418, 2422, 2428, 2435, 2440, 2436, 2431, 2428, 2422, 2418, 2412, 2408, 2415, 2419, 2425, 2429, 2433];
 
+// 추가 시장 지표 데이터
+const mockSP500 = [5825, 5840, 5855, 5870, 5860, 5845, 5830, 5850, 5865, 5880, 5895, 5910, 5900, 5885, 5870, 5890, 5905, 5920, 5935, 5950, 5940, 5925, 5910, 5930, 5945, 5960, 5975, 5965, 5950, 5970];
+const mockKOSPI = [2450, 2465, 2480, 2475, 2460, 2445, 2455, 2470, 2485, 2500, 2490, 2475, 2460, 2470, 2485, 2500, 2515, 2530, 2520, 2505, 2490, 2500, 2515, 2530, 2545, 2535, 2520, 2530, 2545, 2560];
+const mockUS10Y = [4.15, 4.18, 4.22, 4.25, 4.28, 4.32, 4.30, 4.27, 4.24, 4.20, 4.17, 4.15, 4.12, 4.10, 4.08, 4.05, 4.08, 4.12, 4.15, 4.18, 4.22, 4.25, 4.28, 4.30, 4.33, 4.35, 4.32, 4.28, 4.25, 4.22];
+const mockVIX = [14.5, 15.2, 16.0, 15.8, 15.5, 14.8, 14.2, 13.8, 13.5, 13.2, 12.8, 13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 16.2, 16.8, 17.5, 17.0, 16.5, 16.0, 15.5, 15.0, 14.5, 14.0, 13.8, 13.5, 13.2];
+const mockBTC = [92500, 94200, 96800, 95500, 93800, 91200, 89500, 90800, 93200, 96500, 99200, 101800, 100500, 98200, 95800, 94500, 96200, 98800, 101500, 104200, 102800, 100500, 98200, 96800, 95500, 97200, 99800, 102500, 105200, 103800];
+const mockWTI = [70.5, 71.2, 72.0, 71.8, 71.2, 70.5, 69.8, 69.2, 68.5, 68.0, 67.5, 67.8, 68.5, 69.2, 70.0, 70.8, 71.5, 72.2, 73.0, 73.5, 73.0, 72.5, 72.0, 71.5, 71.0, 70.5, 70.0, 69.5, 69.0, 68.5];
+
 // 공포·탐욕 시계열
 const usFearGreedSeries = [58, 60, 59, 61, 62, 64, 63, 66, 67, 65, 66, 61, 60, 62];
 const krFearGreedSeries = [48, 50, 52, 51, 53, 54, 55, 54, 56, 57, 55, 54, 56, 55];
@@ -1455,17 +1463,34 @@ export default function DemoHome() {
               <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
                 📈 시장 현황
               </h2>
-              <div className="grid gap-4 md:grid-cols-2">
-                <FearGreedCard title="미국 공포·탐욕 지수" index={fearGreedUS} asOf={asOfUS} variant="US" series={usFearGreedSeries} />
-                <FearGreedCard title="한국 공포·탐욕 지수" index={fearGreedKR} asOf={asOfKR} variant="KR" series={krFearGreedSeries} />
+              {/* 주요 지수 */}
+              <div className="grid gap-4 md:grid-cols-2 mb-4">
+                <LineChartCard title="S&P 500" unit="" asOf={asOf} data={mockSP500} />
+                <LineChartCard title="코스피" unit="" asOf={asOf} data={mockKOSPI} />
               </div>
-              <div className="grid gap-4 md:grid-cols-2 mt-4">
+              {/* 금리 및 변동성 */}
+              <div className="grid gap-4 md:grid-cols-2 mb-4">
+                <LineChartCard title="미국 10년물 국채수익률" unit="%" asOf={asOf} data={mockUS10Y} />
+                <LineChartCard title="VIX (변동성지수)" unit="" asOf={asOf} data={mockVIX} />
+              </div>
+              {/* 원자재 및 암호화폐 */}
+              <div className="grid gap-4 md:grid-cols-2 mb-4">
+                <LineChartCard title="비트코인" unit="USD" asOf={asOf} data={mockBTC} />
+                <LineChartCard title="WTI 원유" unit="USD/bbl" asOf={asOf} data={mockWTI} />
+              </div>
+              {/* 환율 및 금 */}
+              <div className="grid gap-4 md:grid-cols-2 mb-4">
+                <LineChartCard title="원·달러 환율" unit="KRW" asOf={asOf} data={mockUSDKRW} />
+                <LineChartCard title="금 시세" unit="USD/oz" asOf={asOf} data={mockGoldUSD} />
+              </div>
+              {/* 버핏지수 */}
+              <div className="grid gap-4 md:grid-cols-2 mb-4">
                 <BuffettCard title="미국 버핏지수" asOf={asOf} data={usBuffettSeries} />
                 <BuffettCard title="한국 버핏지수" asOf={asOf} data={krBuffettSeries} />
               </div>
-              <div className="grid gap-4 md:grid-cols-2 mt-4">
-                <LineChartCard title="원·달러 환율" unit="KRW" asOf={asOf} data={mockUSDKRW} />
-                <LineChartCard title="금 시세" unit="USD/oz" asOf={asOf} data={mockGoldUSD} />
+              {/* 공포·탐욕 지수 */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <FearGreedCard title="미국 공포·탐욕 지수" index={fearGreedUS} asOf={asOfUS} variant="US" series={usFearGreedSeries} />
               </div>
             </section>
 
