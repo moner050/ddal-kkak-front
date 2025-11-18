@@ -1776,7 +1776,7 @@ export default function DemoHome() {
                         });
                       }
 
-                      const itemsPerPage = 10;
+                      const itemsPerPage = 30;
                       const startIndex = (undervaluedPage - 1) * itemsPerPage;
                       const endIndex = startIndex + itemsPerPage;
                       const paginatedStocks = filteredStocks.slice(startIndex, endIndex);
@@ -1881,7 +1881,7 @@ export default function DemoHome() {
                   stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
                 return matchMarket && matchCategory && matchQuery;
               });
-              const totalPages = Math.ceil(filteredStocks.length / 10);
+              const totalPages = Math.ceil(filteredStocks.length / 30);
 
               if (totalPages <= 1) return null;
 
@@ -2098,7 +2098,7 @@ export default function DemoHome() {
                   });
                 }
 
-                const itemsPerPage = 10;
+                const itemsPerPage = 30;
                 const startIndex = (filingsPage - 1) * itemsPerPage;
                 const endIndex = startIndex + itemsPerPage;
                 const paginatedFilings = filteredFilings.slice(startIndex, endIndex);
@@ -2128,7 +2128,7 @@ export default function DemoHome() {
                 const matchSentiment = filingsSentimentFilter === "ALL" || filing.sentiment === filingsSentimentFilter;
                 return matchMarket && matchCategory && matchIndustry && matchQuery && matchSentiment;
               });
-              const totalPages = Math.ceil(filteredFilings.length / 10);
+              const totalPages = Math.ceil(filteredFilings.length / 30);
 
               if (totalPages <= 1) return null;
 
