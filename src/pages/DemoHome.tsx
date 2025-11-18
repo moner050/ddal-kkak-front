@@ -1484,9 +1484,13 @@ export default function DemoHome() {
                 <LineChartCard title="금 시세" unit="USD/oz" asOf={asOf} data={mockGoldUSD} />
               </div>
               {/* 버핏지수 */}
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2 mb-4">
                 <BuffettCard title="미국 버핏지수" asOf={asOf} data={usBuffettSeries} />
                 <BuffettCard title="한국 버핏지수" asOf={asOf} data={krBuffettSeries} />
+              </div>
+              {/* 공포·탐욕 지수 */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <FearGreedCard title="미국 공포·탐욕 지수" index={fearGreedUS} asOf={asOfUS} variant="US" series={usFearGreedSeries} />
               </div>
             </section>
 
