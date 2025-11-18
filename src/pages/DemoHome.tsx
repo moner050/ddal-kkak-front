@@ -1,5 +1,6 @@
 // DemoHome.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import * as XLSX from "xlsx";
 
 /* ------------------------------------------------------------
    UI PACKAGE (개정안 v10.3, 뉴스요약 섹션 통합본 + TS 타입 보강)
@@ -962,6 +963,106 @@ export default function DemoHome() {
     switchTab("detail");
   };
 
+  // 공시 목록을 엑셀로 다운로드
+  const exportFilingsToExcel = (filings: any[]) => {
+    if (filings.length === 0) {
+      alert("다운로드할 데이터가 없습니다.");
+      return;
+    }
+
+    // 엑셀에 표시할 데이터 가공
+    const excelData = filings.map(filing => ({
+      "시장": filing.market,
+      "티커": filing.symbol,
+      "회사명": filing.company,
+      "공시 유형": filing.formType,
+      "공시일": filing.date,
+      "요약": filing.summary,
+      "감정 분석": filing.sentiment === "POS" ? "긍정" : filing.sentiment === "NEG" ? "부정" : "중립",
+      "AI 점수": filing.aiScore,
+      "신뢰도": `${(filing.confidence * 100).toFixed(1)}%`,
+      "섹터": filing.category,
+      "산업군": filing.industry || "-"
+    }));
+
+    // 워크시트 생성
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "공시분석");
+
+    // 파일 다운로드
+    const fileName = `공시분석_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
+  // 상세 페이지 데이터를 엑셀로 다운로드
+  const exportStockDetailToExcel = (stockDetail: any, stockInfo: any) => {
+    if (!stockDetail) {
+      alert("다운로드할 데이터가 없습니다.");
+      return;
+    }
+
+    // 기본 정보
+    const basicInfo = [
+      { "항목": "티커", "값": stockDetail.Ticker },
+      { "항목": "회사명", "값": stockDetail.Name },
+      { "항목": "섹터", "값": stockDetail.Sector },
+      { "항목": "산업군", "값": stockDetail.Industry },
+      { "항목": "현재가", "값": `$${stockDetail.Price?.toLocaleString()}` },
+      { "항목": "시가총액", "값": `$${stockDetail.MktCap?.toLocaleString()}B` }
+    ];
+
+    // 종합 평가
+    const scores = [
+      { "항목": "Growth Score", "값": stockDetail.GrowthScore },
+      { "항목": "Quality Score", "값": stockDetail.QualityScore },
+      { "항목": "Value Score", "값": stockDetail.ValueScore },
+      { "항목": "Momentum Score", "값": stockDetail.MomentumScore },
+      { "항목": "Total Score", "값": stockDetail.TotalScore }
+    ];
+
+    // 밸류에이션
+    const valuation = [
+      { "항목": "Fair Value", "값": stockDetail.FairValue },
+      { "항목": "Discount", "값": `${stockDetail.Discount?.toFixed(1)}%` },
+      { "항목": "PE", "값": stockDetail.PE?.toFixed(2) },
+      { "항목": "PEG", "값": stockDetail.PEG?.toFixed(2) },
+      { "항목": "PB", "값": stockDetail.PB?.toFixed(2) },
+      { "항목": "PS", "값": stockDetail.PS?.toFixed(2) },
+      { "항목": "EV/EBITDA", "값": stockDetail.EV_EBITDA?.toFixed(2) }
+    ];
+
+    // 수익성
+    const profitability = [
+      { "항목": "ROE", "값": `${stockDetail.ROE?.toFixed(1)}%` },
+      { "항목": "ROA", "값": `${stockDetail.ROA?.toFixed(1)}%` },
+      { "항목": "Op Margin TTM", "값": `${stockDetail.OpMarginTTM?.toFixed(1)}%` },
+      { "항목": "Operating Margins", "값": `${stockDetail.OperatingMargins?.toFixed(1)}%` }
+    ];
+
+    // 성장성
+    const growth = [
+      { "항목": "Rev YoY", "값": `${stockDetail.RevYoY?.toFixed(1)}%` },
+      { "항목": "Revenue Growth 3Y", "값": `${stockDetail.Revenue_Growth_3Y?.toFixed(1)}%` },
+      { "항목": "EPS Growth 3Y", "값": `${stockDetail.EPS_Growth_3Y?.toFixed(1)}%` },
+      { "항목": "EBITDA Growth 3Y", "값": `${stockDetail.EBITDA_Growth_3Y?.toFixed(1)}%` }
+    ];
+
+    // 워크북 생성
+    const wb = XLSX.utils.book_new();
+
+    // 각 시트 추가
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(basicInfo), "기본정보");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(scores), "종합평가");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(valuation), "밸류에이션");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(profitability), "수익성");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(growth), "성장성");
+
+    // 파일 다운로드
+    const fileName = `${stockDetail.Ticker}_상세정보_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
   // URL → 상태 복원
   useEffect(() => {
     const trySet = (key: string, setter: (v: any) => void, whitelist?: readonly string[]) => {
@@ -1544,10 +1645,51 @@ export default function DemoHome() {
         >
           <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
             <div className="mb-6">
-              <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-                <span>📊</span>
-                공시 분석 리포트
-              </h1>
+              <div className="flex items-center justify-between mb-2">
+                <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+                  <span>📊</span>
+                  공시 분석 리포트
+                </h1>
+                <button
+                  onClick={() => {
+                    let filteredFilings = mockFilings.filter((filing) => {
+                      const matchMarket = filingsMarketFilter === "전체" || filing.market === filingsMarketFilter;
+                      const matchCategory = filingsCategory === "전체" || filing.category === filingsCategory;
+                      const matchIndustry = filingsIndustry === "전체" || filing.industry === filingsIndustry;
+                      const matchQuery =
+                        !filingsSearchQuery ||
+                        filing.company.toLowerCase().includes(filingsSearchQuery.toLowerCase()) ||
+                        filing.symbol.toLowerCase().includes(filingsSearchQuery.toLowerCase());
+                      const matchSentiment = filingsSentimentFilter === "ALL" || filing.sentiment === filingsSentimentFilter;
+                      return matchMarket && matchCategory && matchIndustry && matchQuery && matchSentiment;
+                    });
+
+                    // Apply sorting
+                    if (filingsSortBy) {
+                      filteredFilings = [...filteredFilings].sort((a: any, b: any) => {
+                        let aVal, bVal;
+                        if (filingsSortBy === "company") {
+                          aVal = a.company.toLowerCase();
+                          bVal = b.company.toLowerCase();
+                        } else {
+                          aVal = a[filingsSortBy];
+                          bVal = b[filingsSortBy];
+                        }
+                        if (aVal === undefined || bVal === undefined) return 0;
+                        const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                        return filingsSortDirection === "asc" ? comparison : -comparison;
+                      });
+                    }
+
+                    exportFilingsToExcel(filteredFilings);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-md"
+                >
+                  <span>📥</span>
+                  <span className="hidden sm:inline">엑셀 다운로드</span>
+                  <span className="sm:hidden">다운로드</span>
+                </button>
+              </div>
               <p className="mt-2 text-sm text-gray-600">AI가 분석한 최신 기업 공시 및 보고서를 확인하세요</p>
             </div>
 
@@ -2258,31 +2400,43 @@ export default function DemoHome() {
                 </div>
 
                 {/* 탭 네비게이션 */}
-                <div className="mb-6 flex gap-2">
-                  <button
-                    onClick={() => setDetailTab("info")}
-                    className={classNames(
-                      "flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold transition-all",
-                      detailTab === "info"
-                        ? "bg-indigo-600 text-white shadow-lg"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    )}
-                  >
-                    <span className="hidden sm:inline">📊 종목 정보</span>
-                    <span className="sm:hidden">📊 정보</span>
-                  </button>
-                  <button
-                    onClick={() => setDetailTab("filings")}
-                    className={classNames(
-                      "flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold transition-all",
-                      detailTab === "filings"
-                        ? "bg-indigo-600 text-white shadow-lg"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    )}
-                  >
-                    <span className="hidden sm:inline">📈 공시 분석 요약</span>
-                    <span className="sm:hidden">📈 공시</span>
-                  </button>
+                <div className="mb-6 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setDetailTab("info")}
+                      className={classNames(
+                        "flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold transition-all",
+                        detailTab === "info"
+                          ? "bg-indigo-600 text-white shadow-lg"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      )}
+                    >
+                      <span className="hidden sm:inline">📊 종목 정보</span>
+                      <span className="sm:hidden">📊 정보</span>
+                    </button>
+                    <button
+                      onClick={() => setDetailTab("filings")}
+                      className={classNames(
+                        "flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold transition-all",
+                        detailTab === "filings"
+                          ? "bg-indigo-600 text-white shadow-lg"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      )}
+                    >
+                      <span className="hidden sm:inline">📈 공시 분석 요약</span>
+                      <span className="sm:hidden">📈 공시</span>
+                    </button>
+                  </div>
+                  {detailTab === "info" && (
+                    <button
+                      onClick={() => exportStockDetailToExcel(stockDetail, stockInfo)}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-md"
+                    >
+                      <span>📥</span>
+                      <span className="hidden sm:inline">엑셀 다운로드</span>
+                      <span className="sm:hidden">다운로드</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* 컨텐츠 */}
