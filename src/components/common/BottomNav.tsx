@@ -8,10 +8,10 @@ interface BottomNavProps {
 }
 
 export default function BottomNav({ active = "home", onChange }: BottomNavProps) {
-  // ✅ 탭 순서: 홈 | 저평가 | 공시 | 상세 | 관심 (5개 탭 항상 표시)
+  // ✅ 탭 순서: 홈 | 종목추천 | 공시 | 상세 | 관심 (5개 탭 항상 표시)
   const items = [
     { key: "home" as TabKey, icon: "🏠", label: "홈" },
-    { key: "undervalued" as TabKey, icon: "💎", label: "저평가" },
+    { key: "undervalued" as TabKey, icon: "💎", label: "종목추천" },
     { key: "filings" as TabKey, icon: "📊", label: "공시" },
     { key: "detail" as TabKey, icon: "📈", label: "상세" },
     { key: "watchlist" as TabKey, icon: "⭐", label: "관심" }

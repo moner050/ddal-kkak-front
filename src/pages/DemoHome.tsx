@@ -101,6 +101,95 @@ const usBuffettSeries = [1.55, 1.58, 1.57, 1.59, 1.61, 1.6, 1.62, 1.63, 1.61, 1.
 const krBuffettSeries = [0.97, 0.98, 1.0, 0.99, 1.02, 1.01, 1.03, 1.05, 1.04, 1.03, 1.05, 1.06];
 
 // ------------------------------------------------------------------
+// 투자 전략 정의
+// ------------------------------------------------------------------
+const INVESTMENT_STRATEGIES = {
+  undervalued_quality: {
+    name: "저평가 우량주 (워렌 버핏 스타일)",
+    description: "높은 수익성과 성장성을 갖춘 기업을 합리적인 가격에 매수",
+    criteria: [
+      "시가총액: 20억 달러 이상",
+      "주가: 10달러 이상",
+      "거래대금: 500만 달러 이상",
+      "PER < 25 (섹터별 조정)",
+      "PEG < 1.5",
+      "매출 성장률 > 5%",
+      "EPS 성장률 > 5%",
+      "영업이익률 > 12%",
+      "ROE > 15%",
+      "FCF Yield > 3%"
+    ]
+  },
+  value_basic: {
+    name: "기본 가치투자",
+    description: "저평가된 기업을 발굴하는 기본적인 가치투자 전략",
+    criteria: [
+      "시가총액: 5억 달러 이상",
+      "주가: 5달러 이상",
+      "거래대금: 100만 달러 이상",
+      "PER < 30 (섹터별 조정)",
+      "PEG < 2.0",
+      "영업이익률 > 5%",
+      "ROE > 8%"
+    ]
+  },
+  value_strict: {
+    name: "엄격한 가치투자",
+    description: "더 까다로운 기준으로 우량한 저평가 기업을 선별",
+    criteria: [
+      "시가총액: 20억 달러 이상",
+      "주가: 5달러 이상",
+      "거래대금: 500만 달러 이상",
+      "PER < 20 (섹터별 조정)",
+      "PEG < 1.5",
+      "매출 성장률 > 5%",
+      "EPS 성장률 > 5%",
+      "영업이익률 > 10%",
+      "ROE > 12%",
+      "FCF Yield > 2%"
+    ]
+  },
+  growth_quality: {
+    name: "성장+품질 (장타 전략)",
+    description: "높은 성장성과 품질을 갖춘 기업 장기 보유",
+    criteria: [
+      "시가총액: 10억 달러 이상",
+      "매출 성장률 > 15%",
+      "EPS 성장률 > 10%",
+      "영업이익률 > 15%",
+      "ROE > 15%",
+      "PER < 40 (성장주 특성 반영)",
+      "PEG < 2.0"
+    ]
+  },
+  momentum: {
+    name: "모멘텀 트레이딩 (단타)",
+    description: "강한 상승 추세를 보이는 종목 단기 매매",
+    criteria: [
+      "주가: 10달러 이상",
+      "거래대금: 300만 달러 이상",
+      "상대 거래량 > 1.3배",
+      "RSI: 40-70 (과매도 후 반등)",
+      "20일 수익률 > 3%",
+      "52주 고가 대비 > 70%",
+      "MACD 히스토그램 > 0 (상승 추세)"
+    ]
+  },
+  swing: {
+    name: "스윙 트레이딩 (단타)",
+    description: "적절한 변동성을 가진 종목의 단기 등락 활용",
+    criteria: [
+      "주가: 5달러 이상",
+      "거래대금: 100만 달러 이상",
+      "ATR 변동성: 2-10%",
+      "RSI: 30-70",
+      "볼린저밴드 위치: 20-80%",
+      "5일 수익률: -5% ~ 10%"
+    ]
+  }
+};
+
+// ------------------------------------------------------------------
 // Mock Data
 // ------------------------------------------------------------------
 
@@ -775,8 +864,9 @@ export default function DemoHome() {
   const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
   const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
 
-  // 저평가 발굴 페이지 필터
+  // 종목추천 페이지 필터
   const [undervaluedSearchQuery, setUndervaluedSearchQuery] = useState("");
+  const [undervaluedStrategy, setUndervaluedStrategy] = useState<"undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing">("undervalued_quality");
   const [undervaluedMarket, setUndervaluedMarket] = useState<"전체" | "US" | "KR">("전체");
   const [undervaluedCategory, setUndervaluedCategory] = useState("전체");
   const [undervaluedIndustry, setUndervaluedIndustry] = useState("전체");
@@ -1063,14 +1153,38 @@ export default function DemoHome() {
     XLSX.writeFile(wb, fileName);
   };
 
-  // 저평가 우량주 목록을 엑셀로 다운로드
-  const exportUndervaluedToExcel = (stocks: any[]) => {
+  // 종목추천 목록을 엑셀로 다운로드 (파이썬 소스와 동일한 형식)
+  const exportUndervaluedToExcel = (stocks: any[], strategy: string) => {
     if (stocks.length === 0) {
       alert("다운로드할 데이터가 없습니다.");
       return;
     }
 
-    // 엑셀에 표시할 데이터 가공
+    const wb = XLSX.utils.book_new();
+    const strategyInfo = INVESTMENT_STRATEGIES[strategy as keyof typeof INVESTMENT_STRATEGIES];
+
+    // 전략 정보 시트 생성
+    const headerData: any[] = [];
+
+    // 1행: 전략 이름
+    headerData.push({ A: `📊 ${strategyInfo.name}` });
+
+    // 2행: 빈 행
+    headerData.push({});
+
+    // 3행: 필터 기준 헤더
+    headerData.push({ A: '📋 필터 기준:' });
+
+    // 4행 이후: 각 필터 기준
+    strategyInfo.criteria.forEach(criterion => {
+      headerData.push({ A: `• ${criterion}` });
+    });
+
+    // 빈 행 추가
+    headerData.push({});
+    headerData.push({});
+
+    // 데이터 가공
     const excelData = stocks.map(stock => ({
       "시장": stock.market,
       "티커": stock.symbol,
@@ -1093,13 +1207,39 @@ export default function DemoHome() {
       "FCF Yield": `${stock.FCF_Yield?.toFixed(1)}%`
     }));
 
+    // 헤더와 데이터 합치기
+    const sheetData = [...headerData, ...excelData];
+
     // 워크시트 생성
-    const ws = XLSX.utils.json_to_sheet(excelData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "저평가 우량주");
+    const ws = XLSX.utils.json_to_sheet(sheetData, { skipHeader: true });
+
+    // 컬럼 너비 설정
+    ws['!cols'] = [
+      { wch: 35 }, // A: 전략명/필터기준/시장
+      { wch: 12 }, // B: 티커
+      { wch: 25 }, // C: 회사명
+      { wch: 15 }, // D: 섹터
+      { wch: 20 }, // E: 산업군
+      { wch: 10 }, // F: AI 점수
+      { wch: 12 }, // G: 감정 분석
+      { wch: 12 }, // H: 소개일
+      { wch: 15 }, // I: 소개 후 수익률
+      { wch: 15 }, // J: 100일 수익률
+      { wch: 10 }, // K: ROE
+      { wch: 10 }, // L: PER
+      { wch: 10 }, // M: PEG
+      { wch: 10 }, // N: PBR
+      { wch: 10 }, // O: PSR
+      { wch: 12 }, // P: 매출 YoY
+      { wch: 15 }, // Q: EPS 성장률 3Y
+      { wch: 15 }, // R: 영업이익률 TTM
+      { wch: 12 }  // S: FCF Yield
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, strategyInfo.name.substring(0, 30));
 
     // 파일 다운로드
-    const fileName = `저평가_우량주_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const fileName = `종목추천_${strategyInfo.name}_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 
@@ -1333,7 +1473,7 @@ export default function DemoHome() {
           </main>
         </div>
 
-        {/* UNDERVALUED - 저평가 발굴 */}
+        {/* UNDERVALUED - 종목추천 */}
         <div
           ref={undervaluedRef}
           className={classNames(
@@ -1345,7 +1485,7 @@ export default function DemoHome() {
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
                 <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-                  💎 저평가 우량주 발굴
+                  💎 종목추천
                 </h1>
                 <button
                   onClick={() => {
@@ -1370,7 +1510,7 @@ export default function DemoHome() {
                       });
                     }
 
-                    exportUndervaluedToExcel(filteredStocks);
+                    exportUndervaluedToExcel(filteredStocks, undervaluedStrategy);
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-md"
                 >
@@ -1379,7 +1519,49 @@ export default function DemoHome() {
                   <span className="sm:hidden">다운로드</span>
                 </button>
               </div>
-              <p className="mt-2 text-sm text-gray-600">AI가 선별한 투자 가치가 높은 기업들을 확인하세요</p>
+              <p className="mt-2 text-sm text-gray-600">전략별 맞춤 종목을 확인하세요</p>
+            </div>
+
+            {/* 투자 전략 선택 */}
+            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 space-y-4">
+              <div>
+                <div className="text-xs sm:text-sm text-gray-600 mb-3 font-semibold">📋 투자 전략 선택</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {Object.entries(INVESTMENT_STRATEGIES).map(([key, strategy]) => (
+                    <button
+                      key={key}
+                      onClick={() => setUndervaluedStrategy(key as any)}
+                      className={classNames(
+                        "text-left p-4 rounded-lg border-2 transition-all",
+                        undervaluedStrategy === key
+                          ? "bg-indigo-50 border-indigo-600 shadow-md"
+                          : "bg-white border-gray-200 hover:border-indigo-300 hover:bg-gray-50"
+                      )}
+                    >
+                      <div className={classNames(
+                        "text-sm font-bold mb-1",
+                        undervaluedStrategy === key ? "text-indigo-700" : "text-gray-900"
+                      )}>
+                        {strategy.name}
+                      </div>
+                      <div className="text-xs text-gray-600">{strategy.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 선택된 전략의 필터 기준 표시 */}
+              <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+                <div className="text-xs font-bold text-blue-900 mb-2">📌 {INVESTMENT_STRATEGIES[undervaluedStrategy].name} 필터 기준</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {INVESTMENT_STRATEGIES[undervaluedStrategy].criteria.map((criterion, idx) => (
+                    <div key={idx} className="text-xs text-blue-800 flex items-start gap-1">
+                      <span>•</span>
+                      <span>{criterion}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* 검색 및 필터 */}
