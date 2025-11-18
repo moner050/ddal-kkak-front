@@ -1063,6 +1063,46 @@ export default function DemoHome() {
     XLSX.writeFile(wb, fileName);
   };
 
+  // 저평가 우량주 목록을 엑셀로 다운로드
+  const exportUndervaluedToExcel = (stocks: any[]) => {
+    if (stocks.length === 0) {
+      alert("다운로드할 데이터가 없습니다.");
+      return;
+    }
+
+    // 엑셀에 표시할 데이터 가공
+    const excelData = stocks.map(stock => ({
+      "시장": stock.market,
+      "티커": stock.symbol,
+      "회사명": stock.name,
+      "섹터": stock.category,
+      "산업군": stock.industry,
+      "AI 점수": stock.aiScore,
+      "감정 분석": stock.sentiment === "POS" ? "긍정" : stock.sentiment === "NEG" ? "부정" : "중립",
+      "소개일": stock.introducedAt,
+      "소개 후 수익률": `${stock.perfSinceIntro?.toFixed(1)}%`,
+      "100일 수익률": `${stock.perf100d?.toFixed(1)}%`,
+      "ROE": `${stock.ROE?.toFixed(1)}%`,
+      "PER": stock.PER?.toFixed(2),
+      "PEG": stock.PEG?.toFixed(2),
+      "PBR": stock.PBR?.toFixed(2),
+      "PSR": stock.PSR?.toFixed(2),
+      "매출 YoY": `${stock.RevYoY?.toFixed(1)}%`,
+      "EPS 성장률 3Y": `${stock.EPS_Growth_3Y?.toFixed(1)}%`,
+      "영업이익률 TTM": `${stock.OpMarginTTM?.toFixed(1)}%`,
+      "FCF Yield": `${stock.FCF_Yield?.toFixed(1)}%`
+    }));
+
+    // 워크시트 생성
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "저평가 우량주");
+
+    // 파일 다운로드
+    const fileName = `저평가_우량주_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
   // URL → 상태 복원
   useEffect(() => {
     const trySet = (key: string, setter: (v: any) => void, whitelist?: readonly string[]) => {
@@ -1303,9 +1343,42 @@ export default function DemoHome() {
         >
           <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
             <div className="mb-6">
-              <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-                💎 저평가 우량주 발굴
-              </h1>
+              <div className="flex items-center justify-between mb-2">
+                <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+                  💎 저평가 우량주 발굴
+                </h1>
+                <button
+                  onClick={() => {
+                    let filteredStocks = mockUndervalued.filter((stock) => {
+                      const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
+                      const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
+                      const matchQuery =
+                        !undervaluedSearchQuery ||
+                        stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
+                        stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
+                      return matchMarket && matchCategory && matchQuery;
+                    });
+
+                    // Apply sorting
+                    if (undervaluedSortBy) {
+                      filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
+                        const aVal = a[undervaluedSortBy];
+                        const bVal = b[undervaluedSortBy];
+                        if (aVal === undefined || bVal === undefined) return 0;
+                        const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                        return undervaluedSortDirection === "asc" ? comparison : -comparison;
+                      });
+                    }
+
+                    exportUndervaluedToExcel(filteredStocks);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-md"
+                >
+                  <span>📥</span>
+                  <span className="hidden sm:inline">엑셀 다운로드</span>
+                  <span className="sm:hidden">다운로드</span>
+                </button>
+              </div>
               <p className="mt-2 text-sm text-gray-600">AI가 선별한 투자 가치가 높은 기업들을 확인하세요</p>
             </div>
 
