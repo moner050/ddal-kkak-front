@@ -1309,7 +1309,7 @@ export default function DemoHome() {
             <div className="rounded-2xl sm:rounded-3xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 sm:p-8 text-white shadow-xl">
               <div className="mb-2 sm:mb-3">
                 <h1 className="text-lg sm:text-2xl font-extrabold">AI 기업 분석 플랫폼</h1>
-                <p className="text-xs sm:text-sm text-indigo-100 mt-1">저평가 우량주 발굴 · 공시 분석 · 투자 기회 탐색</p>
+                <p className="text-xs sm:text-sm text-indigo-100 mt-1">종목추천 · 공시 분석 · 투자 기회 탐색</p>
               </div>
               <div className="mt-3 sm:mt-4 grid grid-cols-3 gap-2 sm:gap-4 text-center">
                 <button
@@ -1349,22 +1349,25 @@ export default function DemoHome() {
                       <span className="text-sm font-bold text-red-300">+8</span>
                     </div>
                   </div>
-                  <div className="text-[10px] sm:text-xs text-indigo-100 mt-1">저평가주</div>
+                  <div className="text-[10px] sm:text-xs text-indigo-100 mt-1">종목추천</div>
                 </button>
               </div>
             </div>
 
-            {/* 오늘의 주목 저평가주 */}
+            {/* 오늘의 주목 종목 */}
             <section ref={featuredSectionRef}>
               <div className="mb-3 sm:mb-4">
                 <div className="flex items-center justify-between mb-2 gap-2">
                   <h2 className="text-base sm:text-xl font-extrabold text-gray-900 flex items-center gap-1 sm:gap-2">
                     <span className="text-lg sm:text-2xl">💎</span>
-                    <span className="hidden sm:inline">오늘의 주목 저평가주</span>
-                    <span className="sm:hidden">주목 저평가주</span>
+                    <span className="hidden sm:inline">오늘의 주목 종목</span>
+                    <span className="sm:hidden">주목 종목</span>
                   </h2>
                   <button
-                    onClick={() => switchTab("undervalued")}
+                    onClick={() => {
+                      setUndervaluedMarket(featuredMarket === "US" ? "US" : "KR");
+                      switchTab("undervalued");
+                    }}
                     className="rounded-lg bg-indigo-600 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:bg-indigo-700 whitespace-nowrap"
                   >
                     <span className="hidden sm:inline">전체 보기 →</span>
@@ -1406,7 +1409,10 @@ export default function DemoHome() {
                     <span className="sm:hidden">공시 분석</span>
                   </h2>
                   <button
-                    onClick={() => switchTab("filings")}
+                    onClick={() => {
+                      setFilingsMarketFilter(filingsMarket === "US" ? "US" : "KR");
+                      switchTab("filings");
+                    }}
                     className="rounded-lg bg-indigo-600 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:bg-indigo-700 whitespace-nowrap"
                   >
                     <span className="hidden sm:inline">전체 보기 →</span>
