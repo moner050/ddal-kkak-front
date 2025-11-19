@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { authStorage, verificationStorage } from '@/utils/authStorage';
 
 interface SignupModalProps {
   open: boolean;
@@ -8,11 +9,13 @@ interface SignupModalProps {
 export default function SignupModal({ open, onClose }: SignupModalProps) {
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [email, setEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [timer, setTimer] = useState(0);
+  const [error, setError] = useState('');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -29,11 +32,13 @@ export default function SignupModal({ open, onClose }: SignupModalProps) {
     if (!open) {
       setId('');
       setPassword('');
+      setPasswordConfirm('');
       setEmail('');
       setVerificationCode('');
       setIsCodeSent(false);
       setIsVerified(false);
       setTimer(0);
+      setError('');
       if (timerRef.current) clearTimeout(timerRef.current);
     }
   }, [open]);
@@ -41,23 +46,65 @@ export default function SignupModal({ open, onClose }: SignupModalProps) {
   if (!open) return null;
 
   const handleSendCode = () => {
-    // TODO: Implement send verification code logic
-    console.log('Sending verification code to:', email);
+    setError('');
+
+    // 이메일 중복 체크
+    if (authStorage.findUserByEmail(email)) {
+      setError('이미 사용 중인 이메일입니다.');
+      return;
+    }
+
+    // 인증번호 생성
+    verificationStorage.generateCode(email);
     setIsCodeSent(true);
-    setTimer(300); // 5 minutes = 300 seconds
+    setTimer(300); // 5분
   };
 
   const handleVerify = () => {
-    // TODO: Implement verification logic
-    console.log('Verifying code:', verificationCode);
+    setError('');
+
+    // 인증번호 검증
+    const isValid = verificationStorage.verifyCode(email, verificationCode);
+    if (!isValid) {
+      setError('인증번호가 올바르지 않거나 만료되었습니다.');
+      return;
+    }
+
+    // 인증 성공
+    verificationStorage.removeCode(email);
     setIsVerified(true);
     setTimer(0);
     if (timerRef.current) clearTimeout(timerRef.current);
   };
 
   const handleSignup = () => {
-    // TODO: Implement signup logic
-    console.log('Signup with ID:', id);
+    setError('');
+
+    // 유효성 검사
+    if (!id || !password || !email) {
+      setError('모든 필드를 입력해주세요.');
+      return;
+    }
+
+    if (password !== passwordConfirm) {
+      setError('비밀번호가 일치하지 않습니다.');
+      return;
+    }
+
+    if (!isVerified) {
+      setError('이메일 인증을 완료해주세요.');
+      return;
+    }
+
+    // 회원가입
+    const success = authStorage.saveUser({ id, password, email });
+    if (success) {
+      alert('회원가입 성공! 로그인해주세요.');
+      console.log('회원가입 성공:', { id, email });
+      onClose();
+    } else {
+      setError('이미 사용 중인 아이디입니다.');
+    }
   };
 
   const formatTimer = (seconds: number) => {
@@ -73,6 +120,13 @@ export default function SignupModal({ open, onClose }: SignupModalProps) {
         <div className="px-4 py-6 sm:p-8">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">회원가입</h2>
           <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">AI 기업 분석을 무료로 시작하세요</p>
+
+          {/* 오류 메시지 */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-xs sm:text-sm text-red-600">{error}</p>
+            </div>
+          )}
 
           <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
             <div>
@@ -94,6 +148,30 @@ export default function SignupModal({ open, onClose }: SignupModalProps) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="비밀번호를 입력하세요"
                 className="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                비밀번호 확인
+                {passwordConfirm && (
+                  <span className={`ml-2 text-xs sm:text-sm font-bold ${password === passwordConfirm ? 'text-green-600' : 'text-red-600'}`}>
+                    {password === passwordConfirm ? '✓ 일치' : '✗ 불일치'}
+                  </span>
+                )}
+              </label>
+              <input
+                type="password"
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                placeholder="비밀번호를 다시 입력하세요"
+                className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base rounded-xl border-2 ${
+                  passwordConfirm && password === passwordConfirm
+                    ? 'border-green-500 focus:border-green-600'
+                    : passwordConfirm && password !== passwordConfirm
+                    ? 'border-red-500 focus:border-red-600'
+                    : 'border-gray-200 focus:border-indigo-500'
+                } focus:outline-none transition-colors`}
               />
             </div>
 
@@ -144,7 +222,7 @@ export default function SignupModal({ open, onClose }: SignupModalProps) {
 
             <button
               onClick={handleSignup}
-              disabled={!isVerified}
+              disabled={!isVerified || !password || password !== passwordConfirm}
               className="w-full bg-indigo-600 text-white font-semibold py-2.5 sm:py-3 text-sm sm:text-base rounded-xl hover:bg-indigo-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               회원가입
