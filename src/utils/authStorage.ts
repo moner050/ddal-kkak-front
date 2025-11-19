@@ -15,6 +15,7 @@ export interface VerificationCode {
 
 const USERS_KEY = 'ddal_kkak_users';
 const VERIFICATION_CODES_KEY = 'ddal_kkak_verification_codes';
+const CURRENT_USER_KEY = 'ddal_kkak_current_user';
 
 // 사용자 데이터 관리
 export const authStorage = {
@@ -73,6 +74,30 @@ export const authStorage = {
     users[userIndex].password = newPassword;
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
     return true;
+  },
+
+  // 로그인 처리
+  login(id: string): void {
+    const user = this.findUserById(id);
+    if (user) {
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+    }
+  },
+
+  // 로그아웃 처리
+  logout(): void {
+    localStorage.removeItem(CURRENT_USER_KEY);
+  },
+
+  // 현재 로그인한 사용자 가져오기
+  getCurrentUser(): User | null {
+    const data = localStorage.getItem(CURRENT_USER_KEY);
+    return data ? JSON.parse(data) : null;
+  },
+
+  // 로그인 상태 확인
+  isLoggedIn(): boolean {
+    return this.getCurrentUser() !== null;
   },
 };
 
