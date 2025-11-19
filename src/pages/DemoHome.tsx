@@ -1300,7 +1300,7 @@ export default function DemoHome() {
     // ✅ 전체 레이아웃: 헤더 / (탭별 개별 스크롤 영역) / 고정 하단 네비
     <div className="h-screen w-full bg-gray-50 flex flex-col overflow-hidden">
       {/* 상단 고정 헤더 */}
-      <Header onLogoClick={() => switchTab("home")} />
+      <Header onLogoClick={() => switchTab("home")} onMyPageClick={() => switchTab("watchlist")} />
 
       {/* ✅ 중앙: 탭별 개별 스크롤 컨테이너들 (겹쳐 놓고, active만 표시) */}
       <div className="relative flex-1 overflow-hidden">
