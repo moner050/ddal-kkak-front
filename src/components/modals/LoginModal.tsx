@@ -29,9 +29,12 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
     // 로그인 검증
     const isValid = authStorage.validateLogin(id, password);
     if (isValid) {
+      authStorage.login(id); // 로그인 상태 저장
       console.log('로그인 성공:', id);
       alert('로그인 성공!');
       onClose();
+      // 페이지 새로고침으로 헤더 업데이트
+      window.location.reload();
     } else {
       setError('아이디 또는 비밀번호가 올바르지 않습니다.');
     }

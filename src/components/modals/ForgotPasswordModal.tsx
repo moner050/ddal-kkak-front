@@ -16,7 +16,14 @@ export default function ForgotPasswordModal({ open, onClose }: ForgotPasswordMod
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [timer, setTimer] = useState(0);
   const [error, setError] = useState('');
+  const [userId, setUserId] = useState('');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 이메일 형식 검증
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   useEffect(() => {
     if (timer > 0) {
@@ -37,6 +44,7 @@ export default function ForgotPasswordModal({ open, onClose }: ForgotPasswordMod
       setNewPasswordConfirm('');
       setTimer(0);
       setError('');
+      setUserId('');
       if (timerRef.current) clearTimeout(timerRef.current);
     }
   }, [open]);
@@ -52,12 +60,21 @@ export default function ForgotPasswordModal({ open, onClose }: ForgotPasswordMod
   const handleSendCode = () => {
     setError('');
 
+    // 이메일 형식 검증
+    if (!isValidEmail(email)) {
+      setError('올바른 이메일 형식이 아닙니다.');
+      return;
+    }
+
     // 이메일로 사용자 찾기
     const user = authStorage.findUserByEmail(email);
     if (!user) {
       setError('등록되지 않은 이메일입니다.');
       return;
     }
+
+    // 사용자 아이디 저장
+    setUserId(user.id);
 
     // 인증번호 생성
     verificationStorage.generateCode(email);
@@ -133,19 +150,37 @@ export default function ForgotPasswordModal({ open, onClose }: ForgotPasswordMod
           {step === 'email' && (
             <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">이메일</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                  이메일
+                  {email && !isValidEmail(email) && (
+                    <span className="ml-2 text-xs sm:text-sm font-bold text-red-600">
+                      ✗ 올바른 이메일 형식이 아닙니다
+                    </span>
+                  )}
+                  {email && isValidEmail(email) && (
+                    <span className="ml-2 text-xs sm:text-sm font-bold text-green-600">
+                      ✓ 올바른 형식
+                    </span>
+                  )}
+                </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="이메일을 입력하세요"
-                  className="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors"
+                  className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base rounded-xl border-2 ${
+                    email && !isValidEmail(email)
+                      ? 'border-red-500 focus:border-red-600'
+                      : email && isValidEmail(email)
+                      ? 'border-green-500 focus:border-green-600'
+                      : 'border-gray-200 focus:border-indigo-500'
+                  } focus:outline-none transition-colors`}
                 />
               </div>
 
               <button
                 onClick={handleSendCode}
-                disabled={!email}
+                disabled={!email || !isValidEmail(email)}
                 className="w-full bg-indigo-600 text-white font-semibold py-2.5 sm:py-3 text-sm sm:text-base rounded-xl hover:bg-indigo-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 인증번호 발송
@@ -195,6 +230,13 @@ export default function ForgotPasswordModal({ open, onClose }: ForgotPasswordMod
           {/* 3단계: 새 비밀번호 입력 */}
           {step === 'newPassword' && (
             <div className="space-y-3 sm:space-y-4">
+              {/* 아이디 표시 */}
+              <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                <p className="text-xs sm:text-sm text-indigo-900">
+                  <span className="font-semibold">아이디:</span> {userId}
+                </p>
+              </div>
+
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">새 비밀번호</label>
                 <input
