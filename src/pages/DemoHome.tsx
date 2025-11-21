@@ -20,6 +20,30 @@ import { CATEGORIES, SECTOR_INDUSTRIES, SECTOR_THEMES } from "../constants/categ
 // Import types
 import { TabKey, Sentiment } from "../types";
 
+// Import mock data
+import {
+  categoryMovesUS as mockCategoryMovesUS,
+  categoryMovesKR as mockCategoryMovesKR,
+  usdKrwData as mockUSDKRW,
+  goldUsdData as mockGoldUSD,
+  sp500Data as mockSP500,
+  kospiData as mockKOSPI,
+  us10YData as mockUS10Y,
+  vixData as mockVIX,
+  btcData as mockBTC,
+  wtiData as mockWTI,
+  usFearGreedSeries,
+  krFearGreedSeries,
+  usBuffettSeries,
+  krBuffettSeries,
+  featuredStocks as mockFeaturedStocks,
+  filings as mockFilings,
+  undervaluedStocks as mockUndervalued,
+  stockDetails as mockStockDetails,
+  NEWS_CATEGORIES,
+  newsItems as mockNews,
+} from "../data/mock";
+
 // Import chart components
 import FearGreedCard from "../components/charts/FearGreedCard";
 import Sparkline from "../components/charts/Sparkline";
@@ -59,54 +83,6 @@ import EmptyState from "../components/utils/EmptyState";
 import QuickActionsBar from "../components/utils/QuickActionsBar";
 import TooltipHeader from "../components/utils/TooltipHeader";
 import MetricTooltip from "../components/utils/MetricTooltip";
-
-// 모의 데이터: 섹터별 등락(%) — 미국/한국 분리
-const mockCategoryMovesUS = [
-  { name: "정보기술", pct: 1.2 },
-  { name: "커뮤니케이션 서비스", pct: 0.4 },
-  { name: "경기소비재", pct: -1.1 },
-  { name: "필수소비재", pct: 0.0 },
-  { name: "헬스케어", pct: 0.7 },
-  { name: "금융", pct: -0.6 },
-  { name: "산업재", pct: 2.8 },
-  { name: "소재", pct: -3.4 },
-  { name: "에너지", pct: 3.6 },
-  { name: "유틸리티", pct: -0.2 },
-  { name: "부동산", pct: -2.5 },
-];
-const mockCategoryMovesKR = [
-  { name: "정보기술", pct: 0.8 },
-  { name: "커뮤니케이션 서비스", pct: 1.1 },
-  { name: "경기소비재", pct: -0.4 },
-  { name: "필수소비재", pct: 0.2 },
-  { name: "헬스케어", pct: -0.9 },
-  { name: "금융", pct: 0.3 },
-  { name: "산업재", pct: 1.6 },
-  { name: "소재", pct: -1.2 },
-  { name: "에너지", pct: 0.5 },
-  { name: "유틸리티", pct: -0.1 },
-  { name: "부동산", pct: -0.7 },
-];
-
-// 모의 시세 데이터: USD/KRW, Gold(USD/oz)
-const mockUSDKRW = [1380, 1375, 1372, 1368, 1360, 1355, 1362, 1368, 1359, 1355, 1351, 1348, 1340, 1335, 1332, 1328, 1330, 1338, 1342, 1336, 1331, 1327, 1325, 1322, 1318, 1315, 1317, 1313, 1311, 1314];
-const mockGoldUSD = [2400, 2408, 2412, 2420, 2417, 2410, 2405, 2416, 2424, 2432, 2426, 2420, 2414, 2418, 2422, 2428, 2435, 2440, 2436, 2431, 2428, 2422, 2418, 2412, 2408, 2415, 2419, 2425, 2429, 2433];
-
-// 추가 시장 지표 데이터
-const mockSP500 = [5825, 5840, 5855, 5870, 5860, 5845, 5830, 5850, 5865, 5880, 5895, 5910, 5900, 5885, 5870, 5890, 5905, 5920, 5935, 5950, 5940, 5925, 5910, 5930, 5945, 5960, 5975, 5965, 5950, 5970];
-const mockKOSPI = [2450, 2465, 2480, 2475, 2460, 2445, 2455, 2470, 2485, 2500, 2490, 2475, 2460, 2470, 2485, 2500, 2515, 2530, 2520, 2505, 2490, 2500, 2515, 2530, 2545, 2535, 2520, 2530, 2545, 2560];
-const mockUS10Y = [4.15, 4.18, 4.22, 4.25, 4.28, 4.32, 4.30, 4.27, 4.24, 4.20, 4.17, 4.15, 4.12, 4.10, 4.08, 4.05, 4.08, 4.12, 4.15, 4.18, 4.22, 4.25, 4.28, 4.30, 4.33, 4.35, 4.32, 4.28, 4.25, 4.22];
-const mockVIX = [14.5, 15.2, 16.0, 15.8, 15.5, 14.8, 14.2, 13.8, 13.5, 13.2, 12.8, 13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 16.2, 16.8, 17.5, 17.0, 16.5, 16.0, 15.5, 15.0, 14.5, 14.0, 13.8, 13.5, 13.2];
-const mockBTC = [92500, 94200, 96800, 95500, 93800, 91200, 89500, 90800, 93200, 96500, 99200, 101800, 100500, 98200, 95800, 94500, 96200, 98800, 101500, 104200, 102800, 100500, 98200, 96800, 95500, 97200, 99800, 102500, 105200, 103800];
-const mockWTI = [70.5, 71.2, 72.0, 71.8, 71.2, 70.5, 69.8, 69.2, 68.5, 68.0, 67.5, 67.8, 68.5, 69.2, 70.0, 70.8, 71.5, 72.2, 73.0, 73.5, 73.0, 72.5, 72.0, 71.5, 71.0, 70.5, 70.0, 69.5, 69.0, 68.5];
-
-// 공포·탐욕 시계열
-const usFearGreedSeries = [58, 60, 59, 61, 62, 64, 63, 66, 67, 65, 66, 61, 60, 62];
-const krFearGreedSeries = [48, 50, 52, 51, 53, 54, 55, 54, 56, 57, 55, 54, 56, 55];
-
-// 버핏지수 시계열(비율, 1.0 = 100%)
-const usBuffettSeries = [1.55, 1.58, 1.57, 1.59, 1.61, 1.6, 1.62, 1.63, 1.61, 1.6, 1.62, 1.64];
-const krBuffettSeries = [0.97, 0.98, 1.0, 0.99, 1.02, 1.01, 1.03, 1.05, 1.04, 1.03, 1.05, 1.06];
 
 // ------------------------------------------------------------------
 // 투자 전략 정의
@@ -198,318 +174,8 @@ const INVESTMENT_STRATEGIES = {
 };
 
 // ------------------------------------------------------------------
-// Mock Data
+// Helper Functions
 // ------------------------------------------------------------------
-
-// 오늘의 주목 저평가주 (Featured)
-const mockFeaturedStocks = [
-  {
-    id: "fs1",
-    market: "US",
-    symbol: "NVDA",
-    name: "NVIDIA",
-    category: "정보기술",
-    aiScore: 92,
-    sentiment: "POS" as const,
-    confidence: 0.88,
-    reason: "AI 칩 수요 폭발적 증가, 데이터센터 매출 3분기 연속 150% 성장. 차세대 Blackwell 아키텍처 출시 임박",
-    logoUrl: "https://logo.clearbit.com/nvidia.com",
-    currentPrice: 487.2,
-    targetPrice: 620.0,
-    upside: 27.3
-  },
-  {
-    id: "fs2",
-    market: "KR",
-    symbol: "005930.KS",
-    name: "삼성전자",
-    category: "정보기술",
-    aiScore: 85,
-    sentiment: "POS" as const,
-    confidence: 0.82,
-    reason: "HBM3E 수율 개선 확인, AI 서버용 메모리 공급 본격화. 파운드리 3나노 양산 가시화",
-    logoUrl: "https://logo.clearbit.com/samsung.com",
-    currentPrice: 73500,
-    targetPrice: 95000,
-    upside: 29.3
-  },
-  {
-    id: "fs3",
-    market: "US",
-    symbol: "AMD",
-    name: "AMD",
-    category: "정보기술",
-    aiScore: 78,
-    sentiment: "POS" as const,
-    confidence: 0.75,
-    reason: "MI300 AI 가속기 수주 확대, 데이터센터 CPU 점유율 꾸준한 상승",
-    logoUrl: "https://logo.clearbit.com/amd.com",
-    currentPrice: 142.8,
-    targetPrice: 180.0,
-    upside: 26.0
-  }
-];
-
-// 최근 공시 분석
-const mockFilings = [
-  {
-    id: "f1",
-    market: "US",
-    symbol: "MSFT",
-    company: "Microsoft",
-    formType: "10-Q",
-    date: "2025-11-03",
-    summary: "Azure 클라우드 매출 31% 성장, AI 통합 서비스 확대로 경쟁력 강화",
-    direction: "POS",
-    sentiment: "POS" as const,
-    confidence: 0.85,
-    aiScore: 88,
-    category: "정보기술",
-    logoUrl: "https://logo.clearbit.com/microsoft.com",
-    previousScores: [82, 85, 87]
-  },
-  {
-    id: "f2",
-    market: "US",
-    symbol: "TSLA",
-    company: "Tesla",
-    formType: "10-Q",
-    date: "2025-11-02",
-    summary: "차량 인도량 전분기 대비 6% 감소, 마진율 하락 우려",
-    direction: "NEG",
-    sentiment: "NEG" as const,
-    confidence: 0.73,
-    aiScore: 42,
-    category: "경기소비재",
-    logoUrl: "https://logo.clearbit.com/tesla.com",
-    previousScores: [68, 52, 48]
-  },
-  {
-    id: "f3",
-    market: "KR",
-    symbol: "005930.KS",
-    company: "삼성전자",
-    formType: "분기보고서",
-    date: "2025-11-01",
-    summary: "메모리 부문 ASP 상승, HBM 매출 비중 확대",
-    direction: "POS",
-    sentiment: "POS" as const,
-    confidence: 0.79,
-    aiScore: 82,
-    category: "정보기술",
-    logoUrl: "https://logo.clearbit.com/samsung.com",
-    previousScores: [74, 78, 80]
-  },
-  {
-    id: "f4",
-    market: "KR",
-    symbol: "068270.KS",
-    company: "셀트리온",
-    formType: "분기보고서",
-    date: "2025-10-31",
-    summary: "바이오시밀러 유럽 매출 안정적, 신약 파이프라인 진행 중",
-    direction: "NEU",
-    sentiment: "NEU" as const,
-    confidence: 0.65,
-    aiScore: 68,
-    category: "헬스케어",
-    logoUrl: "https://logo.clearbit.com/celltrion.com",
-    previousScores: [65, 67, 69]
-  },
-  {
-    id: "f5",
-    market: "US",
-    symbol: "META",
-    company: "Meta",
-    formType: "10-Q",
-    date: "2025-10-30",
-    summary: "광고 매출 회복세, Reality Labs 투자 지속으로 적자 확대",
-    direction: "NEU",
-    sentiment: "NEU" as const,
-    confidence: 0.58,
-    aiScore: 64,
-    category: "커뮤니케이션 서비스",
-    logoUrl: "https://logo.clearbit.com/meta.com",
-    previousScores: [58, 61, 63]
-  }
-];
-
-// 저평가 우량주 랭킹
-const mockUndervalued = [
-  {
-    market: "US", symbol: "NVDA", name: "NVIDIA", category: "정보기술", industry: "반도체",
-    rank: 1, aiScore: 92, sentiment: "POS" as const, introducedAt: "2025-08-12",
-    perfSinceIntro: 0.124, perf100d: 0.153, logoUrl: "https://logo.clearbit.com/nvidia.com",
-    ROE: 28.5, PER: 45.2, PEG: 0.82, PBR: 12.8, PSR: 18.3,
-    RevYoY: 34.2, EPS_Growth_3Y: 55.3, OpMarginTTM: 32.1, FCF_Yield: 2.8
-  },
-  {
-    market: "US", symbol: "MSFT", name: "Microsoft", category: "정보기술", industry: "소프트웨어",
-    rank: 2, aiScore: 88, sentiment: "POS" as const, introducedAt: "2025-08-15",
-    perfSinceIntro: 0.104, perf100d: 0.132, logoUrl: "https://logo.clearbit.com/microsoft.com",
-    ROE: 42.3, PER: 32.5, PEG: 0.95, PBR: 10.5, PSR: 11.2,
-    RevYoY: 16.8, EPS_Growth_3Y: 34.2, OpMarginTTM: 42.5, FCF_Yield: 3.5
-  },
-  {
-    market: "US", symbol: "AMD", name: "AMD", category: "정보기술", industry: "반도체",
-    rank: 3, aiScore: 78, sentiment: "POS" as const, introducedAt: "2025-09-01",
-    perfSinceIntro: 0.067, perf100d: 0.089, logoUrl: "https://logo.clearbit.com/amd.com",
-    ROE: 18.2, PER: 38.7, PEG: 1.12, PBR: 5.3, PSR: 7.8,
-    RevYoY: 18.5, EPS_Growth_3Y: 34.5, OpMarginTTM: 24.3, FCF_Yield: 2.1
-  },
-  {
-    market: "KR", symbol: "005930.KS", name: "삼성전자", category: "정보기술", industry: "전자기기",
-    rank: 1, aiScore: 85, sentiment: "POS" as const, introducedAt: "2025-09-02",
-    perfSinceIntro: 0.089, perf100d: 0.112, logoUrl: "https://logo.clearbit.com/samsung.com",
-    ROE: 12.8, PER: 18.5, PEG: 0.88, PBR: 1.8, PSR: 1.2,
-    RevYoY: 12.3, EPS_Growth_3Y: 21.0, OpMarginTTM: 14.5, FCF_Yield: 4.2
-  },
-  {
-    market: "KR", symbol: "000660.KS", name: "SK하이닉스", category: "정보기술", industry: "반도체",
-    rank: 2, aiScore: 81, sentiment: "POS" as const, introducedAt: "2025-08-25",
-    perfSinceIntro: 0.095, perf100d: 0.128, logoUrl: "https://logo.clearbit.com/skhynix.com",
-    ROE: 15.3, PER: 22.1, PEG: 0.75, PBR: 2.3, PSR: 2.1,
-    RevYoY: 28.7, EPS_Growth_3Y: 29.4, OpMarginTTM: 18.9, FCF_Yield: 3.8
-  },
-  {
-    market: "KR", symbol: "068270.KS", name: "셀트리온", category: "헬스케어", industry: "바이오의약품",
-    rank: 3, aiScore: 72, sentiment: "NEU" as const, introducedAt: "2025-08-30",
-    perfSinceIntro: 0.031, perf100d: 0.064, logoUrl: "https://logo.clearbit.com/celltrion.com",
-    ROE: 9.5, PER: 25.3, PEG: 1.35, PBR: 2.8, PSR: 3.5,
-    RevYoY: 8.2, EPS_Growth_3Y: 18.7, OpMarginTTM: 21.3, FCF_Yield: 2.5
-  },
-];
-
-// 종목 상세 정보 (포괄적인 재무/기술적 지표 포함) - 일부만 표시
-const mockStockDetails: Record<string, any> = {
-  "NVDA": {
-    Ticker: "NVDA",
-    Name: "NVIDIA",
-    Sector: "정보기술",
-    Industry: "반도체",
-    Price: 487.20,
-    MktCap: 1200.5,
-    DollarVol: 3500.2,
-    FairValue: 520.00,
-    Discount: 6.3,
-    PE: 45.2,
-    PEG: 0.82,
-    PB: 12.8,
-    PS: 18.3,
-    EV_EBITDA: 38.5,
-    ROE: 28.5,
-    ROA: 18.3,
-    OpMarginTTM: 32.1,
-    OperatingMargins: 31.8,
-    RevYoY: 34.2,
-    EPS_Growth_3Y: 55.3,
-    Revenue_Growth_3Y: 42.1,
-    EBITDA_Growth_3Y: 48.7,
-    FCF_Yield: 2.8,
-    DivYield: 0.04,
-    PayoutRatio: 0.05,
-    Beta: 1.85,
-    ShortPercent: 1.2,
-    InsiderOwnership: 4.3,
-    InstitutionOwnership: 68.5,
-    RVOL: 1.15,
-    RSI_14: 67.3,
-    ATR_PCT: 3.2,
-    Volatility_21D: 2.8,
-    RET5: 2.1,
-    RET20: 8.5,
-    RET63: 15.3,
-    SMA20: 478.50,
-    SMA50: 465.30,
-    SMA200: 420.80,
-    MACD: 5.2,
-    MACD_Signal: 3.8,
-    MACD_Histogram: 1.4,
-    BB_Position: 0.75,
-    High_52W_Ratio: 0.95,
-    Low_52W_Ratio: 1.88,
-    Momentum_12M: 124.5,
-    GrowthScore: 95,
-    QualityScore: 88,
-    ValueScore: 65,
-    MomentumScore: 82,
-    TotalScore: 92
-  },
-  "005930.KS": {
-    Ticker: "005930.KS",
-    Name: "삼성전자",
-    Sector: "정보기술",
-    Industry: "전자기기",
-    Price: 73500,
-    MktCap: 450.2,
-    DollarVol: 1200.5,
-    FairValue: 85000,
-    Discount: 13.5,
-    PE: 18.5,
-    PEG: 0.88,
-    PB: 1.8,
-    PS: 1.2,
-    EV_EBITDA: 12.3,
-    ROE: 12.8,
-    ROA: 8.5,
-    OpMarginTTM: 14.5,
-    OperatingMargins: 14.2,
-    RevYoY: 12.3,
-    EPS_Growth_3Y: 21.0,
-    Revenue_Growth_3Y: 18.5,
-    EBITDA_Growth_3Y: 20.2,
-    FCF_Yield: 4.2,
-    DivYield: 2.1,
-    PayoutRatio: 0.35,
-    Beta: 1.15,
-    ShortPercent: 0.8,
-    InsiderOwnership: 18.5,
-    InstitutionOwnership: 45.2,
-    RVOL: 0.95,
-    RSI_14: 58.5,
-    ATR_PCT: 2.1,
-    Volatility_21D: 1.9,
-    RET5: 1.2,
-    RET20: 5.8,
-    RET63: 11.2,
-    SMA20: 72000,
-    SMA50: 70500,
-    SMA200: 68000,
-    MACD: 2.1,
-    MACD_Signal: 1.8,
-    MACD_Histogram: 0.3,
-    BB_Position: 0.65,
-    High_52W_Ratio: 0.91,
-    Low_52W_Ratio: 1.52,
-    Momentum_12M: 89.2,
-    GrowthScore: 82,
-    QualityScore: 85,
-    ValueScore: 88,
-    MomentumScore: 75,
-    TotalScore: 85
-  }
-};
-
-// ----------------------------
-// 뉴스 요약 (카테고리·정렬·날짜·모달 포함)
-// ----------------------------
-const NEWS_CATEGORIES = ["전체", "거시경제", "금융시장", "기업/산업", "부동산", "소비/고용", "정책/제도", "정치"];
-
-const mockNews = [
-  { id: "n1", date: "2025-10-14", category: "거시경제", title: "미 연준 의사록: 추가 인상 가능성 낮아", body: "...", summary: "금리 동결 기조 유지, 물가 둔화 확인.", link: "#", importance: 9, reason: "시장 변동성 직접 영향" },
-  { id: "n2", date: "2025-10-15", category: "기업/산업", title: "삼성전자 HBM 생산 증설 발표", body: "...", summary: "AI 수요 대응 위해 생산능력 확대.", link: "#", importance: 8, reason: "AI 공급망 영향" },
-  { id: "n3", date: "2025-10-13", category: "금융시장", title: "달러/원 1,330원대 재진입", body: "...", summary: "위험선호 회복으로 환율 하락.", link: "#", importance: 7, reason: "수출/수입주 실적 민감" },
-  { id: "n4", date: "2025-10-12", category: "부동산", title: "수도권 전세가 상승세 둔화", body: "...", summary: "거래량 감소, 금리 부담 지속.", link: "#", importance: 5, reason: "가계 소비 여력 관련" },
-  { id: "n5", date: "2025-10-15", category: "정책/제도", title: "정부, 데이터센터 전력 요금 인센티브 검토", body: "...", summary: "친AI 인프라 정책 일환.", link: "#", importance: 6, reason: "산업 전반 비용 구조" },
-  { id: "n6", date: "2025-10-11", category: "정치", title: "미-중 정상 통화, 통상 이슈 완화 시사", body: "...", summary: "관세 이슈 일부 진전 가능성.", link: "#", importance: 7, reason: "대외 불확실성 완화" },
-  { id: "n7", date: "2025-10-15", category: "소비/고용", title: "9월 고용, 예상치 하회", body: "...", summary: "임금 상승률도 둔화.", link: "#", importance: 8, reason: "소비 사이클 전환 신호" },
-  { id: "n8", date: "2025-10-10", category: "기업/산업", title: "테슬라, FSD 구독가 인하", body: "...", summary: "시장 점유율 확대 전략 분석.", link: "#", importance: 6, reason: "경쟁 구도 변화" },
-  { id: "n9", date: "2025-10-16 12:00:45", category: "거시경제", title: '트럼프, 다음달 관세 재판에 "현장 방청할 생각"…美 대통령 최초 사례 되나', summary: "트럼프 美 대통령, 관세 부과 적법성 심리하는 연방대법원 재판(다음달 5일) 현장 방청 의사 밝힘. 하급심은 IEEPA 근거 관세 부과 위법 판결. 대법원서 하급심 유지 시 美 유효 관세율 16.3%의 절반 이하로 하락 및 수백억 달러 환급 가능성.", link: "https://www.hankyung.com/article/2025101626227", importance: 8, reason: "IEEPA 근거 관세 부과 적법성 여부가 결정됨. 관세는 무역·물가 등 거시경제에 직접적이고 광범위한 영향을 미치는 중대 사안이며, 수백억 달러 환급 가능성도 있음." },
-  { id: "n10", date: "2025-10-16 07:23:33", category: "거시경제", title: "'10일 내' 무역협상 타결 기대감…'3500억달러 패키지' 운명은", summary: "한미 무역협상이 최종 타결 단계에 근접, 미국 베선트 재무부 장관이 10일 내 협상 결과 예상. 주요 쟁점은 3500억 달러 대미 투자 패키지 구성 및 한미 통화스와프 등 외환시장 안정장치. 양측이 세부 사항 조율 중이며, 한국 외환시장 안전장치 마련에 긍정적 언급 나옴.", link: "https://www.hankyung.com/article/2025101615667", importance: 8, reason: "무역 협상 타결 임박 소식은 관세 및 대규모 대미 투자의 확정으로 이어져 거시경제 및 무역에 직접적 영향. 외환시장 안전장치는 금융시장 변동성 완화에 중요." },
-  { id: "n11", date: "2025-10-16 05:26:38", category: "거시경제", title: '베선트 "한미 관세협상, 열흘 내 어떤 결과 나올 것" [이상은의 워싱턴나우]', summary: '베선트 美 재무장관 "한미 관세협상, APEC 정상회담 전 열흘 내 결과 나올 것" 언급. 한국 측 3500억 달러 일시 투자 및 외환시장 영향 우려 관련 양측 의견 좁혀. 협상 마무리 단계, 구체적 투자 방식(펀드 등) 및 최종 타결의 관건 예상.', link: "https://www.hankyung.com/article/202510161460i", importance: 8, reason: "한미 간 대규모 관세협상 및 투자 관련 논의가 마무리 단계에 진입, 외환시장 및 무역 환경 등 거시경제 지표에 즉각적이고 중요한 영향을 미칠 가능성 높음." },
-  { id: "n12", date: "2025-10-16 11:30:06", category: "거시경제", title: "韓협상단, 내일 美백악관 예산국 방문…관세 협상 막바지", summary: "한미 관세 협상 막바지로, 韓 협상단 내일(17일 새벽) 美 백악관 관리예산국 방문 예정. 협상 최종 문구 조율 관측 속, 美 요구 투자액($3500억) 조달 방식(통화스와프, 외평채 등)이 외환보유액 및 국가부채에 미칠 영향이 핵심 쟁점.", link: "https://www.hankyung.com/article/2025101625437", importance: 7, reason: "한미 관세 협상의 최종 단계, $3500억 대미 투자금 조달 방식은 외환보유액, 통화스와프 등 거시경제 핵심 변수에 직접적 영향 예상." },
-  { id: "n13", date: "2025-10-16 11:19:29", category: "거시경제", title: `트럼프 "한국 '3500억달러 선불' 합의" 또 다시 거론 [HK영상]`, summary: `트럼프 美 대통령, 백악관 기자회견서 한국이 무역 합의 일환으로 대미 투자금 3500억 달러(약 500조 원)를 '선불(up front)' 지급하기로 했다고 재차 주장.`, link: "https://www.hankyung.com/article/202510162536i", importance: 7, reason: "한국의 3500억 달러 대미 투자금 관련, 지급 방식(선불 여부)에 대한 미국 대통령의 직접적 압박 발언으로 거시경제 변수(무역/환율)에 잠재적 불확실성 증폭." },
-];
 
 function inDateRange(iso: string, startDate?: string, endDate?: string) {
   if (!startDate && !endDate) return true;
