@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { formatNumber } from '../../utils/format';
-
-const mockUSDKRW = [1380, 1375, 1372, 1368, 1360, 1355, 1362, 1368, 1359, 1355, 1351, 1348, 1340, 1335, 1332, 1328, 1330, 1338, 1342, 1336, 1331, 1327, 1325, 1322, 1318, 1315, 1317, 1313, 1311, 1314];
+import { usdKrwData } from '../../data/mock';
 
 export default function QuickActionsBar() {
+  const mockUSDKRW = usdKrwData;
   const [calcModalOpen, setCalcModalOpen] = useState(false);
   const [amount, setAmount] = useState("1000");
   const [rate] = useState(mockUSDKRW[mockUSDKRW.length - 1]);
