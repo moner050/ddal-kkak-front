@@ -18,7 +18,7 @@ import { setQueryParams, getQueryParam } from "../utils/queryParams";
 import { CATEGORIES, SECTOR_INDUSTRIES, SECTOR_THEMES } from "../constants/categories";
 
 // Import types
-import { TabKey, Sentiment } from "../types";
+import { TAB_KEYS, TabKey, Sentiment } from "../types";
 
 // Import mock data
 import {
@@ -358,8 +358,7 @@ function NewsSummaryTab() {
 }
 
 // ======================= DemoHome (메인) =======================
-const TAB_KEYS = ["home", "undervalued", "filings", "watchlist", "detail"] as const;
-type TabKey = (typeof TAB_KEYS)[number];
+// TAB_KEYS와 TabKey는 ../types에서 import됨
 
 // 재무 지표 평가 함수 (좋음: 초록색, 보통: 검정색, 나쁨: 빨간색)
 function getMetricColor(key: string, value: number): string {
@@ -2184,7 +2183,7 @@ export default function DemoHome() {
               // 최근 본 종목 데이터
               const recentStocksList = recentStocks
                 .map(symbol => mockUndervalued.find(s => s.symbol === symbol))
-                .filter(Boolean)
+                .filter((s): s is typeof mockUndervalued[number] => s !== undefined)
                 .slice(0, 5);
 
               return (
@@ -2500,7 +2499,7 @@ export default function DemoHome() {
                             ) : (
                               <div className="text-xs text-gray-600 mb-2">{key.replace("Score", "")}</div>
                             )}
-                            <div className={classNames("text-3xl font-bold", getMetricColor(key, stockDetail[key]))}>
+                            <div className={classNames("text-3xl font-bold", typeof stockDetail[key] === "number" ? getMetricColor(key, stockDetail[key]) : "text-gray-900")}>
                               {stockDetail[key]}
                             </div>
                           </div>
@@ -2515,8 +2514,8 @@ export default function DemoHome() {
                         {["FairValue", "Discount", "PE", "PEG", "PB", "PS", "EV_EBITDA"].map(key => {
                           if (!stockDetail[key]) return null;
                           const value = stockDetail[key];
-                          let displayValue = typeof value === "number" ? value.toFixed(2) : value;
-                          if (key === "Discount") displayValue = value.toFixed(1) + "%";
+                          let displayValue = typeof value === "number" ? value.toFixed(2) : String(value);
+                          if (key === "Discount" && typeof value === "number") displayValue = value.toFixed(1) + "%";
                           const colorClass = typeof value === "number" ? getMetricColor(key, value) : "text-gray-900";
                           return (
                             <div key={key} className="p-4 rounded-lg bg-gray-50">
@@ -2542,6 +2541,7 @@ export default function DemoHome() {
                           {["ROE", "ROA", "OpMarginTTM", "OperatingMargins"].map(key => {
                             if (!stockDetail[key]) return null;
                             const value = stockDetail[key];
+                            if (typeof value !== "number") return null;
                             const displayValue = value.toFixed(1) + "%";
                             const colorClass = getMetricColor(key, value);
                             return (
@@ -2566,6 +2566,7 @@ export default function DemoHome() {
                           {["RevYoY", "Revenue_Growth_3Y", "EPS_Growth_3Y", "EBITDA_Growth_3Y"].map(key => {
                             if (!stockDetail[key]) return null;
                             const value = stockDetail[key];
+                            if (typeof value !== "number") return null;
                             const displayValue = value.toFixed(1) + "%";
                             const colorClass = getMetricColor(key, value);
                             return (

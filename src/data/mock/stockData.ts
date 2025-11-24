@@ -69,6 +69,7 @@ export const filings: Filing[] = [
     confidence: 0.85,
     aiScore: 88,
     category: "정보기술",
+    industry: "소프트웨어",
     logoUrl: "https://logo.clearbit.com/microsoft.com",
     previousScores: [82, 85, 87]
   },
@@ -85,6 +86,7 @@ export const filings: Filing[] = [
     confidence: 0.73,
     aiScore: 42,
     category: "경기소비재",
+    industry: "자동차",
     logoUrl: "https://logo.clearbit.com/tesla.com",
     previousScores: [68, 52, 48]
   },
@@ -101,6 +103,7 @@ export const filings: Filing[] = [
     confidence: 0.79,
     aiScore: 82,
     category: "정보기술",
+    industry: "전자기기",
     logoUrl: "https://logo.clearbit.com/samsung.com",
     previousScores: [74, 78, 80]
   },
@@ -117,6 +120,7 @@ export const filings: Filing[] = [
     confidence: 0.65,
     aiScore: 68,
     category: "헬스케어",
+    industry: "바이오의약품",
     logoUrl: "https://logo.clearbit.com/celltrion.com",
     previousScores: [65, 67, 69]
   },
@@ -133,6 +137,7 @@ export const filings: Filing[] = [
     confidence: 0.58,
     aiScore: 64,
     category: "커뮤니케이션 서비스",
+    industry: "인터넷 서비스",
     logoUrl: "https://logo.clearbit.com/meta.com",
     previousScores: [58, 61, 63]
   }
@@ -146,6 +151,7 @@ export const undervaluedStocks: UndervaluedStock[] = [
     name: "NVIDIA",
     category: "정보기술",
     industry: "반도체",
+    sector: "Technology",
     rank: 1,
     aiScore: 92,
     sentiment: "POS",
@@ -169,6 +175,7 @@ export const undervaluedStocks: UndervaluedStock[] = [
     name: "Microsoft",
     category: "정보기술",
     industry: "소프트웨어",
+    sector: "Technology",
     rank: 2,
     aiScore: 88,
     sentiment: "POS",
@@ -192,6 +199,7 @@ export const undervaluedStocks: UndervaluedStock[] = [
     name: "AMD",
     category: "정보기술",
     industry: "반도체",
+    sector: "Technology",
     rank: 3,
     aiScore: 78,
     sentiment: "POS",
@@ -215,6 +223,7 @@ export const undervaluedStocks: UndervaluedStock[] = [
     name: "삼성전자",
     category: "정보기술",
     industry: "전자기기",
+    sector: "Technology",
     rank: 1,
     aiScore: 85,
     sentiment: "POS",
@@ -238,6 +247,7 @@ export const undervaluedStocks: UndervaluedStock[] = [
     name: "SK하이닉스",
     category: "정보기술",
     industry: "반도체",
+    sector: "Technology",
     rank: 2,
     aiScore: 81,
     sentiment: "POS",
@@ -261,6 +271,7 @@ export const undervaluedStocks: UndervaluedStock[] = [
     name: "셀트리온",
     category: "헬스케어",
     industry: "바이오의약품",
+    sector: "Healthcare",
     rank: 3,
     aiScore: 72,
     sentiment: "NEU",

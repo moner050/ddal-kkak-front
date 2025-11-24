@@ -41,6 +41,7 @@ export interface Filing {
   confidence: number;
   aiScore: number;
   category: string;
+  industry: string;
   logoUrl: string;
   previousScores: number[];
 }
@@ -51,6 +52,7 @@ export interface UndervaluedStock {
   name: string;
   category: string;
   industry: string;
+  sector: string;
   rank: number;
   aiScore: number;
   sentiment: Sentiment;
@@ -70,6 +72,7 @@ export interface UndervaluedStock {
 }
 
 export interface StockDetail {
+  [key: string]: string | number;
   Ticker: string;
   Name: string;
   Sector: string;
