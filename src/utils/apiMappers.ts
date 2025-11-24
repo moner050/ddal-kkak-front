@@ -1,0 +1,301 @@
+/**
+ * API ↔ Frontend 데이터 변환 유틸리티
+ */
+
+import type { Sentiment, Market } from '../data/mock/types';
+import type {
+  ApiSentiment,
+  ApiUndervaluedStock,
+  ApiFeaturedStock,
+  ApiSecFiling,
+  FilingType,
+  GicsSector,
+} from '../api/types';
+
+// ============================================
+// Sentiment 변환
+// ============================================
+
+const SENTIMENT_TO_FRONTEND: Record<ApiSentiment, Sentiment> = {
+  'POSITIVE': 'POS',
+  'NEUTRAL': 'NEU',
+  'NEGATIVE': 'NEG',
+};
+
+const SENTIMENT_TO_API: Record<Sentiment, ApiSentiment> = {
+  'POS': 'POSITIVE',
+  'NEU': 'NEUTRAL',
+  'NEG': 'NEGATIVE',
+};
+
+export const toFrontendSentiment = (apiSentiment: ApiSentiment): Sentiment => {
+  return SENTIMENT_TO_FRONTEND[apiSentiment] || 'NEU';
+};
+
+export const toApiSentiment = (frontendSentiment: Sentiment): ApiSentiment => {
+  return SENTIMENT_TO_API[frontendSentiment] || 'NEUTRAL';
+};
+
+// ============================================
+// Sector 변환 (GICS 영문 ↔ 한글)
+// ============================================
+
+const SECTOR_TO_KOREAN: Record<string, string> = {
+  'Information Technology': '정보기술',
+  'Healthcare': '헬스케어',
+  'Financials': '금융',
+  'Consumer Discretionary': '경기소비재',
+  'Communication Services': '커뮤니케이션 서비스',
+  'Industrials': '산업재',
+  'Consumer Staples': '필수소비재',
+  'Energy': '에너지',
+  'Utilities': '유틸리티',
+  'Real Estate': '부동산',
+  'Materials': '소재',
+  // Yahoo Finance 섹터 (대체 매핑)
+  'Technology': '정보기술',
+  'Consumer Cyclical': '경기소비재',
+  'Consumer Defensive': '필수소비재',
+  'Basic Materials': '소재',
+};
+
+const SECTOR_TO_ENGLISH: Record<string, string> = {
+  '정보기술': 'Information Technology',
+  '헬스케어': 'Healthcare',
+  '금융': 'Financials',
+  '경기소비재': 'Consumer Discretionary',
+  '커뮤니케이션 서비스': 'Communication Services',
+  '산업재': 'Industrials',
+  '필수소비재': 'Consumer Staples',
+  '에너지': 'Energy',
+  '유틸리티': 'Utilities',
+  '부동산': 'Real Estate',
+  '소재': 'Materials',
+};
+
+export const toKoreanSector = (sector: string): string => {
+  return SECTOR_TO_KOREAN[sector] || sector;
+};
+
+export const toEnglishSector = (sector: string): string => {
+  return SECTOR_TO_ENGLISH[sector] || sector;
+};
+
+// ============================================
+// Filing Type 변환
+// ============================================
+
+const FILING_TYPE_TO_FRONTEND: Record<FilingType, string> = {
+  'FORM_10K': '10-K',
+  'FORM_10Q': '10-Q',
+  'FORM_8K': '8-K',
+};
+
+const FILING_TYPE_TO_API: Record<string, FilingType> = {
+  '10-K': 'FORM_10K',
+  '10-Q': 'FORM_10Q',
+  '8-K': 'FORM_8K',
+};
+
+export const toFrontendFilingType = (apiType: FilingType): string => {
+  return FILING_TYPE_TO_FRONTEND[apiType] || apiType;
+};
+
+export const toApiFilingType = (frontendType: string): FilingType | string => {
+  return FILING_TYPE_TO_API[frontendType] || frontendType;
+};
+
+// ============================================
+// UndervaluedStock 변환
+// ============================================
+
+export interface FrontendUndervaluedStock {
+  market: Market;
+  symbol: string;
+  name: string;
+  category: string;
+  industry: string;
+  sector: string;
+  rank: number;
+  aiScore: number;
+  sentiment: Sentiment;
+  introducedAt: string;
+  perfSinceIntro: number;
+  perf100d: number;
+  logoUrl: string;
+  ROE: number;
+  PER: number;
+  PEG: number;
+  PBR: number;
+  PSR: number;
+  RevYoY: number;
+  EPS_Growth_3Y: number;
+  OpMarginTTM: number;
+  FCF_Yield: number;
+  // 추가 필드 (API에서 제공)
+  price?: number;
+  marketCap?: number;
+  confidence?: number;
+  passedProfiles?: string[];
+  growthScore?: number;
+  qualityScore?: number;
+  valueScore?: number;
+  momentumScore?: number;
+  totalScore?: number;
+}
+
+export const toFrontendUndervaluedStock = (
+  apiStock: ApiUndervaluedStock,
+  index?: number
+): FrontendUndervaluedStock => {
+  return {
+    market: apiStock.market as Market,
+    symbol: apiStock.ticker,
+    name: apiStock.name,
+    category: toKoreanSector(apiStock.sector),
+    industry: apiStock.industry || '',
+    sector: apiStock.sector,
+    rank: apiStock.rank ?? (index !== undefined ? index + 1 : 0),
+    aiScore: apiStock.totalScore,
+    sentiment: toFrontendSentiment(apiStock.sentiment),
+    introducedAt: apiStock.firstScreeningDate || '',
+    perfSinceIntro: apiStock.perfSinceIntro ?? 0,
+    perf100d: apiStock.perf100d ?? 0,
+    logoUrl: apiStock.logoUrl || '',
+    ROE: apiStock.roe ?? 0,
+    PER: apiStock.pe ?? 0,
+    PEG: apiStock.peg ?? 0,
+    PBR: apiStock.pb ?? 0,
+    PSR: apiStock.ps ?? 0,
+    RevYoY: apiStock.revGrowth ?? 0,
+    EPS_Growth_3Y: apiStock.epsGrowth3Y ?? 0,
+    OpMarginTTM: (apiStock.opMargin ?? 0) * 100, // API는 소수점, Frontend는 퍼센트
+    FCF_Yield: apiStock.fcfYield ?? 0,
+    // 추가 필드
+    price: apiStock.price,
+    marketCap: apiStock.marketCap,
+    confidence: apiStock.confidence,
+    passedProfiles: apiStock.passedProfiles,
+    growthScore: apiStock.growthScore,
+    qualityScore: apiStock.qualityScore,
+    valueScore: apiStock.valueScore,
+    momentumScore: apiStock.momentumScore,
+    totalScore: apiStock.totalScore,
+  };
+};
+
+export const toFrontendUndervaluedStocks = (
+  apiStocks: ApiUndervaluedStock[]
+): FrontendUndervaluedStock[] => {
+  return apiStocks.map((stock, index) => toFrontendUndervaluedStock(stock, index));
+};
+
+// ============================================
+// FeaturedStock 변환
+// ============================================
+
+export interface FrontendFeaturedStock {
+  id: string;
+  market: Market;
+  symbol: string;
+  name: string;
+  category: string;
+  aiScore: number;
+  sentiment: Sentiment;
+  confidence: number;
+  reason: string;
+  logoUrl: string;
+  currentPrice: number;
+  targetPrice: number;
+  upside: number;
+}
+
+export const toFrontendFeaturedStock = (apiStock: ApiFeaturedStock): FrontendFeaturedStock => {
+  // sentiment를 totalScore 기반으로 계산 (API에 없으므로)
+  let sentiment: Sentiment = 'NEU';
+  if (apiStock.totalScore >= 70) sentiment = 'POS';
+  else if (apiStock.totalScore < 50) sentiment = 'NEG';
+
+  return {
+    id: `featured-${apiStock.ticker}`,
+    market: apiStock.market as Market,
+    symbol: apiStock.ticker,
+    name: apiStock.name,
+    category: toKoreanSector(apiStock.sector),
+    aiScore: apiStock.totalScore,
+    sentiment,
+    confidence: apiStock.totalScore / 100,
+    reason: apiStock.reason,
+    logoUrl: apiStock.logoUrl || '',
+    currentPrice: apiStock.currentPrice,
+    targetPrice: apiStock.targetPrice ?? apiStock.currentPrice,
+    upside: apiStock.upside,
+  };
+};
+
+export const toFrontendFeaturedStocks = (apiStocks: ApiFeaturedStock[]): FrontendFeaturedStock[] => {
+  return apiStocks.map(toFrontendFeaturedStock);
+};
+
+// ============================================
+// Filing 변환
+// ============================================
+
+export interface FrontendFiling {
+  id: string;
+  market: Market;
+  symbol: string;
+  company: string;
+  formType: string;
+  date: string;
+  summary: string;
+  direction: string;
+  sentiment: Sentiment;
+  confidence: number;
+  aiScore: number;
+  category: string;
+  industry: string;
+  logoUrl: string;
+  previousScores: number[];
+}
+
+export const toFrontendFiling = (
+  apiFiling: ApiSecFiling,
+  scoreHistory?: { score: number; dataDate: string }[]
+): FrontendFiling => {
+  const sentiment = toFrontendSentiment(apiFiling.sentiment);
+
+  return {
+    id: String(apiFiling.id),
+    market: (apiFiling.stockInfo?.marketType || 'US') as Market,
+    symbol: apiFiling.ticker,
+    company: apiFiling.companyName,
+    formType: toFrontendFilingType(apiFiling.filingType),
+    date: apiFiling.filingDate,
+    summary: apiFiling.summary || '',
+    direction: sentiment, // direction과 sentiment 동일하게 처리
+    sentiment,
+    confidence: apiFiling.score / 100,
+    aiScore: apiFiling.score,
+    category: toKoreanSector(apiFiling.stockInfo?.gicsSector || ''),
+    industry: apiFiling.stockInfo?.gicsIndustryGroup || '',
+    logoUrl: apiFiling.stockInfo?.logoUrl || '',
+    previousScores: scoreHistory?.map(h => h.score) || [],
+  };
+};
+
+export const toFrontendFilings = (apiFilings: ApiSecFiling[]): FrontendFiling[] => {
+  return apiFilings.map(filing => toFrontendFiling(filing));
+};
+
+// ============================================
+// US 종목만 필터링
+// ============================================
+
+export const filterUSOnly = <T extends { market: string }>(items: T[]): T[] => {
+  return items.filter(item => item.market === 'US');
+};
+
+export const filterUSOnlyFromApi = <T extends { market: string }>(items: T[]): T[] => {
+  return items.filter(item => item.market === 'US');
+};

@@ -1085,12 +1085,14 @@ export default function DemoHome() {
                     >
                       🇺🇸 미국
                     </button>
+                    {/* KR 종목 지원 예정 - 현재 숨김 처리
                     <button
                       onClick={() => setFeaturedMarket("KR")}
                       className={classNames("rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap", featuredMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
                     >
                       🇰🇷 한국
                     </button>
+                    */}
                   </div>
                 </div>
               </div>
@@ -1130,12 +1132,14 @@ export default function DemoHome() {
                     >
                       🇺🇸 미국
                     </button>
+                    {/* KR 종목 지원 예정 - 현재 숨김 처리
                     <button
                       onClick={() => setFilingsMarket("KR")}
                       className={classNames("rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap", filingsMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
                     >
                       🇰🇷 한국
                     </button>
+                    */}
                   </div>
                 </div>
               </div>
@@ -1315,11 +1319,11 @@ export default function DemoHome() {
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-indigo-200"
               />
 
-              {/* 시장 선택 */}
+              {/* 시장 선택 - KR 종목 지원 예정 */}
               <div>
                 <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">시장</div>
                 <div className="flex gap-1.5 sm:gap-2">
-                  {(["전체", "US", "KR"] as const).map((market) => (
+                  {(["전체", "US"] as const).map((market) => (
                     <button
                       key={market}
                       onClick={() => setUndervaluedMarket(market)}
@@ -1330,7 +1334,7 @@ export default function DemoHome() {
                           : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                       )}
                     >
-                      {market === "전체" ? "전체" : market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                      {market === "전체" ? "🌐 전체" : "🇺🇸 미국"}
                     </button>
                   ))}
                 </div>
@@ -1798,11 +1802,11 @@ export default function DemoHome() {
                 </div>
               </div>
 
-              {/* 시장 선택 */}
+              {/* 시장 선택 - KR 종목 지원 예정 */}
               <div>
                 <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">시장</div>
                 <div className="flex gap-1.5 sm:gap-2">
-                  {(["전체", "US", "KR"] as const).map((market) => (
+                  {(["전체", "US"] as const).map((market) => (
                     <button
                       key={market}
                       onClick={() => setFilingsMarketFilter(market)}
@@ -1813,7 +1817,7 @@ export default function DemoHome() {
                           : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                       )}
                     >
-                      {market === "전체" ? "전체" : market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                      {market === "전체" ? "🌐 전체" : "🇺🇸 미국"}
                     </button>
                   ))}
                 </div>
@@ -1990,11 +1994,11 @@ export default function DemoHome() {
                       className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
                     />
 
-                    {/* 시장 선택 */}
+                    {/* 시장 선택 - KR 종목 지원 예정 */}
                     <div>
                       <div className="text-xs text-gray-600 mb-2 font-semibold">시장</div>
                       <div className="flex gap-2">
-                        {(["전체", "US", "KR"] as const).map((market) => (
+                        {(["전체", "US"] as const).map((market) => (
                           <button
                             key={market}
                             onClick={() => setWatchlistMarket(market)}
@@ -2005,7 +2009,7 @@ export default function DemoHome() {
                                 : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                             )}
                           >
-                            {market === "전체" ? "전체" : market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                            {market === "전체" ? "🌐 전체" : "🇺🇸 미국"}
                           </button>
                         ))}
                       </div>
