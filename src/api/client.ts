@@ -48,6 +48,11 @@ import {
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:9876';
 const AUTH_TOKEN_KEY = 'authToken';
 
+// 개발 모드에서 API URL 확인
+if (__DEV__) {
+  console.log('🌐 API Base URL:', API_BASE_URL);
+}
+
 // ============================================
 // Axios Instance
 // ============================================
