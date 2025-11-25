@@ -432,4 +432,7 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# Generated data files (created at build time)
+public/data/
+
 app-example

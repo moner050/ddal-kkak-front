@@ -6,11 +6,12 @@
 
 ## 🆕 최근 업데이트 (2025-11-25)
 
-### ⚡ 성능 최적화 - 정적 데이터 Export 방식 도입
-- **대용량 데이터 일괄 로드**: 최대 1000개 종목을 한 번에 로드
-- **즉각적인 응답**: 페이지 전환, 필터링, 정렬 시 서버 호출 없이 클라이언트에서 처리
+### ⚡ 성능 최적화 - Build-time Static Data Generation
+- **빌드 타임 데이터 생성**: 백엔드 API에서 데이터를 미리 fetch하여 static JSON 파일로 저장
+- **제로 API 호출**: 사용자가 페이지 접속 시 API 호출 없이 즉시 데이터 표시
+- **항목별 JSON 파일 분리**: undervalued-stocks, featured-stocks, filings 등 개별 JSON 관리
+- **자동 빌드 프로세스**: `npm run build:web` 시 자동으로 최신 데이터 fetch
 - **데이터 투명성**: UI에 데이터 기준 날짜 명시 (예: "📅 데이터 기준: 2025년 11월 25일")
-- **네트워크 최적화**: API 호출 최소화로 서버 부하 감소
 
 ### 🎓 초보자 친화적 UI/UX
 - **듀얼 모드 지원**: 초보자 모드와 전문가 모드 간 원클릭 전환
@@ -218,6 +219,7 @@ ddal-kkak-front/
 
 - Node.js 18.x 이상
 - npm 또는 yarn
+- **백엔드 서버 실행 중** (또는 환경변수 설정)
 
 ### 설치
 
@@ -231,6 +233,24 @@ cd ddal-kkak-front
 # 의존성 설치
 npm install
 ```
+
+### 데이터 준비 (필수)
+
+프로젝트 실행 전 백엔드 API에서 데이터를 fetch하여 static JSON 파일 생성:
+
+```bash
+# 백엔드 서버가 http://localhost:9876에서 실행 중이어야 함
+npm run fetch-data
+
+# 또는 다른 API URL 사용
+EXPO_PUBLIC_API_URL=http://your-api-url npm run fetch-data
+```
+
+생성되는 파일:
+- `public/data/undervalued-stocks.json` (1000개 종목)
+- `public/data/featured-stocks.json` (10개 주목 종목)
+- `public/data/filings.json` (20개 공시)
+- `public/data/metadata.json` (메타정보)
 
 ### 개발 서버 실행
 
@@ -247,9 +267,11 @@ npx expo start --web
 ### 빌드
 
 ```bash
-# 웹 빌드
+# 웹 빌드 (자동으로 데이터 fetch 후 빌드)
 npm run build:web
 ```
+
+**주의**: 빌드 전 `prebuild:web` 스크립트가 자동으로 `fetch-data`를 실행합니다.
 
 ## 📜 사용 가능한 스크립트
 
@@ -257,9 +279,10 @@ npm run build:web
 |--------|------|
 | `npm start` | Expo 개발 서버 시작 |
 | `npm run web` | 웹 개발 서버 시작 |
+| `npm run fetch-data` | **백엔드 API에서 데이터 fetch하여 static JSON 생성** |
+| `npm run build:web` | 웹 프로덕션 빌드 (자동으로 데이터 fetch) |
 | `npm run android` | Android 앱 실행 |
 | `npm run ios` | iOS 앱 실행 |
-| `npm run build:web` | 웹 프로덕션 빌드 |
 
 ## 🎯 주요 특징
 

@@ -24,8 +24,8 @@ import type { InvestmentProfile } from './types';
 
 export const stockService = {
   /**
-   * 전체 저평가 우량주 데이터 Export (정적 데이터용)
-   * lastUpdated 타임스탬프 포함
+   * 정적 JSON 파일에서 저평가 우량주 데이터 로드
+   * 빌드 타임에 생성된 static JSON 파일 사용
    */
   exportAllStocks: async (limit: number = 1000): Promise<{
     lastUpdated: string;
@@ -34,16 +34,23 @@ export const stockService = {
     stocks: FrontendUndervaluedStock[];
   }> => {
     try {
-      const response = await undervaluedStocksApi.export(limit);
-      const usStocks = filterUSOnlyFromApi(response.stocks);
+      // static JSON 파일에서 로드
+      const response = await fetch('/data/undervalued-stocks.json');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+
+      // API 응답 형식과 동일하게 변환
+      const usStocks = filterUSOnlyFromApi(data.stocks);
       return {
-        lastUpdated: response.lastUpdated,
-        dataDate: response.dataDate,
+        lastUpdated: data.lastUpdated,
+        dataDate: data.dataDate,
         totalCount: usStocks.length,
         stocks: toFrontendUndervaluedStocks(usStocks),
       };
     } catch (error) {
-      console.error('Failed to export stocks:', error);
+      console.error('Failed to load stocks from static JSON:', error);
       return {
         lastUpdated: new Date().toISOString(),
         dataDate: new Date().toISOString().split('T')[0],
@@ -183,15 +190,21 @@ export const stockService = {
 
 export const featuredService = {
   /**
-   * 오늘의 주목 종목 조회 (US 종목만)
+   * 정적 JSON 파일에서 오늘의 주목 종목 로드
    */
   getFeatured: async (limit: number = 5): Promise<FrontendFeaturedStock[]> => {
     try {
-      const apiStocks = await undervaluedStocksApi.getFeatured(limit);
-      const usStocks = filterUSOnlyFromApi(apiStocks);
-      return toFrontendFeaturedStocks(usStocks);
+      // static JSON 파일에서 로드
+      const response = await fetch('/data/featured-stocks.json');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+
+      const usStocks = filterUSOnlyFromApi(data.stocks);
+      return toFrontendFeaturedStocks(usStocks.slice(0, limit));
     } catch (error) {
-      console.error('Failed to fetch featured stocks:', error);
+      console.error('Failed to load featured stocks from static JSON:', error);
       return [];
     }
   },
@@ -203,14 +216,20 @@ export const featuredService = {
 
 export const filingService = {
   /**
-   * 최신 공시 조회
+   * 정적 JSON 파일에서 최신 공시 로드
    */
   getLatest: async (limit: number = 20): Promise<FrontendFiling[]> => {
     try {
-      const apiFilings = await filingsApi.getLatest(limit);
-      return toFrontendFilings(apiFilings);
+      // static JSON 파일에서 로드
+      const response = await fetch('/data/filings.json');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+
+      return toFrontendFilings(data.filings.slice(0, limit));
     } catch (error) {
-      console.error('Failed to fetch latest filings:', error);
+      console.error('Failed to load filings from static JSON:', error);
       return [];
     }
   },
