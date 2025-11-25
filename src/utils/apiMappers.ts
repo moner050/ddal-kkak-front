@@ -11,6 +11,7 @@ import type {
   FilingType,
   GicsSector,
 } from '../api/types';
+import { toKoreanSector as mapSectorToKorean, toKoreanIndustry as mapIndustryToKorean } from '../constants/sectorMapping';
 
 // ============================================
 // Sentiment 변환
@@ -37,28 +38,26 @@ export const toApiSentiment = (frontendSentiment: FrontendSentiment): Sentiment 
 };
 
 // ============================================
-// Sector 변환 (GICS 영문 ↔ 한글)
+// Sector & Industry 변환 (영문 ↔ 한글)
 // ============================================
 
-const SECTOR_TO_KOREAN: Record<string, string> = {
-  'Information Technology': '정보기술',
-  'Healthcare': '헬스케어',
-  'Financials': '금융',
-  'Consumer Discretionary': '경기소비재',
-  'Communication Services': '커뮤니케이션 서비스',
-  'Industrials': '산업재',
-  'Consumer Staples': '필수소비재',
-  'Energy': '에너지',
-  'Utilities': '유틸리티',
-  'Real Estate': '부동산',
-  'Materials': '소재',
-  // Yahoo Finance 섹터 (대체 매핑)
-  'Technology': '정보기술',
-  'Consumer Cyclical': '경기소비재',
-  'Consumer Defensive': '필수소비재',
-  'Basic Materials': '소재',
+/**
+ * 백엔드 API의 영문 sector를 한글로 변환
+ * sectorMapping.ts의 포괄적인 매핑 사용
+ */
+export const toKoreanSector = (sector: string): string => {
+  return mapSectorToKorean(sector);
 };
 
+/**
+ * 백엔드 API의 영문 industry를 한글로 변환
+ * sectorMapping.ts의 포괄적인 매핑 사용
+ */
+export const toKoreanIndustry = (industry: string): string => {
+  return mapIndustryToKorean(industry);
+};
+
+// 한글 → 영문 매핑 (필터링/검색용)
 const SECTOR_TO_ENGLISH: Record<string, string> = {
   '정보기술': 'Information Technology',
   '헬스케어': 'Healthcare',
@@ -71,10 +70,6 @@ const SECTOR_TO_ENGLISH: Record<string, string> = {
   '유틸리티': 'Utilities',
   '부동산': 'Real Estate',
   '소재': 'Materials',
-};
-
-export const toKoreanSector = (sector: string): string => {
-  return SECTOR_TO_KOREAN[sector] || sector;
 };
 
 export const toEnglishSector = (sector: string): string => {
@@ -153,8 +148,8 @@ export const toFrontendUndervaluedStock = (
     symbol: apiStock.ticker,
     name: apiStock.name,
     category: toKoreanSector(apiStock.sector),
-    industry: apiStock.industry || '',
-    sector: apiStock.sector,
+    industry: toKoreanIndustry(apiStock.industry || ''),
+    sector: toKoreanSector(apiStock.sector),
     rank: apiStock.rank ?? (index !== undefined ? index + 1 : 0),
     aiScore: apiStock.totalScore,
     sentiment: toFrontendSentiment(apiStock.sentiment),
@@ -273,7 +268,7 @@ export const toFrontendFiling = (
     confidence: apiFiling.score / 100,
     aiScore: apiFiling.score,
     category: toKoreanSector(apiFiling.stockInfo?.gicsSector || ''),
-    industry: apiFiling.stockInfo?.gicsIndustryGroup || '',
+    industry: toKoreanIndustry(apiFiling.stockInfo?.gicsIndustryGroup || ''),
     logoUrl: apiFiling.stockInfo?.logoUrl || '',
     previousScores: scoreHistory?.map(h => h.score) || [],
   };
