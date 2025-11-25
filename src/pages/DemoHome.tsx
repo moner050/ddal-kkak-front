@@ -20,7 +20,7 @@ import { CATEGORIES, SECTOR_INDUSTRIES, SECTOR_THEMES } from "../constants/categ
 // Import types
 import { TAB_KEYS, TabKey, Sentiment } from "../types";
 
-// Import mock data
+// Import mock data (차트 및 뉴스용)
 import {
   categoryMovesUS as mockCategoryMovesUS,
   categoryMovesKR as mockCategoryMovesKR,
@@ -36,9 +36,6 @@ import {
   krFearGreedSeries,
   usBuffettSeries,
   krBuffettSeries,
-  featuredStocks as mockFeaturedStocks,
-  filings as mockFilings,
-  undervaluedStocks as mockUndervalued,
   NEWS_CATEGORIES,
   newsItems as mockNews,
 } from "../data/mock";
@@ -1149,9 +1146,22 @@ export default function DemoHome() {
                 </div>
               </div>
               <div className="space-y-3 sm:space-y-4">
-                {featuredStocks.filter(s => s.market === featuredMarket).map((stock) => (
-                  <FeaturedStockCard key={stock.id} stock={stock} onClick={() => openStockDetail(stock.symbol, "info")} />
-                ))}
+                {isLoadingFeatured ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+                    <div className="text-4xl mb-3">⏳</div>
+                    <p className="text-gray-600 font-medium">데이터를 불러오는 중...</p>
+                  </div>
+                ) : featuredStocks.filter(s => s.market === featuredMarket).length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+                    <div className="text-4xl mb-3">📭</div>
+                    <p className="text-gray-600 font-medium">데이터가 없습니다</p>
+                    <p className="text-sm text-gray-500 mt-2">백엔드 서버 연결을 확인해주세요</p>
+                  </div>
+                ) : (
+                  featuredStocks.filter(s => s.market === featuredMarket).map((stock) => (
+                    <FeaturedStockCard key={stock.id} stock={stock} onClick={() => openStockDetail(stock.symbol, "info")} />
+                  ))
+                )}
               </div>
             </section>
 
@@ -1196,15 +1206,28 @@ export default function DemoHome() {
                 </div>
               </div>
               <div className="grid gap-2 sm:gap-3 md:grid-cols-2">
-                {filings.filter(f => f.market === filingsMarket).slice(0, 4).map((filing) => (
-                  <FilingAnalysisCard
-                    key={filing.id}
-                    filing={filing}
-                    onClick={() => openStockDetail(filing.symbol, "filings")}
-                    favorites={favorites}
-                    toggleFavorite={toggleFavorite}
-                  />
-                ))}
+                {isLoadingFilings ? (
+                  <div className="col-span-2 text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+                    <div className="text-4xl mb-3">⏳</div>
+                    <p className="text-gray-600 font-medium">데이터를 불러오는 중...</p>
+                  </div>
+                ) : filings.filter(f => f.market === filingsMarket).length === 0 ? (
+                  <div className="col-span-2 text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+                    <div className="text-4xl mb-3">📭</div>
+                    <p className="text-gray-600 font-medium">데이터가 없습니다</p>
+                    <p className="text-sm text-gray-500 mt-2">백엔드 서버 연결을 확인해주세요</p>
+                  </div>
+                ) : (
+                  filings.filter(f => f.market === filingsMarket).slice(0, 4).map((filing) => (
+                    <FilingAnalysisCard
+                      key={filing.id}
+                      filing={filing}
+                      onClick={() => openStockDetail(filing.symbol, "filings")}
+                      favorites={favorites}
+                      toggleFavorite={toggleFavorite}
+                    />
+                  ))
+                )}
               </div>
             </section>
 
@@ -1427,11 +1450,22 @@ export default function DemoHome() {
             </div>
 
             {/* 초보자 모드: 카드 뷰 / 전문가 모드: 테이블 뷰 */}
-            {isBeginnerMode ? (
+            {isLoadingUndervalued ? (
+              <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="text-4xl mb-3">⏳</div>
+                <p className="text-gray-600 font-medium">데이터를 불러오는 중...</p>
+              </div>
+            ) : undervaluedStocks.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="text-4xl mb-3">📭</div>
+                <p className="text-gray-600 font-medium">데이터가 없습니다</p>
+                <p className="text-sm text-gray-500 mt-2">백엔드 서버 연결을 확인해주세요</p>
+              </div>
+            ) : isBeginnerMode ? (
               /* 초보자 모드 - 카드 뷰 */
               <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {(() => {
-                  let filteredStocks = mockUndervalued.filter((stock) => {
+                  let filteredStocks = undervaluedStocks.filter((stock) => {
                     const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
                     const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
                     const matchIndustry = undervaluedIndustry === "전체" || stock.industry === undervaluedIndustry;
@@ -1709,7 +1743,7 @@ export default function DemoHome() {
 
             {/* Pagination */}
             {(() => {
-              const filteredStocks = mockUndervalued.filter((stock) => {
+              const filteredStocks = undervaluedStocks.filter((stock) => {
                 const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
                 const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
                 const matchIndustry = undervaluedIndustry === "전체" || stock.industry === undervaluedIndustry;
@@ -1906,53 +1940,66 @@ export default function DemoHome() {
             </div>
 
             {/* 공시 목록 */}
-            <div className="space-y-3">
-              {(() => {
-                let filteredFilings = filings.filter((filing) => {
-                  const matchMarket = filingsMarketFilter === "전체" || filing.market === filingsMarketFilter;
-                  const matchCategory = filingsCategory === "전체" || filing.category === filingsCategory;
-                  const matchIndustry = filingsIndustry === "전체" || filing.industry === filingsIndustry;
-                  const matchQuery =
-                    !filingsSearchQuery ||
-                    filing.company.toLowerCase().includes(filingsSearchQuery.toLowerCase()) ||
-                    filing.symbol.toLowerCase().includes(filingsSearchQuery.toLowerCase());
-                  const matchSentiment = filingsSentimentFilter === "ALL" || filing.sentiment === filingsSentimentFilter;
-                  return matchMarket && matchCategory && matchIndustry && matchQuery && matchSentiment;
-                });
-
-                // Apply sorting
-                if (filingsSortBy) {
-                  filteredFilings = [...filteredFilings].sort((a: any, b: any) => {
-                    let aVal, bVal;
-                    if (filingsSortBy === "company") {
-                      aVal = a.company.toLowerCase();
-                      bVal = b.company.toLowerCase();
-                    } else {
-                      aVal = a[filingsSortBy];
-                      bVal = b[filingsSortBy];
-                    }
-                    if (aVal === undefined || bVal === undefined) return 0;
-                    const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-                    return filingsSortDirection === "asc" ? comparison : -comparison;
+            {isLoadingFilings ? (
+              <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="text-4xl mb-3">⏳</div>
+                <p className="text-gray-600 font-medium">데이터를 불러오는 중...</p>
+              </div>
+            ) : filings.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="text-4xl mb-3">📭</div>
+                <p className="text-gray-600 font-medium">데이터가 없습니다</p>
+                <p className="text-sm text-gray-500 mt-2">백엔드 서버 연결을 확인해주세요</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(() => {
+                  let filteredFilings = filings.filter((filing) => {
+                    const matchMarket = filingsMarketFilter === "전체" || filing.market === filingsMarketFilter;
+                    const matchCategory = filingsCategory === "전체" || filing.category === filingsCategory;
+                    const matchIndustry = filingsIndustry === "전체" || filing.industry === filingsIndustry;
+                    const matchQuery =
+                      !filingsSearchQuery ||
+                      filing.company.toLowerCase().includes(filingsSearchQuery.toLowerCase()) ||
+                      filing.symbol.toLowerCase().includes(filingsSearchQuery.toLowerCase());
+                    const matchSentiment = filingsSentimentFilter === "ALL" || filing.sentiment === filingsSentimentFilter;
+                    return matchMarket && matchCategory && matchIndustry && matchQuery && matchSentiment;
                   });
-                }
 
-                const itemsPerPage = 30;
-                const startIndex = (filingsPage - 1) * itemsPerPage;
-                const endIndex = startIndex + itemsPerPage;
-                const paginatedFilings = filteredFilings.slice(startIndex, endIndex);
+                  // Apply sorting
+                  if (filingsSortBy) {
+                    filteredFilings = [...filteredFilings].sort((a: any, b: any) => {
+                      let aVal, bVal;
+                      if (filingsSortBy === "company") {
+                        aVal = a.company.toLowerCase();
+                        bVal = b.company.toLowerCase();
+                      } else {
+                        aVal = a[filingsSortBy];
+                        bVal = b[filingsSortBy];
+                      }
+                      if (aVal === undefined || bVal === undefined) return 0;
+                      const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                      return filingsSortDirection === "asc" ? comparison : -comparison;
+                    });
+                  }
 
-                return paginatedFilings.map((filing) => (
-                  <FilingAnalysisCard
-                    key={filing.id}
-                    filing={filing}
-                    onClick={() => openStockDetail(filing.symbol, "filings")}
-                    favorites={favorites}
-                    toggleFavorite={toggleFavorite}
-                  />
-                ));
-              })()}
-            </div>
+                  const itemsPerPage = 30;
+                  const startIndex = (filingsPage - 1) * itemsPerPage;
+                  const endIndex = startIndex + itemsPerPage;
+                  const paginatedFilings = filteredFilings.slice(startIndex, endIndex);
+
+                  return paginatedFilings.map((filing) => (
+                    <FilingAnalysisCard
+                      key={filing.id}
+                      filing={filing}
+                      onClick={() => openStockDetail(filing.symbol, "filings")}
+                      favorites={favorites}
+                      toggleFavorite={toggleFavorite}
+                    />
+                  ));
+                })()}
+              </div>
+            )}
 
             {/* Pagination */}
             {(() => {
@@ -2020,7 +2067,7 @@ export default function DemoHome() {
                 );
               }
 
-              // Get favorited stocks from mockUndervalued and apply filters
+              // Get favorited stocks from undervaluedStocks and apply filters
               let favoritedStocks = undervaluedStocks.filter(stock => {
                 const isFavorited = favorites[stock.symbol];
                 const matchMarket = watchlistMarket === "전체" || stock.market === watchlistMarket;
@@ -2227,7 +2274,7 @@ export default function DemoHome() {
             // ✅ 종목이 선택되지 않은 경우: 첫 화면 표시
             if (!detailSymbol) {
               // 저평가 우량주 최신 3개
-              const latestUndervalued = mockUndervalued
+              const latestUndervalued = undervaluedStocks
                 .sort((a, b) => (b.aiScore || 0) - (a.aiScore || 0))
                 .slice(0, 3);
 
