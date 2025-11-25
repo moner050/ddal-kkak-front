@@ -18,7 +18,7 @@ import { setQueryParams, getQueryParam } from "../utils/queryParams";
 import { CATEGORIES, SECTOR_INDUSTRIES, SECTOR_THEMES } from "../constants/categories";
 
 // Import types
-import { TabKey, Sentiment } from "../types";
+import { TAB_KEYS, TabKey, Sentiment } from "../types";
 
 // Import mock data
 import {
@@ -59,6 +59,7 @@ import ImpactBadge from "../components/stock/ImpactBadge";
 import FeaturedStockCard from "../components/stock/FeaturedStockCard";
 import FilingAnalysisCard from "../components/stock/FilingAnalysisCard";
 import FilingCard from "../components/stock/FilingCard";
+import BeginnerStockCard from "../components/stock/BeginnerStockCard";
 
 // Import news components
 import NewsImportanceBadge from "../components/news/NewsImportanceBadge";
@@ -71,6 +72,11 @@ import Header from "../components/common/Header";
 import BottomNav from "../components/common/BottomNav";
 import CategoryChips from "../components/common/CategoryChips";
 import Pagination from "../components/common/Pagination";
+import BeginnerModeToggle from "../components/common/BeginnerModeToggle";
+import ColorLegend from "../components/common/ColorLegend";
+
+// Import beginner guide constants
+import { METRIC_BEGINNER_GUIDE, AI_SCORE_INTERPRETATION } from "../constants/beginnerGuide";
 
 // Import modal components
 import LoginModal from "../components/modals/LoginModal";
@@ -352,8 +358,7 @@ function NewsSummaryTab() {
 }
 
 // ======================= DemoHome (메인) =======================
-const TAB_KEYS = ["home", "undervalued", "filings", "watchlist", "detail"] as const;
-type TabKey = (typeof TAB_KEYS)[number];
+// TAB_KEYS와 TabKey는 ../types에서 import됨
 
 // 재무 지표 평가 함수 (좋음: 초록색, 보통: 검정색, 나쁨: 빨간색)
 function getMetricColor(key: string, value: number): string {
@@ -571,6 +576,29 @@ export default function DemoHome() {
 
   // 저평가/관심 탭 로고 에러 상태
   const [logoErrors, setLogoErrors] = useState<Record<string, boolean>>({});
+
+  // ✅ 초보자 모드 상태 (localStorage에 저장)
+  const [isBeginnerMode, setIsBeginnerMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true; // 기본값: 초보자 모드
+    try {
+      const saved = localStorage.getItem("ddal-kkak-beginner-mode");
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  // 초보자 모드 변경 시 localStorage에 저장
+  const handleBeginnerModeToggle = (value: boolean) => {
+    setIsBeginnerMode(value);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("ddal-kkak-beginner-mode", JSON.stringify(value));
+      } catch (e) {
+        console.error("Failed to save beginner mode:", e);
+      }
+    }
+  };
 
   // ✅ 최근 본 종목 (최대 5개, localStorage 활용)
   const [recentStocks, setRecentStocks] = useState<string[]>(() => {
@@ -1057,12 +1085,14 @@ export default function DemoHome() {
                     >
                       🇺🇸 미국
                     </button>
+                    {/* KR 종목 지원 예정 - 현재 숨김 처리
                     <button
                       onClick={() => setFeaturedMarket("KR")}
                       className={classNames("rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap", featuredMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
                     >
                       🇰🇷 한국
                     </button>
+                    */}
                   </div>
                 </div>
               </div>
@@ -1102,12 +1132,14 @@ export default function DemoHome() {
                     >
                       🇺🇸 미국
                     </button>
+                    {/* KR 종목 지원 예정 - 현재 숨김 처리
                     <button
                       onClick={() => setFilingsMarket("KR")}
                       className={classNames("rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap", filingsMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
                     >
                       🇰🇷 한국
                     </button>
+                    */}
                   </div>
                 </div>
               </div>
@@ -1180,43 +1212,58 @@ export default function DemoHome() {
         >
           <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
             <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-2">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
                   💎 종목추천
                 </h1>
-                <button
-                  onClick={() => {
-                    let filteredStocks = mockUndervalued.filter((stock) => {
-                      const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
-                      const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
-                      const matchQuery =
-                        !undervaluedSearchQuery ||
-                        stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
-                        stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
-                      return matchMarket && matchCategory && matchQuery;
-                    });
-
-                    // Apply sorting
-                    if (undervaluedSortBy) {
-                      filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
-                        const aVal = a[undervaluedSortBy];
-                        const bVal = b[undervaluedSortBy];
-                        if (aVal === undefined || bVal === undefined) return 0;
-                        const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-                        return undervaluedSortDirection === "asc" ? comparison : -comparison;
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                  {/* 초보자/전문가 모드 토글 */}
+                  <BeginnerModeToggle
+                    isBeginnerMode={isBeginnerMode}
+                    onToggle={handleBeginnerModeToggle}
+                  />
+                  <button
+                    onClick={() => {
+                      let filteredStocks = mockUndervalued.filter((stock) => {
+                        const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
+                        const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
+                        const matchQuery =
+                          !undervaluedSearchQuery ||
+                          stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
+                          stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
+                        return matchMarket && matchCategory && matchQuery;
                       });
-                    }
 
-                    exportUndervaluedToExcel(filteredStocks, undervaluedStrategy);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-md"
-                >
-                  <span>📥</span>
-                  <span className="hidden sm:inline">엑셀 다운로드</span>
-                  <span className="sm:hidden">다운로드</span>
-                </button>
+                      // Apply sorting
+                      if (undervaluedSortBy) {
+                        filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
+                          const aVal = a[undervaluedSortBy];
+                          const bVal = b[undervaluedSortBy];
+                          if (aVal === undefined || bVal === undefined) return 0;
+                          const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                          return undervaluedSortDirection === "asc" ? comparison : -comparison;
+                        });
+                      }
+
+                      exportUndervaluedToExcel(filteredStocks, undervaluedStrategy);
+                    }}
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-md"
+                  >
+                    <span>📥</span>
+                    <span className="hidden sm:inline">엑셀 다운로드</span>
+                    <span className="sm:hidden">다운로드</span>
+                  </button>
+                </div>
               </div>
-              <p className="mt-2 text-sm text-gray-600">전략별 맞춤 종목을 확인하세요</p>
+              <p className="text-xs sm:text-sm text-gray-600">
+                {isBeginnerMode
+                  ? "🌱 초보자 모드: 핵심 지표와 쉬운 설명을 제공합니다. 각 지표를 클릭하면 상세 설명을 볼 수 있어요!"
+                  : "📊 전문가 모드: 모든 재무 지표를 한눈에 비교할 수 있습니다."}
+              </p>
+              {/* 색상 범례 */}
+              <div className="mt-3">
+                <ColorLegend />
+              </div>
             </div>
 
             {/* 투자 전략 선택 */}
@@ -1272,11 +1319,11 @@ export default function DemoHome() {
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-indigo-200"
               />
 
-              {/* 시장 선택 */}
+              {/* 시장 선택 - KR 종목 지원 예정 */}
               <div>
                 <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">시장</div>
                 <div className="flex gap-1.5 sm:gap-2">
-                  {(["전체", "US", "KR"] as const).map((market) => (
+                  {(["전체", "US"] as const).map((market) => (
                     <button
                       key={market}
                       onClick={() => setUndervaluedMarket(market)}
@@ -1287,7 +1334,7 @@ export default function DemoHome() {
                           : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                       )}
                     >
-                      {market === "전체" ? "전체" : market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                      {market === "전체" ? "🌐 전체" : "🇺🇸 미국"}
                     </button>
                   ))}
                 </div>
@@ -1327,252 +1374,301 @@ export default function DemoHome() {
               )}
             </div>
 
-            {/* 게시판 형식 테이블 */}
-            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs">
-                        종목
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs">
-                        섹터
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs">
-                        산업군
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs">
-                        <TooltipHeader
-                          label="AI 점수"
-                          sortKey="aiScore"
-                          currentSortKey={undervaluedSortBy}
-                          sortDirection={undervaluedSortDirection}
-                          onSort={handleUndervaluedSort}
-                        />
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs">
-                        <TooltipHeader
-                          label="ROE"
-                          tooltip="자기자본이익률 - 높을수록 우수"
-                          sortKey="ROE"
-                          currentSortKey={undervaluedSortBy}
-                          sortDirection={undervaluedSortDirection}
-                          onSort={handleUndervaluedSort}
-                        />
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs">
-                        <TooltipHeader
-                          label="PER"
-                          tooltip="주가수익비율 - 낮을수록 저평가"
-                          sortKey="PER"
-                          currentSortKey={undervaluedSortBy}
-                          sortDirection={undervaluedSortDirection}
-                          onSort={handleUndervaluedSort}
-                        />
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs">
-                        <TooltipHeader
-                          label="PEG"
-                          tooltip="PEG 비율 (PER/성장률) - 1 이하 매력적"
-                          sortKey="PEG"
-                          currentSortKey={undervaluedSortBy}
-                          sortDirection={undervaluedSortDirection}
-                          onSort={handleUndervaluedSort}
-                        />
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs">
-                        <TooltipHeader
-                          label="PBR"
-                          tooltip="주가순자산비율 - 낮을수록 저평가"
-                          sortKey="PBR"
-                          currentSortKey={undervaluedSortBy}
-                          sortDirection={undervaluedSortDirection}
-                          onSort={handleUndervaluedSort}
-                        />
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs">
-                        <TooltipHeader
-                          label="PSR"
-                          tooltip="주가매출비율 - 낮을수록 저평가"
-                          sortKey="PSR"
-                          currentSortKey={undervaluedSortBy}
-                          sortDirection={undervaluedSortDirection}
-                          onSort={handleUndervaluedSort}
-                        />
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs">
-                        <TooltipHeader
-                          label="RevYoY"
-                          tooltip="매출 YoY 성장률"
-                          sortKey="RevYoY"
-                          currentSortKey={undervaluedSortBy}
-                          sortDirection={undervaluedSortDirection}
-                          onSort={handleUndervaluedSort}
-                        />
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs">
-                        <TooltipHeader
-                          label="EPS 3Y"
-                          tooltip="3년 EPS 성장률"
-                          sortKey="EPS_Growth_3Y"
-                          currentSortKey={undervaluedSortBy}
-                          sortDirection={undervaluedSortDirection}
-                          onSort={handleUndervaluedSort}
-                        />
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs">
-                        <TooltipHeader
-                          label="영업이익률"
-                          tooltip="영업이익률 - 높을수록 우수"
-                          sortKey="OpMarginTTM"
-                          currentSortKey={undervaluedSortBy}
-                          sortDirection={undervaluedSortDirection}
-                          onSort={handleUndervaluedSort}
-                        />
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs">
-                        <TooltipHeader
-                          label="FCF"
-                          tooltip="FCF 수익률 (현금 창출 능력)"
-                          sortKey="FCF_Yield"
-                          currentSortKey={undervaluedSortBy}
-                          sortDirection={undervaluedSortDirection}
-                          onSort={handleUndervaluedSort}
-                        />
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-100">
-                    {(() => {
-                      let filteredStocks = mockUndervalued.filter((stock) => {
-                        const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
-                        const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
-                        const matchIndustry = undervaluedIndustry === "전체" || stock.industry === undervaluedIndustry;
-                        const matchQuery =
-                          !undervaluedSearchQuery ||
-                          stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
-                          stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
-                        return matchMarket && matchCategory && matchIndustry && matchQuery;
-                      });
+            {/* 초보자 모드: 카드 뷰 / 전문가 모드: 테이블 뷰 */}
+            {isBeginnerMode ? (
+              /* 초보자 모드 - 카드 뷰 */
+              <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {(() => {
+                  let filteredStocks = mockUndervalued.filter((stock) => {
+                    const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
+                    const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
+                    const matchIndustry = undervaluedIndustry === "전체" || stock.industry === undervaluedIndustry;
+                    const matchQuery =
+                      !undervaluedSearchQuery ||
+                      stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
+                      stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
+                    return matchMarket && matchCategory && matchIndustry && matchQuery;
+                  });
 
-                      // Apply sorting
-                      if (undervaluedSortBy) {
-                        filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
-                          const aVal = a[undervaluedSortBy];
-                          const bVal = b[undervaluedSortBy];
-                          if (aVal === undefined || bVal === undefined) return 0;
-                          const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-                          return undervaluedSortDirection === "asc" ? comparison : -comparison;
+                  // Apply sorting
+                  if (undervaluedSortBy) {
+                    filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
+                      const aVal = a[undervaluedSortBy];
+                      const bVal = b[undervaluedSortBy];
+                      if (aVal === undefined || bVal === undefined) return 0;
+                      const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                      return undervaluedSortDirection === "asc" ? comparison : -comparison;
+                    });
+                  }
+
+                  const itemsPerPage = 12; // 카드 뷰에서는 12개씩
+                  const startIndex = (undervaluedPage - 1) * itemsPerPage;
+                  const endIndex = startIndex + itemsPerPage;
+                  const paginatedStocks = filteredStocks.slice(startIndex, endIndex);
+
+                  return paginatedStocks.map((stock) => (
+                    <BeginnerStockCard
+                      key={stock.symbol}
+                      stock={stock}
+                      onClick={() => openStockDetail(stock.symbol, "info")}
+                      onToggleFavorite={() => toggleFavorite(stock.symbol)}
+                      isFavorite={favorites[stock.symbol]}
+                      logoError={logoErrors[stock.symbol]}
+                      onLogoError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
+                    />
+                  ));
+                })()}
+              </div>
+            ) : (
+              /* 전문가 모드 - 테이블 뷰 */
+              <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs">
+                          종목
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs">
+                          섹터
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs">
+                          산업군
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs">
+                          <TooltipHeader
+                            label="AI 점수"
+                            sortKey="aiScore"
+                            currentSortKey={undervaluedSortBy}
+                            sortDirection={undervaluedSortDirection}
+                            onSort={handleUndervaluedSort}
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs">
+                          <TooltipHeader
+                            label="ROE"
+                            tooltip="자기자본이익률 - 높을수록 우수"
+                            sortKey="ROE"
+                            currentSortKey={undervaluedSortBy}
+                            sortDirection={undervaluedSortDirection}
+                            onSort={handleUndervaluedSort}
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs">
+                          <TooltipHeader
+                            label="PER"
+                            tooltip="주가수익비율 - 낮을수록 저평가"
+                            sortKey="PER"
+                            currentSortKey={undervaluedSortBy}
+                            sortDirection={undervaluedSortDirection}
+                            onSort={handleUndervaluedSort}
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs">
+                          <TooltipHeader
+                            label="PEG"
+                            tooltip="PEG 비율 (PER/성장률) - 1 이하 매력적"
+                            sortKey="PEG"
+                            currentSortKey={undervaluedSortBy}
+                            sortDirection={undervaluedSortDirection}
+                            onSort={handleUndervaluedSort}
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs">
+                          <TooltipHeader
+                            label="PBR"
+                            tooltip="주가순자산비율 - 낮을수록 저평가"
+                            sortKey="PBR"
+                            currentSortKey={undervaluedSortBy}
+                            sortDirection={undervaluedSortDirection}
+                            onSort={handleUndervaluedSort}
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs">
+                          <TooltipHeader
+                            label="PSR"
+                            tooltip="주가매출비율 - 낮을수록 저평가"
+                            sortKey="PSR"
+                            currentSortKey={undervaluedSortBy}
+                            sortDirection={undervaluedSortDirection}
+                            onSort={handleUndervaluedSort}
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs">
+                          <TooltipHeader
+                            label="RevYoY"
+                            tooltip="매출 YoY 성장률"
+                            sortKey="RevYoY"
+                            currentSortKey={undervaluedSortBy}
+                            sortDirection={undervaluedSortDirection}
+                            onSort={handleUndervaluedSort}
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs">
+                          <TooltipHeader
+                            label="EPS 3Y"
+                            tooltip="3년 EPS 성장률"
+                            sortKey="EPS_Growth_3Y"
+                            currentSortKey={undervaluedSortBy}
+                            sortDirection={undervaluedSortDirection}
+                            onSort={handleUndervaluedSort}
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs">
+                          <TooltipHeader
+                            label="영업이익률"
+                            tooltip="영업이익률 - 높을수록 우수"
+                            sortKey="OpMarginTTM"
+                            currentSortKey={undervaluedSortBy}
+                            sortDirection={undervaluedSortDirection}
+                            onSort={handleUndervaluedSort}
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs">
+                          <TooltipHeader
+                            label="FCF"
+                            tooltip="FCF 수익률 (현금 창출 능력)"
+                            sortKey="FCF_Yield"
+                            currentSortKey={undervaluedSortBy}
+                            sortDirection={undervaluedSortDirection}
+                            onSort={handleUndervaluedSort}
+                          />
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-100">
+                      {(() => {
+                        let filteredStocks = mockUndervalued.filter((stock) => {
+                          const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
+                          const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
+                          const matchIndustry = undervaluedIndustry === "전체" || stock.industry === undervaluedIndustry;
+                          const matchQuery =
+                            !undervaluedSearchQuery ||
+                            stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
+                            stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
+                          return matchMarket && matchCategory && matchIndustry && matchQuery;
                         });
-                      }
 
-                      const itemsPerPage = 30;
-                      const startIndex = (undervaluedPage - 1) * itemsPerPage;
-                      const endIndex = startIndex + itemsPerPage;
-                      const paginatedStocks = filteredStocks.slice(startIndex, endIndex);
+                        // Apply sorting
+                        if (undervaluedSortBy) {
+                          filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
+                            const aVal = a[undervaluedSortBy];
+                            const bVal = b[undervaluedSortBy];
+                            if (aVal === undefined || bVal === undefined) return 0;
+                            const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                            return undervaluedSortDirection === "asc" ? comparison : -comparison;
+                          });
+                        }
 
-                      return paginatedStocks.map((stock) => (
-                        <tr
-                          key={stock.symbol}
-                          onClick={() => openStockDetail(stock.symbol, "info")}
-                          className="hover:bg-gray-50 cursor-pointer transition-colors"
-                        >
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
-                              <div className="relative">
-                                {stock.logoUrl && !logoErrors[stock.symbol] ? (
-                                  <img
-                                    src={stock.logoUrl}
-                                    alt={stock.name}
-                                    className="h-10 w-10 rounded-lg"
-                                    onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
-                                  />
-                                ) : (
-                                  <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
-                                    <span className="text-lg text-gray-400">?</span>
+                        const itemsPerPage = 30;
+                        const startIndex = (undervaluedPage - 1) * itemsPerPage;
+                        const endIndex = startIndex + itemsPerPage;
+                        const paginatedStocks = filteredStocks.slice(startIndex, endIndex);
+
+                        return paginatedStocks.map((stock) => (
+                          <tr
+                            key={stock.symbol}
+                            onClick={() => openStockDetail(stock.symbol, "info")}
+                            className="hover:bg-gray-50 cursor-pointer transition-colors"
+                          >
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-3">
+                                <div className="relative">
+                                  {stock.logoUrl && !logoErrors[stock.symbol] ? (
+                                    <img
+                                      src={stock.logoUrl}
+                                      alt={stock.name}
+                                      className="h-10 w-10 rounded-lg"
+                                      onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
+                                    />
+                                  ) : (
+                                    <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                                      <span className="text-lg text-gray-400">?</span>
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleFavorite(stock.symbol);
+                                    }}
+                                    className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
+                                  >
+                                    <span className="text-xs">
+                                      {favorites[stock.symbol] ? '❤️' : '🤍'}
+                                    </span>
+                                  </button>
+                                </div>
+                                <div>
+                                  <div className="text-sm font-bold text-gray-900">{stock.name}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {stock.symbol} · {stock.market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
                                   </div>
-                                )}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleFavorite(stock.symbol);
-                                  }}
-                                  className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-200"
-                                >
-                                  <span className="text-xs">
-                                    {favorites[stock.symbol] ? '❤️' : '🤍'}
-                                  </span>
-                                </button>
-                              </div>
-                              <div>
-                                <div className="text-sm font-bold text-gray-900">{stock.name}</div>
-                                <div className="text-xs text-gray-500">
-                                  {stock.symbol} · {stock.market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-                              {stock.category}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-left">
-                            <span className="text-xs text-gray-700">{stock.industry}</span>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center">
-                            <div className="flex justify-center">
-                              <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="sm" />
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center">
-                            <span className="text-xs text-gray-900 font-medium">{stock.ROE}%</span>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center">
-                            <span className="text-xs text-gray-900 font-medium">{stock.PER}</span>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center">
-                            <span className="text-xs text-gray-900 font-medium">{stock.PEG}</span>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center">
-                            <span className="text-xs text-gray-900 font-medium">{stock.PBR}</span>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center">
-                            <span className="text-xs text-gray-900 font-medium">{stock.PSR}</span>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center">
-                            <span className="text-xs text-emerald-600 font-medium">{stock.RevYoY}%</span>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center">
-                            <span className="text-xs text-emerald-600 font-medium">{stock.EPS_Growth_3Y}%</span>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center">
-                            <span className="text-xs text-gray-900 font-medium">{stock.OpMarginTTM}%</span>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center">
-                            <span className="text-xs text-gray-900 font-medium">{stock.FCF_Yield}%</span>
-                          </td>
-                        </tr>
-                      ));
-                    })()}
-                  </tbody>
-                </table>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+                                {stock.category}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-left">
+                              <span className="text-xs text-gray-700">{stock.industry}</span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <div className="flex justify-center">
+                                <AIScoreGauge score={stock.aiScore} sentiment={stock.sentiment} size="sm" />
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <span className={classNames("text-xs font-medium", getMetricColor("ROE", stock.ROE))}>{stock.ROE}%</span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <span className={classNames("text-xs font-medium", getMetricColor("PER", stock.PER))}>{stock.PER}</span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <span className={classNames("text-xs font-medium", getMetricColor("PEG", stock.PEG))}>{stock.PEG}</span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <span className={classNames("text-xs font-medium", getMetricColor("PBR", stock.PBR))}>{stock.PBR}</span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <span className={classNames("text-xs font-medium", getMetricColor("PSR", stock.PSR))}>{stock.PSR}</span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <span className={classNames("text-xs font-medium", getMetricColor("RevYoY", stock.RevYoY))}>{stock.RevYoY}%</span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <span className={classNames("text-xs font-medium", getMetricColor("EPS_Growth_3Y", stock.EPS_Growth_3Y))}>{stock.EPS_Growth_3Y}%</span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <span className={classNames("text-xs font-medium", getMetricColor("OpMarginTTM", stock.OpMarginTTM))}>{stock.OpMarginTTM}%</span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <span className={classNames("text-xs font-medium", getMetricColor("FCF_Yield", stock.FCF_Yield))}>{stock.FCF_Yield}%</span>
+                            </td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Pagination */}
             {(() => {
               const filteredStocks = mockUndervalued.filter((stock) => {
                 const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
                 const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
+                const matchIndustry = undervaluedIndustry === "전체" || stock.industry === undervaluedIndustry;
                 const matchQuery =
                   !undervaluedSearchQuery ||
                   stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
                   stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
-                return matchMarket && matchCategory && matchQuery;
+                return matchMarket && matchCategory && matchIndustry && matchQuery;
               });
-              const totalPages = Math.ceil(filteredStocks.length / 30);
+              const itemsPerPage = isBeginnerMode ? 12 : 30;
+              const totalPages = Math.ceil(filteredStocks.length / itemsPerPage);
 
               if (totalPages <= 1) return null;
 
@@ -1706,11 +1802,11 @@ export default function DemoHome() {
                 </div>
               </div>
 
-              {/* 시장 선택 */}
+              {/* 시장 선택 - KR 종목 지원 예정 */}
               <div>
                 <div className="text-[10px] sm:text-xs text-gray-600 mb-2 font-semibold">시장</div>
                 <div className="flex gap-1.5 sm:gap-2">
-                  {(["전체", "US", "KR"] as const).map((market) => (
+                  {(["전체", "US"] as const).map((market) => (
                     <button
                       key={market}
                       onClick={() => setFilingsMarketFilter(market)}
@@ -1721,7 +1817,7 @@ export default function DemoHome() {
                           : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                       )}
                     >
-                      {market === "전체" ? "전체" : market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                      {market === "전체" ? "🌐 전체" : "🇺🇸 미국"}
                     </button>
                   ))}
                 </div>
@@ -1898,11 +1994,11 @@ export default function DemoHome() {
                       className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
                     />
 
-                    {/* 시장 선택 */}
+                    {/* 시장 선택 - KR 종목 지원 예정 */}
                     <div>
                       <div className="text-xs text-gray-600 mb-2 font-semibold">시장</div>
                       <div className="flex gap-2">
-                        {(["전체", "US", "KR"] as const).map((market) => (
+                        {(["전체", "US"] as const).map((market) => (
                           <button
                             key={market}
                             onClick={() => setWatchlistMarket(market)}
@@ -1913,7 +2009,7 @@ export default function DemoHome() {
                                 : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                             )}
                           >
-                            {market === "전체" ? "전체" : market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                            {market === "전체" ? "🌐 전체" : "🇺🇸 미국"}
                           </button>
                         ))}
                       </div>
@@ -2091,7 +2187,7 @@ export default function DemoHome() {
               // 최근 본 종목 데이터
               const recentStocksList = recentStocks
                 .map(symbol => mockUndervalued.find(s => s.symbol === symbol))
-                .filter(Boolean)
+                .filter((s): s is typeof mockUndervalued[number] => s !== undefined)
                 .slice(0, 5);
 
               return (
@@ -2407,7 +2503,7 @@ export default function DemoHome() {
                             ) : (
                               <div className="text-xs text-gray-600 mb-2">{key.replace("Score", "")}</div>
                             )}
-                            <div className={classNames("text-3xl font-bold", getMetricColor(key, stockDetail[key]))}>
+                            <div className={classNames("text-3xl font-bold", typeof stockDetail[key] === "number" ? getMetricColor(key, stockDetail[key]) : "text-gray-900")}>
                               {stockDetail[key]}
                             </div>
                           </div>
@@ -2422,8 +2518,8 @@ export default function DemoHome() {
                         {["FairValue", "Discount", "PE", "PEG", "PB", "PS", "EV_EBITDA"].map(key => {
                           if (!stockDetail[key]) return null;
                           const value = stockDetail[key];
-                          let displayValue = typeof value === "number" ? value.toFixed(2) : value;
-                          if (key === "Discount") displayValue = value.toFixed(1) + "%";
+                          let displayValue = typeof value === "number" ? value.toFixed(2) : String(value);
+                          if (key === "Discount" && typeof value === "number") displayValue = value.toFixed(1) + "%";
                           const colorClass = typeof value === "number" ? getMetricColor(key, value) : "text-gray-900";
                           return (
                             <div key={key} className="p-4 rounded-lg bg-gray-50">
@@ -2449,6 +2545,7 @@ export default function DemoHome() {
                           {["ROE", "ROA", "OpMarginTTM", "OperatingMargins"].map(key => {
                             if (!stockDetail[key]) return null;
                             const value = stockDetail[key];
+                            if (typeof value !== "number") return null;
                             const displayValue = value.toFixed(1) + "%";
                             const colorClass = getMetricColor(key, value);
                             return (
@@ -2473,6 +2570,7 @@ export default function DemoHome() {
                           {["RevYoY", "Revenue_Growth_3Y", "EPS_Growth_3Y", "EBITDA_Growth_3Y"].map(key => {
                             if (!stockDetail[key]) return null;
                             const value = stockDetail[key];
+                            if (typeof value !== "number") return null;
                             const displayValue = value.toFixed(1) + "%";
                             const colorClass = getMetricColor(key, value);
                             return (
