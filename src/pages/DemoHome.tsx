@@ -551,6 +551,10 @@ export default function DemoHome() {
   const [isLoadingFilings, setIsLoadingFilings] = useState(false);
   const [isLoadingUndervalued, setIsLoadingUndervalued] = useState(false);
 
+  // 데이터 업데이트 날짜
+  const [dataLastUpdated, setDataLastUpdated] = useState<string>('');
+  const [dataDate, setDataDate] = useState<string>('');
+
   // 홈 화면 필터
   const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
   const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
@@ -668,11 +672,14 @@ export default function DemoHome() {
         console.log('✅ Filings loaded:', filingsData.length);
         setIsLoadingFilings(false);
 
-        // Undervalued Stocks 로드
+        // Undervalued Stocks 로드 (정적 데이터 Export)
         setIsLoadingUndervalued(true);
-        const stocks = await stockService.getTopStocks(100);
-        setUndervaluedStocks(stocks);
-        console.log('✅ Undervalued stocks loaded:', stocks.length);
+        const stocksData = await stockService.exportAllStocks(1000);
+        setUndervaluedStocks(stocksData.stocks);
+        setDataLastUpdated(stocksData.lastUpdated);
+        setDataDate(stocksData.dataDate);
+        console.log('✅ Undervalued stocks loaded:', stocksData.stocks.length);
+        console.log('📅 Data date:', stocksData.dataDate, '| Last updated:', stocksData.lastUpdated);
         setIsLoadingUndervalued(false);
       } catch (error) {
         console.error('❌ Failed to load API data:', error);
@@ -1335,6 +1342,12 @@ export default function DemoHome() {
                   ? "🌱 초보자 모드: 핵심 지표와 쉬운 설명을 제공합니다. 각 지표를 클릭하면 상세 설명을 볼 수 있어요!"
                   : "📊 전문가 모드: 모든 재무 지표를 한눈에 비교할 수 있습니다."}
               </p>
+              {/* 데이터 기준 날짜 */}
+              {dataDate && (
+                <p className="text-xs text-gray-500 mt-2">
+                  📅 데이터 기준: {new Date(dataDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              )}
               {/* 색상 범례 */}
               <div className="mt-3">
                 <ColorLegend />
