@@ -466,6 +466,18 @@ export const undervaluedStocksApi = {
     return response.data;
   },
 
+  export: async (limit: number = 1000): Promise<{
+    lastUpdated: string;
+    dataDate: string;
+    totalCount: number;
+    stocks: UndervaluedStock[];
+  }> => {
+    const response = await apiClient.get('/api/undervalued-stocks/export', {
+      params: { limit },
+    });
+    return response.data;
+  },
+
   health: async (): Promise<HealthResponse> => {
     const response = await apiClient.get<HealthResponse>('/api/undervalued-stocks/health');
     return response.data;

@@ -24,7 +24,38 @@ import type { InvestmentProfile } from './types';
 
 export const stockService = {
   /**
+   * 전체 저평가 우량주 데이터 Export (정적 데이터용)
+   * lastUpdated 타임스탬프 포함
+   */
+  exportAllStocks: async (limit: number = 1000): Promise<{
+    lastUpdated: string;
+    dataDate: string;
+    totalCount: number;
+    stocks: FrontendUndervaluedStock[];
+  }> => {
+    try {
+      const response = await undervaluedStocksApi.export(limit);
+      const usStocks = filterUSOnlyFromApi(response.stocks);
+      return {
+        lastUpdated: response.lastUpdated,
+        dataDate: response.dataDate,
+        totalCount: usStocks.length,
+        stocks: toFrontendUndervaluedStocks(usStocks),
+      };
+    } catch (error) {
+      console.error('Failed to export stocks:', error);
+      return {
+        lastUpdated: new Date().toISOString(),
+        dataDate: new Date().toISOString().split('T')[0],
+        totalCount: 0,
+        stocks: [],
+      };
+    }
+  },
+
+  /**
    * Top N 저평가 우량주 조회 (US 종목만)
+   * @deprecated exportAllStocks 사용 권장
    */
   getTopStocks: async (limit: number = 100): Promise<FrontendUndervaluedStock[]> => {
     try {
