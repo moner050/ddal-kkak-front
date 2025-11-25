@@ -8,7 +8,10 @@
     "web": "expo start --web",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "build:web": "expo export --platform web"
+    "build:web": "expo export --platform web",
+    "dev:local": "cross-env EXPO_PUBLIC_API_URL=http://localhost:9876 expo start --web",
+    "dev:local:android": "cross-env EXPO_PUBLIC_API_URL=http://localhost:9876 expo run:android",
+    "dev:local:ios": "cross-env EXPO_PUBLIC_API_URL=http://localhost:9876 expo run:ios"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -28,6 +31,7 @@
     "@types/react": "~19.1.10",
     "autoprefixer": "^10.4.20",
     "babel-preset-expo": "^54.0.0",
+    "cross-env": "^10.1.0",
     "postcss": "^8.4.41",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.3"
