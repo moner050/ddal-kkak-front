@@ -157,15 +157,15 @@ export const toFrontendUndervaluedStock = (
     perfSinceIntro: apiStock.perfSinceIntro ?? 0,
     perf100d: apiStock.perf100d ?? 0,
     logoUrl: apiStock.logoUrl || '',
-    ROE: apiStock.roe ?? 0,
+    ROE: (apiStock.roe ?? 0) * 100, // API는 소수점(0.3268), Frontend는 퍼센트(32.68)
     PER: apiStock.pe ?? 0,
     PEG: apiStock.peg ?? 0,
     PBR: apiStock.pb ?? 0,
     PSR: apiStock.ps ?? 0,
-    RevYoY: apiStock.revGrowth ?? 0,
-    EPS_Growth_3Y: apiStock.epsGrowth3Y ?? 0,
+    RevYoY: (apiStock.revGrowth ?? 0) * 100, // API는 소수점, Frontend는 퍼센트
+    EPS_Growth_3Y: (apiStock.epsGrowth3Y ?? 0) * 100, // API는 소수점, Frontend는 퍼센트
     OpMarginTTM: (apiStock.opMargin ?? 0) * 100, // API는 소수점, Frontend는 퍼센트
-    FCF_Yield: apiStock.fcfYield ?? 0,
+    FCF_Yield: (apiStock.fcfYield ?? 0) * 100, // API는 소수점, Frontend는 퍼센트
     // 추가 필드
     price: apiStock.price,
     marketCap: apiStock.marketCap,

@@ -1719,31 +1719,31 @@ export default function DemoHome() {
                               </div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("ROE", stock.ROE))}>{stock.ROE}%</span>
+                              <span className={classNames("text-xs font-medium", getMetricColor("ROE", stock.ROE))}>{stock.ROE?.toFixed(1)}%</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("PER", stock.PER))}>{stock.PER}</span>
+                              <span className={classNames("text-xs font-medium", getMetricColor("PER", stock.PER))}>{stock.PER?.toFixed(2)}</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("PEG", stock.PEG))}>{stock.PEG}</span>
+                              <span className={classNames("text-xs font-medium", getMetricColor("PEG", stock.PEG))}>{stock.PEG?.toFixed(2)}</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("PBR", stock.PBR))}>{stock.PBR}</span>
+                              <span className={classNames("text-xs font-medium", getMetricColor("PBR", stock.PBR))}>{stock.PBR?.toFixed(2)}</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("PSR", stock.PSR))}>{stock.PSR}</span>
+                              <span className={classNames("text-xs font-medium", getMetricColor("PSR", stock.PSR))}>{stock.PSR?.toFixed(2)}</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("RevYoY", stock.RevYoY))}>{stock.RevYoY}%</span>
+                              <span className={classNames("text-xs font-medium", getMetricColor("RevYoY", stock.RevYoY))}>{stock.RevYoY?.toFixed(1)}%</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("EPS_Growth_3Y", stock.EPS_Growth_3Y))}>{stock.EPS_Growth_3Y}%</span>
+                              <span className={classNames("text-xs font-medium", getMetricColor("EPS_Growth_3Y", stock.EPS_Growth_3Y))}>{stock.EPS_Growth_3Y?.toFixed(1)}%</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("OpMarginTTM", stock.OpMarginTTM))}>{stock.OpMarginTTM}%</span>
+                              <span className={classNames("text-xs font-medium", getMetricColor("OpMarginTTM", stock.OpMarginTTM))}>{stock.OpMarginTTM?.toFixed(1)}%</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("FCF_Yield", stock.FCF_Yield))}>{stock.FCF_Yield}%</span>
+                              <span className={classNames("text-xs font-medium", getMetricColor("FCF_Yield", stock.FCF_Yield))}>{stock.FCF_Yield?.toFixed(1)}%</span>
                             </td>
                           </tr>
                         ));
