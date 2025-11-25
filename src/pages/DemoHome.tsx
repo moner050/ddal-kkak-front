@@ -39,7 +39,6 @@ import {
   featuredStocks as mockFeaturedStocks,
   filings as mockFilings,
   undervaluedStocks as mockUndervalued,
-  stockDetails as mockStockDetails,
   NEWS_CATEGORIES,
   newsItems as mockNews,
 } from "../data/mock";
@@ -2410,12 +2409,11 @@ export default function DemoHome() {
             }
 
             // ✅ 종목이 선택된 경우: 상세 정보 표시
-            const stockDetail = mockStockDetails[detailSymbol];
             const stockInfo = undervaluedStocks.find(s => s.symbol === detailSymbol);
             const stockFilings = filings.filter(f => f.symbol === detailSymbol);
 
             // ✅ 종목 정보가 없을 때 안내 메시지 표시
-            if (!stockDetail) {
+            if (!stockInfo) {
               return (
                 <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
                   <div className="mb-4">
@@ -2444,6 +2442,30 @@ export default function DemoHome() {
               );
             }
 
+            // StockDetail 형식으로 변환 (기존 코드와 호환성 유지)
+            const stockDetail: { [key: string]: string | number } = {
+              Ticker: stockInfo.symbol,
+              Name: stockInfo.name,
+              Sector: stockInfo.category,
+              Industry: stockInfo.industry || stockInfo.sector,
+              Price: stockInfo.price || 0,
+              MktCap: stockInfo.marketCap ? stockInfo.marketCap / 1e9 : 0,
+              PE: stockInfo.PER || 0,
+              PEG: stockInfo.PEG || 0,
+              PB: stockInfo.PBR || 0,
+              PS: stockInfo.PSR || 0,
+              ROE: stockInfo.ROE || 0,
+              OpMarginTTM: stockInfo.OpMarginTTM || 0,
+              RevYoY: stockInfo.RevYoY || 0,
+              EPS_Growth_3Y: stockInfo.EPS_Growth_3Y || 0,
+              FCF_Yield: stockInfo.FCF_Yield || 0,
+              GrowthScore: stockInfo.growthScore || 0,
+              QualityScore: stockInfo.qualityScore || 0,
+              ValueScore: stockInfo.valueScore || 0,
+              MomentumScore: stockInfo.momentumScore || 0,
+              TotalScore: stockInfo.totalScore || stockInfo.aiScore || 0,
+            };
+
             return (
               <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
                 {/* ✅ 뒤로가기 버튼 */}
@@ -2463,7 +2485,7 @@ export default function DemoHome() {
                       {stockInfo?.logoUrl && !detailLogoError ? (
                         <img
                           src={stockInfo.logoUrl}
-                          alt={stockDetail.Name}
+                          alt={String(stockDetail.Name)}
                           className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-xl sm:rounded-2xl bg-white p-1.5 sm:p-2 shadow-lg flex-shrink-0"
                           onError={() => setDetailLogoError(true)}
                         />
