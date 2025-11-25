@@ -44,6 +44,14 @@ import {
   newsItems as mockNews,
 } from "../data/mock";
 
+// Import API services
+import { stockService, featuredService, filingService } from "../api/services";
+import type {
+  FrontendUndervaluedStock,
+  FrontendFeaturedStock,
+  FrontendFiling
+} from "../utils/apiMappers";
+
 // Import chart components
 import FearGreedCard from "../components/charts/FearGreedCard";
 import Sparkline from "../components/charts/Sparkline";
@@ -539,6 +547,14 @@ export default function DemoHome() {
   // 탭 상태
   const [activeTab, setActiveTab] = useState<TabKey>("home");
 
+  // API 데이터 상태
+  const [featuredStocks, setFeaturedStocks] = useState<FrontendFeaturedStock[]>([]);
+  const [filings, setFilings] = useState<FrontendFiling[]>([]);
+  const [undervaluedStocks, setUndervaluedStocks] = useState<FrontendUndervaluedStock[]>([]);
+  const [isLoadingFeatured, setIsLoadingFeatured] = useState(false);
+  const [isLoadingFilings, setIsLoadingFilings] = useState(false);
+  const [isLoadingUndervalued, setIsLoadingUndervalued] = useState(false);
+
   // 홈 화면 필터
   const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
   const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
@@ -635,6 +651,43 @@ export default function DemoHome() {
       return updated;
     });
   }, [detailSymbol]);
+
+  // API 데이터 로드
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        console.log('🔄 Loading API data...');
+
+        // Featured Stocks 로드
+        setIsLoadingFeatured(true);
+        const featured = await featuredService.getFeatured(10);
+        setFeaturedStocks(featured);
+        console.log('✅ Featured stocks loaded:', featured.length);
+        setIsLoadingFeatured(false);
+
+        // Filings 로드
+        setIsLoadingFilings(true);
+        const filingsData = await filingService.getLatest(20);
+        setFilings(filingsData);
+        console.log('✅ Filings loaded:', filingsData.length);
+        setIsLoadingFilings(false);
+
+        // Undervalued Stocks 로드
+        setIsLoadingUndervalued(true);
+        const stocks = await stockService.getTopStocks(100);
+        setUndervaluedStocks(stocks);
+        console.log('✅ Undervalued stocks loaded:', stocks.length);
+        setIsLoadingUndervalued(false);
+      } catch (error) {
+        console.error('❌ Failed to load API data:', error);
+        setIsLoadingFeatured(false);
+        setIsLoadingFilings(false);
+        setIsLoadingUndervalued(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   // ✅ 탭별 스크롤 위치 저장용
   const scrollPositions = useRef<Record<TabKey, number>>({
@@ -1019,7 +1072,7 @@ export default function DemoHome() {
                   className="rounded-lg sm:rounded-xl bg-white/20 backdrop-blur p-2 sm:p-3 hover:bg-white/30 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-center gap-1 sm:gap-2">
-                    <span className="text-lg sm:text-2xl font-bold">{mockFeaturedStocks.length}</span>
+                    <span className="text-lg sm:text-2xl font-bold">{featuredStocks.length}</span>
                     <div className="hidden sm:flex items-center gap-1">
                       <span className="text-red-400 text-lg">↑</span>
                       <span className="text-sm font-bold text-red-300">+5</span>
@@ -1032,7 +1085,7 @@ export default function DemoHome() {
                   className="rounded-lg sm:rounded-xl bg-white/20 backdrop-blur p-2 sm:p-3 hover:bg-white/30 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-center gap-1 sm:gap-2">
-                    <span className="text-lg sm:text-2xl font-bold">{mockFilings.length}</span>
+                    <span className="text-lg sm:text-2xl font-bold">{filings.length}</span>
                     <div className="hidden sm:flex items-center gap-1">
                       <span className="text-red-400 text-lg">↑</span>
                       <span className="text-sm font-bold text-red-300">+12</span>
@@ -1045,7 +1098,7 @@ export default function DemoHome() {
                   className="rounded-lg sm:rounded-xl bg-white/20 backdrop-blur p-2 sm:p-3 hover:bg-white/30 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-center gap-1 sm:gap-2">
-                    <span className="text-lg sm:text-2xl font-bold">{mockUndervalued.length}</span>
+                    <span className="text-lg sm:text-2xl font-bold">{undervaluedStocks.length}</span>
                     <div className="hidden sm:flex items-center gap-1">
                       <span className="text-red-400 text-lg">↑</span>
                       <span className="text-sm font-bold text-red-300">+8</span>
@@ -1097,7 +1150,7 @@ export default function DemoHome() {
                 </div>
               </div>
               <div className="space-y-3 sm:space-y-4">
-                {mockFeaturedStocks.filter(s => s.market === featuredMarket).map((stock) => (
+                {featuredStocks.filter(s => s.market === featuredMarket).map((stock) => (
                   <FeaturedStockCard key={stock.id} stock={stock} onClick={() => openStockDetail(stock.symbol, "info")} />
                 ))}
               </div>
@@ -1144,7 +1197,7 @@ export default function DemoHome() {
                 </div>
               </div>
               <div className="grid gap-2 sm:gap-3 md:grid-cols-2">
-                {mockFilings.filter(f => f.market === filingsMarket).slice(0, 4).map((filing) => (
+                {filings.filter(f => f.market === filingsMarket).slice(0, 4).map((filing) => (
                   <FilingAnalysisCard
                     key={filing.id}
                     filing={filing}
@@ -1224,7 +1277,7 @@ export default function DemoHome() {
                   />
                   <button
                     onClick={() => {
-                      let filteredStocks = mockUndervalued.filter((stock) => {
+                      let filteredStocks = undervaluedStocks.filter((stock) => {
                         const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
                         const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
                         const matchQuery =
@@ -1538,7 +1591,7 @@ export default function DemoHome() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
                       {(() => {
-                        let filteredStocks = mockUndervalued.filter((stock) => {
+                        let filteredStocks = undervaluedStocks.filter((stock) => {
                           const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
                           const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
                           const matchIndustry = undervaluedIndustry === "전체" || stock.industry === undervaluedIndustry;
@@ -1700,7 +1753,7 @@ export default function DemoHome() {
                 </h1>
                 <button
                   onClick={() => {
-                    let filteredFilings = mockFilings.filter((filing) => {
+                    let filteredFilings = filings.filter((filing) => {
                       const matchMarket = filingsMarketFilter === "전체" || filing.market === filingsMarketFilter;
                       const matchCategory = filingsCategory === "전체" || filing.category === filingsCategory;
                       const matchIndustry = filingsIndustry === "전체" || filing.industry === filingsIndustry;
@@ -1856,7 +1909,7 @@ export default function DemoHome() {
             {/* 공시 목록 */}
             <div className="space-y-3">
               {(() => {
-                let filteredFilings = mockFilings.filter((filing) => {
+                let filteredFilings = filings.filter((filing) => {
                   const matchMarket = filingsMarketFilter === "전체" || filing.market === filingsMarketFilter;
                   const matchCategory = filingsCategory === "전체" || filing.category === filingsCategory;
                   const matchIndustry = filingsIndustry === "전체" || filing.industry === filingsIndustry;
@@ -1904,7 +1957,7 @@ export default function DemoHome() {
 
             {/* Pagination */}
             {(() => {
-              const filteredFilings = mockFilings.filter((filing) => {
+              const filteredFilings = filings.filter((filing) => {
                 const matchMarket = filingsMarketFilter === "전체" || filing.market === filingsMarketFilter;
                 const matchCategory = filingsCategory === "전체" || filing.category === filingsCategory;
                 const matchIndustry = filingsIndustry === "전체" || filing.industry === filingsIndustry;
@@ -1969,7 +2022,7 @@ export default function DemoHome() {
               }
 
               // Get favorited stocks from mockUndervalued and apply filters
-              let favoritedStocks = mockUndervalued.filter(stock => {
+              let favoritedStocks = undervaluedStocks.filter(stock => {
                 const isFavorited = favorites[stock.symbol];
                 const matchMarket = watchlistMarket === "전체" || stock.market === watchlistMarket;
                 const matchCategory = watchlistCategory === "전체" || stock.category === watchlistCategory;
@@ -2081,7 +2134,7 @@ export default function DemoHome() {
                         <tbody className="bg-white divide-y divide-gray-100">
                           {favoritedStocks.map((stock) => {
                             // Get latest filing for this stock
-                            const latestFiling = mockFilings.find(f => f.symbol === stock.symbol);
+                            const latestFiling = filings.find(f => f.symbol === stock.symbol);
                             return (
                               <tr
                                 key={stock.symbol}
@@ -2180,14 +2233,14 @@ export default function DemoHome() {
                 .slice(0, 3);
 
               // 공시분석 최신 3개
-              const latestFilings = mockFilings
+              const latestFilings = filings
                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                 .slice(0, 3);
 
               // 최근 본 종목 데이터
               const recentStocksList = recentStocks
-                .map(symbol => mockUndervalued.find(s => s.symbol === symbol))
-                .filter((s): s is typeof mockUndervalued[number] => s !== undefined)
+                .map(symbol => undervaluedStocks.find(s => s.symbol === symbol))
+                .filter((s): s is typeof undervaluedStocks[number] => s !== undefined)
                 .slice(0, 5);
 
               return (
@@ -2269,7 +2322,7 @@ export default function DemoHome() {
                       {latestFilings.length > 0 ? (
                         <div className="grid gap-3 sm:gap-4">
                           {latestFilings.map(filing => {
-                            const stock = mockUndervalued.find(s => s.symbol === filing.symbol);
+                            const stock = undervaluedStocks.find(s => s.symbol === filing.symbol);
                             return (
                               <div
                                 key={filing.id}
@@ -2358,8 +2411,8 @@ export default function DemoHome() {
 
             // ✅ 종목이 선택된 경우: 상세 정보 표시
             const stockDetail = mockStockDetails[detailSymbol];
-            const stockInfo = mockUndervalued.find(s => s.symbol === detailSymbol);
-            const stockFilings = mockFilings.filter(f => f.symbol === detailSymbol);
+            const stockInfo = undervaluedStocks.find(s => s.symbol === detailSymbol);
+            const stockFilings = filings.filter(f => f.symbol === detailSymbol);
 
             // ✅ 종목 정보가 없을 때 안내 메시지 표시
             if (!stockDetail) {
