@@ -62,7 +62,7 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 300000, // 5분 (대용량 데이터 export를 위해)
+  timeout: 600000, // 10분 (대용량 데이터 export를 위해)
 });
 
 // Request Interceptor - JWT 토큰 자동 추가

@@ -13,10 +13,10 @@ const axios = require('axios');
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:9876';
 const DATA_DIR = path.join(__dirname, '../public/data');
 
-// Axios 인스턴스 생성 (5분 timeout)
+// Axios 인스턴스 생성 (10분 timeout)
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 300000,
+  timeout: 600000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -53,11 +53,11 @@ async function fetchAllData() {
   };
 
   try {
-    // 1. 저평가 우량주 데이터 (1000개)
+    // 1. 저평가 우량주 데이터 (10000개)
     console.log('\n📊 Fetching undervalued stocks...');
     try {
       const undervaluedResponse = await apiClient.get('/api/undervalued-stocks/export', {
-        params: { limit: 1000 },
+        params: { limit: 10000 },
       });
 
       saveJSON('undervalued-stocks.json', {
