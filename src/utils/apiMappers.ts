@@ -2,12 +2,12 @@
  * API ↔ Frontend 데이터 변환 유틸리티
  */
 
-import type { Sentiment, Market } from '../data/mock/types';
+import type { Sentiment as FrontendSentiment, Market } from '../data/mock/types';
 import type {
-  ApiSentiment,
-  ApiUndervaluedStock,
-  ApiFeaturedStock,
-  ApiSecFiling,
+  Sentiment,
+  UndervaluedStock,
+  FeaturedStock,
+  SecFiling,
   FilingType,
   GicsSector,
 } from '../api/types';
@@ -16,23 +16,23 @@ import type {
 // Sentiment 변환
 // ============================================
 
-const SENTIMENT_TO_FRONTEND: Record<ApiSentiment, Sentiment> = {
+const SENTIMENT_TO_FRONTEND: Record<Sentiment, FrontendSentiment> = {
   'POSITIVE': 'POS',
   'NEUTRAL': 'NEU',
   'NEGATIVE': 'NEG',
 };
 
-const SENTIMENT_TO_API: Record<Sentiment, ApiSentiment> = {
+const SENTIMENT_TO_API: Record<FrontendSentiment, Sentiment> = {
   'POS': 'POSITIVE',
   'NEU': 'NEUTRAL',
   'NEG': 'NEGATIVE',
 };
 
-export const toFrontendSentiment = (apiSentiment: ApiSentiment): Sentiment => {
+export const toFrontendSentiment = (apiSentiment: Sentiment): FrontendSentiment => {
   return SENTIMENT_TO_FRONTEND[apiSentiment] || 'NEU';
 };
 
-export const toApiSentiment = (frontendSentiment: Sentiment): ApiSentiment => {
+export const toApiSentiment = (frontendSentiment: FrontendSentiment): Sentiment => {
   return SENTIMENT_TO_API[frontendSentiment] || 'NEUTRAL';
 };
 
@@ -118,7 +118,7 @@ export interface FrontendUndervaluedStock {
   sector: string;
   rank: number;
   aiScore: number;
-  sentiment: Sentiment;
+  sentiment: FrontendSentiment;
   introducedAt: string;
   perfSinceIntro: number;
   perf100d: number;
@@ -145,7 +145,7 @@ export interface FrontendUndervaluedStock {
 }
 
 export const toFrontendUndervaluedStock = (
-  apiStock: ApiUndervaluedStock,
+  apiStock: UndervaluedStock,
   index?: number
 ): FrontendUndervaluedStock => {
   return {
@@ -185,7 +185,7 @@ export const toFrontendUndervaluedStock = (
 };
 
 export const toFrontendUndervaluedStocks = (
-  apiStocks: ApiUndervaluedStock[]
+  apiStocks: UndervaluedStock[]
 ): FrontendUndervaluedStock[] => {
   return apiStocks.map((stock, index) => toFrontendUndervaluedStock(stock, index));
 };
@@ -201,7 +201,7 @@ export interface FrontendFeaturedStock {
   name: string;
   category: string;
   aiScore: number;
-  sentiment: Sentiment;
+  sentiment: FrontendSentiment;
   confidence: number;
   reason: string;
   logoUrl: string;
@@ -210,12 +210,7 @@ export interface FrontendFeaturedStock {
   upside: number;
 }
 
-export const toFrontendFeaturedStock = (apiStock: ApiFeaturedStock): FrontendFeaturedStock => {
-  // sentiment를 totalScore 기반으로 계산 (API에 없으므로)
-  let sentiment: Sentiment = 'NEU';
-  if (apiStock.totalScore >= 70) sentiment = 'POS';
-  else if (apiStock.totalScore < 50) sentiment = 'NEG';
-
+export const toFrontendFeaturedStock = (apiStock: FeaturedStock): FrontendFeaturedStock => {
   return {
     id: `featured-${apiStock.ticker}`,
     market: apiStock.market as Market,
@@ -223,8 +218,8 @@ export const toFrontendFeaturedStock = (apiStock: ApiFeaturedStock): FrontendFea
     name: apiStock.name,
     category: toKoreanSector(apiStock.sector),
     aiScore: apiStock.totalScore,
-    sentiment,
-    confidence: apiStock.totalScore / 100,
+    sentiment: toFrontendSentiment(apiStock.sentiment),
+    confidence: apiStock.confidence,
     reason: apiStock.reason,
     logoUrl: apiStock.logoUrl || '',
     currentPrice: apiStock.currentPrice,
@@ -233,7 +228,7 @@ export const toFrontendFeaturedStock = (apiStock: ApiFeaturedStock): FrontendFea
   };
 };
 
-export const toFrontendFeaturedStocks = (apiStocks: ApiFeaturedStock[]): FrontendFeaturedStock[] => {
+export const toFrontendFeaturedStocks = (apiStocks: FeaturedStock[]): FrontendFeaturedStock[] => {
   return apiStocks.map(toFrontendFeaturedStock);
 };
 
@@ -250,7 +245,7 @@ export interface FrontendFiling {
   date: string;
   summary: string;
   direction: string;
-  sentiment: Sentiment;
+  sentiment: FrontendSentiment;
   confidence: number;
   aiScore: number;
   category: string;
@@ -260,7 +255,7 @@ export interface FrontendFiling {
 }
 
 export const toFrontendFiling = (
-  apiFiling: ApiSecFiling,
+  apiFiling: SecFiling,
   scoreHistory?: { score: number; dataDate: string }[]
 ): FrontendFiling => {
   const sentiment = toFrontendSentiment(apiFiling.sentiment);
@@ -284,7 +279,7 @@ export const toFrontendFiling = (
   };
 };
 
-export const toFrontendFilings = (apiFilings: ApiSecFiling[]): FrontendFiling[] => {
+export const toFrontendFilings = (apiFilings: SecFiling[]): FrontendFiling[] => {
   return apiFilings.map(filing => toFrontendFiling(filing));
 };
 

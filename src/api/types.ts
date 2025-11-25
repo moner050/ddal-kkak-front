@@ -1,13 +1,14 @@
 /**
- * Finance Info Shuttle - API Type Definitions
- * 백엔드 API 연동용 타입 정의
+ * Finance Info Shuttle - TypeScript Type Definitions
+ * React Native Web (Expo) 프론트엔드 연동용 타입 정의
+ * 백엔드 API와 동일한 타입 정의 사용
  */
 
 // ============================================
 // Enums & Constants
 // ============================================
 
-export type ApiSentiment = 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
+export type Sentiment = 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
 
 export type FilingType = 'FORM_10K' | 'FORM_10Q' | 'FORM_8K';
 
@@ -116,7 +117,7 @@ export interface StockInfo {
 // SEC Filing DTOs
 // ============================================
 
-export interface ApiSecFiling {
+export interface SecFiling {
   id: number;
   ticker: string;
   companyName: string;
@@ -124,7 +125,7 @@ export interface ApiSecFiling {
   filingDate: string;
   fiscalYear?: number;
   fiscalQuarter?: number;
-  sentiment: ApiSentiment;
+  sentiment: Sentiment;
   score: number;
   summary?: string;
   detailedAnalysis?: string;
@@ -141,7 +142,7 @@ export interface ScoreHistory {
 }
 
 export interface FilingWithScores {
-  currentFiling: ApiSecFiling;
+  currentFiling: SecFiling;
   scoreHistory: ScoreHistory[];
 }
 
@@ -160,12 +161,12 @@ export interface FavoriteStockUpdateRequest {
   notificationEnabled?: boolean;
 }
 
-export interface ApiFavoriteStock {
+export interface FavoriteStock {
   id: number;
   userId: string;
   ticker: string;
   stockInfo?: StockInfo;
-  latestFiling?: ApiSecFiling;
+  latestFiling?: SecFiling;
   memo?: string;
   notificationEnabled: boolean;
   createdAt: string;
@@ -182,13 +183,13 @@ export type FavoriteMap = Record<string, boolean>;
 // Undervalued Stock DTOs
 // ============================================
 
-export interface ApiUndervaluedStock {
+export interface UndervaluedStock {
   // Basic Info
   ticker: string;
   name: string;
   sector: string;
   industry?: string;
-  market: string;
+  market: string;  // "US" | "KR"
   logoUrl?: string;
 
   // Price Data
@@ -209,7 +210,7 @@ export interface ApiUndervaluedStock {
   // Profitability Metrics
   roe?: number;
   roa?: number;
-  opMargin?: number;
+  opMargin?: number;       // 영업이익률 (TTM)
   operatingMargins?: number;
   grossMargins?: number;
   netMargins?: number;
@@ -258,18 +259,18 @@ export interface ApiUndervaluedStock {
   momentumScore: number;
   totalScore: number;
 
-  // AI Analysis
-  sentiment: ApiSentiment;
-  confidence: number;
-  rank?: number;
+  // AI Analysis (AI 분석 정보)
+  sentiment: Sentiment;     // 감성 분석 (POSITIVE/NEUTRAL/NEGATIVE)
+  confidence: number;       // 신뢰도 (0.0 ~ 1.0)
+  rank?: number;            // 순위 (totalScore 기준, 리스트 조회 시에만 제공)
 
   // Profile
   passedProfiles: InvestmentProfile[];
 
-  // Performance
-  perfSinceIntro?: number;
-  perf100d?: number;
-  firstScreeningDate?: string;
+  // Performance (수익률)
+  perfSinceIntro?: number;  // 첫 스크리닝 통과 이후 수익률 (%)
+  perf100d?: number;        // 100일 수익률 (%)
+  firstScreeningDate?: string;  // 첫 스크리닝 통과 날짜
 
   // Metadata
   dataDate: string;
@@ -301,26 +302,37 @@ export interface HealthResponse {
 }
 
 // ============================================
-// Featured Stock DTOs
+// Featured Stock DTOs (오늘의 주목 종목)
 // ============================================
 
-export interface ApiFeaturedStock {
+export interface FeaturedStock {
+  // 기본 정보
   ticker: string;
   name: string;
   sector: string;
   industry?: string;
   market: string;
   logoUrl?: string;
+
+  // 가격 정보
   currentPrice: number;
   targetPrice?: number;
   upside: number;
+
+  // AI 분석 정보
   reason: string;
   totalScore: number;
+  sentiment: Sentiment;     // 감성 분석 (POSITIVE/NEUTRAL/NEGATIVE)
+  confidence: number;       // 신뢰도 (0.0 ~ 1.0)
   passedProfiles: InvestmentProfile[];
+
+  // 주요 지표
   pe?: number;
   roe?: number;
   revGrowth?: number;
   marketCap: number;
+
+  // 메타데이터
   dataDate: string;
   rank: number;
 }
@@ -333,24 +345,38 @@ export interface BacktestResult {
   ticker: string;
   name: string;
   sector: string;
+
+  // Investment Period
   buyDate: string;
   sellDate: string;
   holdingDays: number;
   holdingYears: number;
+
+  // Prices
   buyPrice: number;
   sellPrice: number;
+
+  // Returns
   priceReturn: number;
   dividendReturn: number;
   totalReturn: number;
   annualizedReturn: number;
+
+  // Dividends
   totalDividends: number;
   dividendCount: number;
+
+  // Screening
   screeningPassCount: number;
   undervaluedQualityCount: number;
   lastScreeningDate?: string;
   lastTotalScore?: number;
+
+  // Risk
   maxDrawdown: number;
   volatility: number;
+
+  // Comparison
   sp500Return: number;
   outperformance: number;
 }
@@ -442,4 +468,114 @@ export interface ApiResponse<T> {
 
 export interface MessageResponse {
   message: string;
+}
+
+// ============================================
+// API Query Parameters
+// ============================================
+
+export interface PaginationParams {
+  page?: number;
+  size?: number;
+}
+
+export interface StockSearchParams extends PaginationParams {
+  profile?: InvestmentProfile;
+  sector?: string;
+  minScore?: number;
+}
+
+export interface ScoreFilterParams {
+  minScore?: number;
+  maxScore?: number;
+  limit?: number;
+}
+
+export interface MarketCapFilterParams {
+  minMarketCap?: number;
+  maxMarketCap?: number;
+  limit?: number;
+}
+
+export interface BacktestParams {
+  years?: number;
+}
+
+export interface BatchBacktestParams {
+  tickers: string;
+  years?: number;
+}
+
+// ============================================
+// API Endpoint Types (for type-safe API calls)
+// ============================================
+
+export interface ApiEndpoints {
+  // Auth
+  login: (data: LoginRequest) => Promise<AuthResponse>;
+  signup: (data: SignupRequest) => Promise<AuthResponse>;
+  sendVerificationEmail: (data: EmailSendRequest) => Promise<MessageResponse>;
+  verifyEmail: (data: EmailVerifyRequest) => Promise<MessageResponse>;
+  checkUsername: (username: string) => Promise<CheckResponse>;
+  checkEmail: (email: string) => Promise<CheckResponse>;
+  googleLogin: (data: GoogleLoginRequest) => Promise<AuthResponse>;
+  naverLogin: (data: NaverLoginRequest) => Promise<AuthResponse>;
+  kakaoLogin: (data: KakaoLoginRequest) => Promise<AuthResponse>;
+
+  // Favorites
+  getFavorites: (userId: string) => Promise<FavoriteStock[]>;
+  addFavorite: (userId: string, data: FavoriteStockRequest) => Promise<FavoriteStock>;
+  deleteFavorite: (ticker: string, userId: string) => Promise<MessageResponse>;
+  checkFavorite: (ticker: string, userId: string) => Promise<FavoriteCheckResponse>;
+  updateFavorite: (ticker: string, userId: string, data: FavoriteStockUpdateRequest) => Promise<FavoriteStock>;
+  getFavoriteMap: (userId: string) => Promise<FavoriteMap>;
+  toggleFavorite: (ticker: string, userId: string) => Promise<FavoriteCheckResponse>;
+
+  // SEC Filings
+  getFilingWithScores: (ticker: string) => Promise<FilingWithScores>;
+  getFilings: (ticker: string) => Promise<SecFiling[]>;
+  getLatestFilings: (limit?: number) => Promise<SecFiling[]>;
+  getHighScoreFilings: (minScore?: number, limit?: number) => Promise<SecFiling[]>;
+  getPositiveFilings: (daysAgo?: number, limit?: number) => Promise<SecFiling[]>;
+  getFilingsByType: (filingType: FilingType, limit?: number) => Promise<SecFiling[]>;
+  getAnnualReports: (limit?: number) => Promise<SecFiling[]>;
+  getQuarterlyReports: (limit?: number) => Promise<SecFiling[]>;
+  batchGetFilings: (tickers: string[]) => Promise<Record<string, SecFiling>>;
+
+  // Stock Info
+  getStockInfo: (ticker: string) => Promise<StockInfo>;
+  getStocksByMarket: (marketType: MarketType) => Promise<StockInfo[]>;
+  getStocksBySector: (sector: string) => Promise<StockInfo[]>;
+
+  // Undervalued Stocks
+  getLatestDate: () => Promise<LatestDateResponse>;
+  getTopStocks: (limit?: number) => Promise<UndervaluedStock[]>;
+  getStock: (ticker: string) => Promise<UndervaluedStock>;
+  getStockHistory: (ticker: string, date: string) => Promise<UndervaluedStock>;
+  getStocksByProfile: (profile: InvestmentProfile, limit?: number) => Promise<UndervaluedStock[]>;
+  getStocksByProfilePaged: (profile: InvestmentProfile, params?: PaginationParams & { date?: string }) => Promise<Page<UndervaluedStock>>;
+  getSectors: () => Promise<string[]>;
+  getTopBySector: (sector: string, limit?: number) => Promise<UndervaluedStock[]>;
+  filterByScore: (params: ScoreFilterParams) => Promise<UndervaluedStock[]>;
+  filterByMarketCap: (params: MarketCapFilterParams) => Promise<UndervaluedStock[]>;
+  getMostUndervalued: (limit?: number) => Promise<UndervaluedStock[]>;
+  searchStocks: (params: StockSearchParams) => Promise<Page<UndervaluedStock>>;
+  getTopByGrowth: (limit?: number) => Promise<UndervaluedStock[]>;
+  getTopByQuality: (limit?: number) => Promise<UndervaluedStock[]>;
+  getTopByValue: (limit?: number) => Promise<UndervaluedStock[]>;
+  getTopByMomentum: (limit?: number) => Promise<UndervaluedStock[]>;
+  getStats: () => Promise<StockStats>;
+  getProfileCount: (profile: InvestmentProfile) => Promise<ProfileCountResponse>;
+  healthCheck: () => Promise<HealthResponse>;
+
+  // Backtest
+  backtest: (ticker: string, years?: number) => Promise<BacktestResult>;
+  batchBacktest: (tickers: string[], years?: number) => Promise<BacktestResult[]>;
+  getScreeningStats: (ticker: string) => Promise<ScreeningStats>;
+  getProfilePerformance: (profile: InvestmentProfile, years?: number) => Promise<ProfilePerformance>;
+  getFrequencyCorrelation: (years?: number) => Promise<any>;
+  getTopScreened: (limit?: number) => Promise<TopScreenedStock[]>;
+
+  // Exchange Rate
+  getExchangeRate: (symbol: string) => Promise<ExchangeRate>;
 }

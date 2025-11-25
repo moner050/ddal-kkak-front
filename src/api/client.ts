@@ -15,18 +15,18 @@ import {
   KakaoLoginRequest,
   AuthResponse,
   CheckResponse,
-  ApiFavoriteStock,
+  FavoriteStock,
   FavoriteStockRequest,
   FavoriteStockUpdateRequest,
   FavoriteCheckResponse,
   FavoriteMap,
-  ApiSecFiling,
+  SecFiling,
   FilingWithScores,
   FilingType,
   StockInfo,
   MarketType,
-  ApiUndervaluedStock,
-  ApiFeaturedStock,
+  UndervaluedStock,
+  FeaturedStock,
   LatestDateResponse,
   ProfileCountResponse,
   StockStats,
@@ -173,15 +173,15 @@ export const authApi = {
 // ============================================
 
 export const favoritesApi = {
-  getAll: async (userId: string = 'default'): Promise<ApiFavoriteStock[]> => {
-    const response = await apiClient.get<ApiFavoriteStock[]>('/api/v1/favorites', {
+  getAll: async (userId: string = 'default'): Promise<FavoriteStock[]> => {
+    const response = await apiClient.get<FavoriteStock[]>('/api/v1/favorites', {
       params: { userId },
     });
     return response.data;
   },
 
-  add: async (data: FavoriteStockRequest, userId: string = 'default'): Promise<ApiFavoriteStock> => {
-    const response = await apiClient.post<ApiFavoriteStock>('/api/v1/favorites', data, {
+  add: async (data: FavoriteStockRequest, userId: string = 'default'): Promise<FavoriteStock> => {
+    const response = await apiClient.post<FavoriteStock>('/api/v1/favorites', data, {
       params: { userId },
     });
     return response.data;
@@ -205,8 +205,8 @@ export const favoritesApi = {
     ticker: string,
     data: FavoriteStockUpdateRequest,
     userId: string = 'default'
-  ): Promise<ApiFavoriteStock> => {
-    const response = await apiClient.patch<ApiFavoriteStock>(`/api/v1/favorites/${ticker}`, data, {
+  ): Promise<FavoriteStock> => {
+    const response = await apiClient.patch<FavoriteStock>(`/api/v1/favorites/${ticker}`, data, {
       params: { userId },
     });
     return response.data;
@@ -237,55 +237,55 @@ export const filingsApi = {
     return response.data;
   },
 
-  getByTicker: async (ticker: string): Promise<ApiSecFiling[]> => {
-    const response = await apiClient.get<ApiSecFiling[]>(`/api/v1/sec-filings/${ticker}`);
+  getByTicker: async (ticker: string): Promise<SecFiling[]> => {
+    const response = await apiClient.get<SecFiling[]>(`/api/v1/sec-filings/${ticker}`);
     return response.data;
   },
 
-  getLatest: async (limit: number = 20): Promise<ApiSecFiling[]> => {
-    const response = await apiClient.get<ApiSecFiling[]>('/api/v1/sec-filings/latest', {
+  getLatest: async (limit: number = 20): Promise<SecFiling[]> => {
+    const response = await apiClient.get<SecFiling[]>('/api/v1/sec-filings/latest', {
       params: { limit },
     });
     return response.data;
   },
 
-  getHighScore: async (minScore: number = 70, limit: number = 20): Promise<ApiSecFiling[]> => {
-    const response = await apiClient.get<ApiSecFiling[]>('/api/v1/sec-filings/high-score', {
+  getHighScore: async (minScore: number = 70, limit: number = 20): Promise<SecFiling[]> => {
+    const response = await apiClient.get<SecFiling[]>('/api/v1/sec-filings/high-score', {
       params: { minScore, limit },
     });
     return response.data;
   },
 
-  getPositive: async (daysAgo: number = 30, limit: number = 20): Promise<ApiSecFiling[]> => {
-    const response = await apiClient.get<ApiSecFiling[]>('/api/v1/sec-filings/positive', {
+  getPositive: async (daysAgo: number = 30, limit: number = 20): Promise<SecFiling[]> => {
+    const response = await apiClient.get<SecFiling[]>('/api/v1/sec-filings/positive', {
       params: { daysAgo, limit },
     });
     return response.data;
   },
 
-  getByType: async (filingType: FilingType, limit: number = 20): Promise<ApiSecFiling[]> => {
-    const response = await apiClient.get<ApiSecFiling[]>(`/api/v1/sec-filings/by-type/${filingType}`, {
+  getByType: async (filingType: FilingType, limit: number = 20): Promise<SecFiling[]> => {
+    const response = await apiClient.get<SecFiling[]>(`/api/v1/sec-filings/by-type/${filingType}`, {
       params: { limit },
     });
     return response.data;
   },
 
-  getAnnualReports: async (limit: number = 20): Promise<ApiSecFiling[]> => {
-    const response = await apiClient.get<ApiSecFiling[]>('/api/v1/sec-filings/annual-reports', {
+  getAnnualReports: async (limit: number = 20): Promise<SecFiling[]> => {
+    const response = await apiClient.get<SecFiling[]>('/api/v1/sec-filings/annual-reports', {
       params: { limit },
     });
     return response.data;
   },
 
-  getQuarterlyReports: async (limit: number = 20): Promise<ApiSecFiling[]> => {
-    const response = await apiClient.get<ApiSecFiling[]>('/api/v1/sec-filings/quarterly-reports', {
+  getQuarterlyReports: async (limit: number = 20): Promise<SecFiling[]> => {
+    const response = await apiClient.get<SecFiling[]>('/api/v1/sec-filings/quarterly-reports', {
       params: { limit },
     });
     return response.data;
   },
 
-  getBatch: async (tickers: string[]): Promise<Record<string, ApiSecFiling>> => {
-    const response = await apiClient.post<Record<string, ApiSecFiling>>('/api/v1/sec-filings/batch', tickers);
+  getBatch: async (tickers: string[]): Promise<Record<string, SecFiling>> => {
+    const response = await apiClient.post<Record<string, SecFiling>>('/api/v1/sec-filings/batch', tickers);
     return response.data;
   },
 };
@@ -321,27 +321,27 @@ export const undervaluedStocksApi = {
     return response.data;
   },
 
-  getTop: async (limit: number = 100): Promise<ApiUndervaluedStock[]> => {
-    const response = await apiClient.get<ApiUndervaluedStock[]>('/api/undervalued-stocks/top', {
+  getTop: async (limit: number = 100): Promise<UndervaluedStock[]> => {
+    const response = await apiClient.get<UndervaluedStock[]>('/api/undervalued-stocks/top', {
       params: { limit },
     });
     return response.data;
   },
 
-  get: async (ticker: string): Promise<ApiUndervaluedStock> => {
-    const response = await apiClient.get<ApiUndervaluedStock>(`/api/undervalued-stocks/${ticker}`);
+  get: async (ticker: string): Promise<UndervaluedStock> => {
+    const response = await apiClient.get<UndervaluedStock>(`/api/undervalued-stocks/${ticker}`);
     return response.data;
   },
 
-  getHistory: async (ticker: string, date: string): Promise<ApiUndervaluedStock> => {
-    const response = await apiClient.get<ApiUndervaluedStock>(`/api/undervalued-stocks/${ticker}/history`, {
+  getHistory: async (ticker: string, date: string): Promise<UndervaluedStock> => {
+    const response = await apiClient.get<UndervaluedStock>(`/api/undervalued-stocks/${ticker}/history`, {
       params: { date },
     });
     return response.data;
   },
 
-  getByProfile: async (profile: InvestmentProfile, limit: number = 50): Promise<ApiUndervaluedStock[]> => {
-    const response = await apiClient.get<ApiUndervaluedStock[]>(`/api/undervalued-stocks/profile/${profile}`, {
+  getByProfile: async (profile: InvestmentProfile, limit: number = 50): Promise<UndervaluedStock[]> => {
+    const response = await apiClient.get<UndervaluedStock[]>(`/api/undervalued-stocks/profile/${profile}`, {
       params: { limit },
     });
     return response.data;
@@ -352,8 +352,8 @@ export const undervaluedStocksApi = {
     page: number = 0,
     size: number = 20,
     date?: string
-  ): Promise<Page<ApiUndervaluedStock>> => {
-    const response = await apiClient.get<Page<ApiUndervaluedStock>>(
+  ): Promise<Page<UndervaluedStock>> => {
+    const response = await apiClient.get<Page<UndervaluedStock>>(
       `/api/undervalued-stocks/profile/${profile}/paging`,
       { params: { page, size, date } }
     );
@@ -365,8 +365,8 @@ export const undervaluedStocksApi = {
     return response.data;
   },
 
-  getTopBySector: async (sector: string, limit: number = 20): Promise<ApiUndervaluedStock[]> => {
-    const response = await apiClient.get<ApiUndervaluedStock[]>(`/api/undervalued-stocks/sector/${sector}/top`, {
+  getTopBySector: async (sector: string, limit: number = 20): Promise<UndervaluedStock[]> => {
+    const response = await apiClient.get<UndervaluedStock[]>(`/api/undervalued-stocks/sector/${sector}/top`, {
       params: { limit },
     });
     return response.data;
@@ -376,8 +376,8 @@ export const undervaluedStocksApi = {
     minScore?: number,
     maxScore?: number,
     limit: number = 50
-  ): Promise<ApiUndervaluedStock[]> => {
-    const response = await apiClient.get<ApiUndervaluedStock[]>('/api/undervalued-stocks/filter/score', {
+  ): Promise<UndervaluedStock[]> => {
+    const response = await apiClient.get<UndervaluedStock[]>('/api/undervalued-stocks/filter/score', {
       params: { minScore, maxScore, limit },
     });
     return response.data;
@@ -387,15 +387,15 @@ export const undervaluedStocksApi = {
     minMarketCap?: number,
     maxMarketCap?: number,
     limit: number = 50
-  ): Promise<ApiUndervaluedStock[]> => {
-    const response = await apiClient.get<ApiUndervaluedStock[]>('/api/undervalued-stocks/filter/market-cap', {
+  ): Promise<UndervaluedStock[]> => {
+    const response = await apiClient.get<UndervaluedStock[]>('/api/undervalued-stocks/filter/market-cap', {
       params: { minMarketCap, maxMarketCap, limit },
     });
     return response.data;
   },
 
-  getMostUndervalued: async (limit: number = 30): Promise<ApiUndervaluedStock[]> => {
-    const response = await apiClient.get<ApiUndervaluedStock[]>('/api/undervalued-stocks/filter/most-undervalued', {
+  getMostUndervalued: async (limit: number = 30): Promise<UndervaluedStock[]> => {
+    const response = await apiClient.get<UndervaluedStock[]>('/api/undervalued-stocks/filter/most-undervalued', {
       params: { limit },
     });
     return response.data;
@@ -407,36 +407,36 @@ export const undervaluedStocksApi = {
     minScore?: number;
     page?: number;
     size?: number;
-  }): Promise<Page<ApiUndervaluedStock>> => {
-    const response = await apiClient.get<Page<ApiUndervaluedStock>>('/api/undervalued-stocks/search', {
+  }): Promise<Page<UndervaluedStock>> => {
+    const response = await apiClient.get<Page<UndervaluedStock>>('/api/undervalued-stocks/search', {
       params,
     });
     return response.data;
   },
 
-  getTopByGrowth: async (limit: number = 20): Promise<ApiUndervaluedStock[]> => {
-    const response = await apiClient.get<ApiUndervaluedStock[]>('/api/undervalued-stocks/top/growth', {
+  getTopByGrowth: async (limit: number = 20): Promise<UndervaluedStock[]> => {
+    const response = await apiClient.get<UndervaluedStock[]>('/api/undervalued-stocks/top/growth', {
       params: { limit },
     });
     return response.data;
   },
 
-  getTopByQuality: async (limit: number = 20): Promise<ApiUndervaluedStock[]> => {
-    const response = await apiClient.get<ApiUndervaluedStock[]>('/api/undervalued-stocks/top/quality', {
+  getTopByQuality: async (limit: number = 20): Promise<UndervaluedStock[]> => {
+    const response = await apiClient.get<UndervaluedStock[]>('/api/undervalued-stocks/top/quality', {
       params: { limit },
     });
     return response.data;
   },
 
-  getTopByValue: async (limit: number = 20): Promise<ApiUndervaluedStock[]> => {
-    const response = await apiClient.get<ApiUndervaluedStock[]>('/api/undervalued-stocks/top/value', {
+  getTopByValue: async (limit: number = 20): Promise<UndervaluedStock[]> => {
+    const response = await apiClient.get<UndervaluedStock[]>('/api/undervalued-stocks/top/value', {
       params: { limit },
     });
     return response.data;
   },
 
-  getTopByMomentum: async (limit: number = 20): Promise<ApiUndervaluedStock[]> => {
-    const response = await apiClient.get<ApiUndervaluedStock[]>('/api/undervalued-stocks/top/momentum', {
+  getTopByMomentum: async (limit: number = 20): Promise<UndervaluedStock[]> => {
+    const response = await apiClient.get<UndervaluedStock[]>('/api/undervalued-stocks/top/momentum', {
       params: { limit },
     });
     return response.data;
@@ -454,8 +454,8 @@ export const undervaluedStocksApi = {
     return response.data;
   },
 
-  getFeatured: async (limit: number = 5): Promise<ApiFeaturedStock[]> => {
-    const response = await apiClient.get<ApiFeaturedStock[]>('/api/undervalued-stocks/featured', {
+  getFeatured: async (limit: number = 5): Promise<FeaturedStock[]> => {
+    const response = await apiClient.get<FeaturedStock[]>('/api/undervalued-stocks/featured', {
       params: { limit },
     });
     return response.data;
