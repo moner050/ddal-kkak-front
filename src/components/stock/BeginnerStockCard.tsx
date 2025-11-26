@@ -154,7 +154,7 @@ export default function BeginnerStockCard({
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">{stock.market === 'US' ? '🇺🇸' : '🇰🇷'} {stock.symbol}</span>
+              <span className="text-xs text-gray-500">{stock.symbol} · {stock.market === 'US' ? '🇺🇸 미국' : '🇰🇷 한국'}</span>
               {onToggleFavorite && (
                 <button
                   onClick={(e) => {
@@ -168,7 +168,7 @@ export default function BeginnerStockCard({
               )}
             </div>
             <div className="text-base sm:text-lg font-bold text-gray-900 truncate">{stock.name}</div>
-            <div className="text-[10px] sm:text-xs text-gray-500">{stock.category} · {stock.industry}</div>
+            <div className="text-[10px] sm:text-xs text-gray-500">{stock.category}</div>
           </div>
         </div>
 

@@ -2522,26 +2522,37 @@ export default function DemoHome() {
 
             // StockDetail 형식으로 변환 (기존 코드와 호환성 유지)
             const stockDetail: { [key: string]: string | number } = {
+              // Basic Info
               Ticker: stockInfo.symbol,
               Name: stockInfo.name,
               Sector: stockInfo.category,
               Industry: stockInfo.industry || stockInfo.sector,
+
+              // Price Data
               Price: stockInfo.price || 0,
               MktCap: stockInfo.marketCap ? stockInfo.marketCap / 1e9 : 0,
-              PE: stockInfo.PER || 0,
-              PEG: stockInfo.PEG || 0,
-              PB: stockInfo.PBR || 0,
-              PS: stockInfo.PSR || 0,
-              ROE: stockInfo.ROE || 0,
-              OpMarginTTM: stockInfo.OpMarginTTM || 0,
-              RevYoY: stockInfo.RevYoY || 0,
-              EPS_Growth_3Y: stockInfo.EPS_Growth_3Y || 0,
-              FCF_Yield: stockInfo.FCF_Yield || 0,
+
+              // Scores
               GrowthScore: stockInfo.growthScore || 0,
               QualityScore: stockInfo.qualityScore || 0,
               ValueScore: stockInfo.valueScore || 0,
               MomentumScore: stockInfo.momentumScore || 0,
               TotalScore: stockInfo.totalScore || stockInfo.aiScore || 0,
+
+              // Valuation Metrics (will be in 밸류에이션 section)
+              PE: stockInfo.PER || 0,
+              PEG: stockInfo.PEG || 0,
+              PB: stockInfo.PBR || 0,
+              PS: stockInfo.PSR || 0,
+              FCF_Yield: stockInfo.FCF_Yield || 0,
+
+              // Profitability Metrics
+              ROE: stockInfo.ROE || 0,
+              OpMarginTTM: stockInfo.OpMarginTTM || 0,
+
+              // Growth Metrics
+              RevYoY: stockInfo.RevYoY || 0,
+              EPS_Growth_3Y: stockInfo.EPS_Growth_3Y || 0,
             };
 
             return (
@@ -2649,15 +2660,12 @@ export default function DemoHome() {
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         {["GrowthScore", "QualityScore", "ValueScore", "MomentumScore", "TotalScore"].map(key => (
                           <div key={key} className="text-center p-4 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
-                            {METRIC_DESCRIPTIONS[key] ? (
-                              <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
-                                <div className="text-xs text-gray-600 mb-2">{key.replace("Score", "")}</div>
-                              </MetricTooltip>
-                            ) : (
-                              <div className="text-xs text-gray-600 mb-2">{key.replace("Score", "")}</div>
+                            <div className="text-xs font-semibold text-gray-700 mb-1">{key.replace("Score", "")}</div>
+                            {METRIC_DESCRIPTIONS[key] && (
+                              <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                             )}
                             <div className={classNames("text-3xl font-bold", typeof stockDetail[key] === "number" ? getMetricColor(key, stockDetail[key]) : "text-gray-900")}>
-                              {stockDetail[key]}
+                              {typeof stockDetail[key] === "number" ? (stockDetail[key] * 100).toFixed(0) : stockDetail[key]}
                             </div>
                           </div>
                         ))}
@@ -2668,20 +2676,18 @@ export default function DemoHome() {
                     <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
                       <h2 className="text-lg font-bold text-gray-900 mb-4">💰 밸류에이션</h2>
                       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {["FairValue", "Discount", "PE", "PEG", "PB", "PS", "EV_EBITDA"].map(key => {
+                        {["FairValue", "Discount", "PE", "PEG", "PB", "PS", "EV_EBITDA", "FCF_Yield"].map(key => {
                           if (!stockDetail[key]) return null;
                           const value = stockDetail[key];
                           let displayValue = typeof value === "number" ? value.toFixed(2) : String(value);
                           if (key === "Discount" && typeof value === "number") displayValue = value.toFixed(1) + "%";
+                          if ((key === "PE" || key === "PEG" || key === "PB" || key === "PS" || key === "FCF_Yield") && typeof value === "number") displayValue = value.toFixed(2) + "%";
                           const colorClass = typeof value === "number" ? getMetricColor(key, value) : "text-gray-900";
                           return (
                             <div key={key} className="p-4 rounded-lg bg-gray-50">
-                              {METRIC_DESCRIPTIONS[key] ? (
-                                <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
-                                  <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
-                                </MetricTooltip>
-                              ) : (
-                                <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                              <div className="text-xs font-semibold text-gray-700 mb-1">{key.replace(/_/g, " ")}</div>
+                              {METRIC_DESCRIPTIONS[key] && (
+                                <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                               )}
                               <div className={classNames("text-xl font-bold", colorClass)}>{displayValue}</div>
                             </div>
@@ -2703,12 +2709,9 @@ export default function DemoHome() {
                             const colorClass = getMetricColor(key, value);
                             return (
                               <div key={key} className="p-4 rounded-lg bg-gray-50">
-                                {METRIC_DESCRIPTIONS[key] ? (
-                                  <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
-                                    <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
-                                  </MetricTooltip>
-                                ) : (
-                                  <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                <div className="text-xs font-semibold text-gray-700 mb-1">{key.replace(/_/g, " ")}</div>
+                                {METRIC_DESCRIPTIONS[key] && (
+                                  <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                                 )}
                                 <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
                               </div>
@@ -2728,12 +2731,9 @@ export default function DemoHome() {
                             const colorClass = getMetricColor(key, value);
                             return (
                               <div key={key} className="p-4 rounded-lg bg-gray-50">
-                                {METRIC_DESCRIPTIONS[key] ? (
-                                  <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
-                                    <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
-                                  </MetricTooltip>
-                                ) : (
-                                  <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                                <div className="text-xs font-semibold text-gray-700 mb-1">{key.replace(/_/g, " ")}</div>
+                                {METRIC_DESCRIPTIONS[key] && (
+                                  <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                                 )}
                                 <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
                               </div>
@@ -2751,7 +2751,7 @@ export default function DemoHome() {
                           // 이미 표시한 지표들은 제외
                           const excludeKeys = ["Ticker", "Name", "Sector", "Industry", "Price", "MktCap",
                             "GrowthScore", "QualityScore", "ValueScore", "MomentumScore", "TotalScore",
-                            "FairValue", "Discount", "PE", "PEG", "PB", "PS", "EV_EBITDA",
+                            "FairValue", "Discount", "PE", "PEG", "PB", "PS", "EV_EBITDA", "FCF_Yield",
                             "ROE", "ROA", "OpMarginTTM", "OperatingMargins",
                             "RevYoY", "Revenue_Growth_3Y", "EPS_Growth_3Y", "EBITDA_Growth_3Y"];
                           if (excludeKeys.includes(key)) return null;
@@ -2772,12 +2772,9 @@ export default function DemoHome() {
 
                           return (
                             <div key={key} className="p-4 rounded-lg bg-gray-50">
-                              {METRIC_DESCRIPTIONS[key] ? (
-                                <MetricTooltip tooltip={METRIC_DESCRIPTIONS[key]}>
-                                  <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
-                                </MetricTooltip>
-                              ) : (
-                                <div className="text-xs text-gray-600 mb-1">{key.replace(/_/g, " ")}</div>
+                              <div className="text-xs font-semibold text-gray-700 mb-1">{key.replace(/_/g, " ")}</div>
+                              {METRIC_DESCRIPTIONS[key] && (
+                                <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                               )}
                               <div className={classNames("text-lg font-bold", colorClass)}>{displayValue}</div>
                             </div>
