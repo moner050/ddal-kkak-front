@@ -137,6 +137,45 @@ export interface FrontendUndervaluedStock {
   valueScore?: number;
   momentumScore?: number;
   totalScore?: number;
+  // 추가 밸류에이션 지표
+  dollarVolume?: number;
+  divYield?: number;
+  payoutRatio?: number;
+  evEbitda?: number;
+  fairValue?: number;
+  discount?: number;
+  // 추가 수익성 지표
+  ROA?: number;
+  grossMargins?: number;
+  netMargins?: number;
+  operatingMargins?: number;
+  // 추가 성장성 지표
+  revenueGrowth3Y?: number;
+  ebitdaGrowth3Y?: number;
+  // 기술적 지표
+  sma20?: number;
+  sma50?: number;
+  sma200?: number;
+  rsi?: number;
+  macd?: number;
+  macdSignal?: number;
+  macdHistogram?: number;
+  bbPosition?: number;
+  atr?: number;
+  // 모멘텀 지표
+  ret5d?: number;
+  ret20d?: number;
+  ret63d?: number;
+  momentum12m?: number;
+  volatility?: number;
+  high52wRatio?: number;
+  low52wRatio?: number;
+  rvol?: number;
+  // 리스크 지표
+  beta?: number;
+  shortPercent?: number;
+  insiderOwnership?: number;
+  institutionOwnership?: number;
 }
 
 export const toFrontendUndervaluedStock = (
@@ -176,6 +215,45 @@ export const toFrontendUndervaluedStock = (
     valueScore: apiStock.valueScore,
     momentumScore: apiStock.momentumScore,
     totalScore: apiStock.totalScore,
+    // 추가 밸류에이션 지표
+    dollarVolume: apiStock.dollarVolume,
+    divYield: apiStock.divYield ? apiStock.divYield * 100 : undefined,
+    payoutRatio: apiStock.payoutRatio ? apiStock.payoutRatio * 100 : undefined,
+    evEbitda: apiStock.evEbitda,
+    fairValue: apiStock.fairValue,
+    discount: apiStock.discount ? apiStock.discount * 100 : undefined,
+    // 추가 수익성 지표
+    ROA: apiStock.roa ? apiStock.roa * 100 : undefined,
+    grossMargins: apiStock.grossMargins ? apiStock.grossMargins * 100 : undefined,
+    netMargins: apiStock.netMargins ? apiStock.netMargins * 100 : undefined,
+    operatingMargins: apiStock.operatingMargins ? apiStock.operatingMargins * 100 : undefined,
+    // 추가 성장성 지표
+    revenueGrowth3Y: apiStock.revenueGrowth3Y ? apiStock.revenueGrowth3Y * 100 : undefined,
+    ebitdaGrowth3Y: apiStock.ebitdaGrowth3Y ? apiStock.ebitdaGrowth3Y * 100 : undefined,
+    // 기술적 지표
+    sma20: apiStock.sma20,
+    sma50: apiStock.sma50,
+    sma200: apiStock.sma200,
+    rsi: apiStock.rsi,
+    macd: apiStock.macd,
+    macdSignal: apiStock.macdSignal,
+    macdHistogram: apiStock.macdHistogram,
+    bbPosition: apiStock.bbPosition ? apiStock.bbPosition * 100 : undefined,
+    atr: apiStock.atr,
+    // 모멘텀 지표
+    ret5d: apiStock.ret5d ? apiStock.ret5d * 100 : undefined,
+    ret20d: apiStock.ret20d ? apiStock.ret20d * 100 : undefined,
+    ret63d: apiStock.ret63d ? apiStock.ret63d * 100 : undefined,
+    momentum12m: apiStock.momentum12m ? apiStock.momentum12m * 100 : undefined,
+    volatility: apiStock.volatility ? apiStock.volatility * 100 : undefined,
+    high52wRatio: apiStock.high52wRatio,
+    low52wRatio: apiStock.low52wRatio,
+    rvol: apiStock.rvol,
+    // 리스크 지표
+    beta: apiStock.beta,
+    shortPercent: apiStock.shortPercent ? apiStock.shortPercent * 100 : undefined,
+    insiderOwnership: apiStock.insiderOwnership ? apiStock.insiderOwnership * 100 : undefined,
+    institutionOwnership: apiStock.institutionOwnership ? apiStock.institutionOwnership * 100 : undefined,
   };
 };
 

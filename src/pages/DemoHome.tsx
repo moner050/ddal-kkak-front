@@ -1501,16 +1501,13 @@ export default function DemoHome() {
                     return matchMarket && matchCategory && matchIndustry && matchQuery;
                   });
 
-                  // Apply sorting
-                  if (undervaluedSortBy) {
-                    filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
-                      const aVal = a[undervaluedSortBy];
-                      const bVal = b[undervaluedSortBy];
-                      if (aVal === undefined || bVal === undefined) return 0;
-                      const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-                      return undervaluedSortDirection === "asc" ? comparison : -comparison;
-                    });
-                  }
+                  // Apply sorting - 초보자 모드는 무조건 AI 점수 높은 순
+                  filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
+                    const aVal = a.aiScore;
+                    const bVal = b.aiScore;
+                    if (aVal === undefined || bVal === undefined) return 0;
+                    return bVal - aVal; // 내림차순
+                  });
 
                   const itemsPerPage = 12; // 카드 뷰에서는 12개씩
                   const startIndex = (undervaluedPage - 1) * itemsPerPage;
@@ -1540,9 +1537,6 @@ export default function DemoHome() {
                         <th className="px-4 py-3 text-left text-xs">
                           종목
                         </th>
-                        <th className="px-4 py-3 text-left text-xs">
-                          섹터
-                        </th>
                         <th className="px-4 py-3 text-center text-xs">
                           <TooltipHeader
                             label="산업군"
@@ -1555,6 +1549,7 @@ export default function DemoHome() {
                         <th className="px-4 py-3 text-center text-xs">
                           <TooltipHeader
                             label="AI 점수"
+                            tooltip="AI가 분석한 종합 투자 매력도 (0-100점)"
                             sortKey="aiScore"
                             currentSortKey={undervaluedSortBy}
                             sortDirection={undervaluedSortDirection}
@@ -1720,13 +1715,9 @@ export default function DemoHome() {
                                   <div className="text-xs text-gray-500">
                                     {stock.symbol} · {stock.market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
                                   </div>
+                                  <div className="text-xs text-gray-500">{stock.category}</div>
                                 </div>
                               </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-                                {stock.category}
-                              </span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-left">
                               <span className="text-xs text-gray-700">{stock.industry}</span>
@@ -2531,6 +2522,7 @@ export default function DemoHome() {
               // Price Data
               Price: stockInfo.price || 0,
               MktCap: stockInfo.marketCap ? stockInfo.marketCap / 1e9 : 0,
+              DollarVol: stockInfo.dollarVolume ? stockInfo.dollarVolume / 1e6 : 0,
 
               // Scores
               GrowthScore: stockInfo.growthScore || 0,
@@ -2539,20 +2531,58 @@ export default function DemoHome() {
               MomentumScore: stockInfo.momentumScore || 0,
               TotalScore: stockInfo.totalScore || stockInfo.aiScore || 0,
 
-              // Valuation Metrics (will be in 밸류에이션 section)
+              // Valuation Metrics
               PE: stockInfo.PER || 0,
               PEG: stockInfo.PEG || 0,
               PB: stockInfo.PBR || 0,
               PS: stockInfo.PSR || 0,
               FCF_Yield: stockInfo.FCF_Yield || 0,
+              DivYield: stockInfo.divYield || 0,
+              PayoutRatio: stockInfo.payoutRatio || 0,
+              EV_EBITDA: stockInfo.evEbitda || 0,
+              FairValue: stockInfo.fairValue || 0,
+              Discount: stockInfo.discount || 0,
 
               // Profitability Metrics
               ROE: stockInfo.ROE || 0,
+              ROA: stockInfo.ROA || 0,
               OpMarginTTM: stockInfo.OpMarginTTM || 0,
+              OperatingMargins: stockInfo.operatingMargins || 0,
+              GrossMargins: stockInfo.grossMargins || 0,
+              NetMargins: stockInfo.netMargins || 0,
 
               // Growth Metrics
               RevYoY: stockInfo.RevYoY || 0,
               EPS_Growth_3Y: stockInfo.EPS_Growth_3Y || 0,
+              Revenue_Growth_3Y: stockInfo.revenueGrowth3Y || 0,
+              EBITDA_Growth_3Y: stockInfo.ebitdaGrowth3Y || 0,
+
+              // Technical Indicators
+              SMA20: stockInfo.sma20 || 0,
+              SMA50: stockInfo.sma50 || 0,
+              SMA200: stockInfo.sma200 || 0,
+              RSI_14: stockInfo.rsi || 0,
+              MACD: stockInfo.macd || 0,
+              MACD_Signal: stockInfo.macdSignal || 0,
+              MACD_Histogram: stockInfo.macdHistogram || 0,
+              BB_Position: stockInfo.bbPosition || 0,
+              ATR_PCT: stockInfo.atr || 0,
+
+              // Momentum Metrics
+              RET5: stockInfo.ret5d || 0,
+              RET20: stockInfo.ret20d || 0,
+              RET63: stockInfo.ret63d || 0,
+              Momentum_12M: stockInfo.momentum12m || 0,
+              Volatility_21D: stockInfo.volatility || 0,
+              High_52W_Ratio: stockInfo.high52wRatio || 0,
+              Low_52W_Ratio: stockInfo.low52wRatio || 0,
+              RVOL: stockInfo.rvol || 0,
+
+              // Risk Metrics
+              Beta: stockInfo.beta || 0,
+              ShortPercent: stockInfo.shortPercent || 0,
+              InsiderOwnership: stockInfo.insiderOwnership || 0,
+              InstitutionOwnership: stockInfo.institutionOwnership || 0,
             };
 
             return (
@@ -2665,7 +2695,7 @@ export default function DemoHome() {
                               <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                             )}
                             <div className={classNames("text-3xl font-bold", typeof stockDetail[key] === "number" ? getMetricColor(key, stockDetail[key]) : "text-gray-900")}>
-                              {typeof stockDetail[key] === "number" ? (stockDetail[key] * 100).toFixed(0) : stockDetail[key]}
+                              {typeof stockDetail[key] === "number" ? stockDetail[key].toFixed(0) : stockDetail[key]}
                             </div>
                           </div>
                         ))}
@@ -2676,11 +2706,11 @@ export default function DemoHome() {
                     <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
                       <h2 className="text-lg font-bold text-gray-900 mb-4">💰 밸류에이션</h2>
                       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {["FairValue", "Discount", "PE", "PEG", "PB", "PS", "EV_EBITDA", "FCF_Yield"].map(key => {
+                        {["FairValue", "Discount", "PE", "PEG", "PB", "PS", "EV_EBITDA", "FCF_Yield", "DivYield", "PayoutRatio"].map(key => {
                           if (!stockDetail[key]) return null;
                           const value = stockDetail[key];
                           let displayValue = typeof value === "number" ? value.toFixed(2) : String(value);
-                          if (key === "Discount" && typeof value === "number") displayValue = value.toFixed(1) + "%";
+                          if ((key === "Discount" || key === "DivYield" || key === "PayoutRatio") && typeof value === "number") displayValue = value.toFixed(1) + "%";
                           if ((key === "PE" || key === "PEG" || key === "PB" || key === "PS" || key === "FCF_Yield") && typeof value === "number") displayValue = value.toFixed(2) + "%";
                           const colorClass = typeof value === "number" ? getMetricColor(key, value) : "text-gray-900";
                           return (
@@ -2701,7 +2731,7 @@ export default function DemoHome() {
                       <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
                         <h2 className="text-lg font-bold text-gray-900 mb-4">📈 수익성</h2>
                         <div className="grid grid-cols-2 gap-4">
-                          {["ROE", "ROA", "OpMarginTTM", "OperatingMargins"].map(key => {
+                          {["ROE", "ROA", "OpMarginTTM", "OperatingMargins", "GrossMargins", "NetMargins"].map(key => {
                             if (!stockDetail[key]) return null;
                             const value = stockDetail[key];
                             if (typeof value !== "number") return null;
@@ -2751,8 +2781,8 @@ export default function DemoHome() {
                           // 이미 표시한 지표들은 제외
                           const excludeKeys = ["Ticker", "Name", "Sector", "Industry", "Price", "MktCap",
                             "GrowthScore", "QualityScore", "ValueScore", "MomentumScore", "TotalScore",
-                            "FairValue", "Discount", "PE", "PEG", "PB", "PS", "EV_EBITDA", "FCF_Yield",
-                            "ROE", "ROA", "OpMarginTTM", "OperatingMargins",
+                            "FairValue", "Discount", "PE", "PEG", "PB", "PS", "EV_EBITDA", "FCF_Yield", "DivYield", "PayoutRatio",
+                            "ROE", "ROA", "OpMarginTTM", "OperatingMargins", "GrossMargins", "NetMargins",
                             "RevYoY", "Revenue_Growth_3Y", "EPS_Growth_3Y", "EBITDA_Growth_3Y"];
                           if (excludeKeys.includes(key)) return null;
 
