@@ -182,6 +182,92 @@ export const stockService = {
       return null;
     }
   },
+
+  /**
+   * 최신 데이터 기준일 조회
+   */
+  getLatestDataDate: async (): Promise<string | null> => {
+    try {
+      const response = await undervaluedStocksApi.getLatestDate();
+      return response.latestDate;
+    } catch (error) {
+      console.error('Failed to fetch latest data date:', error);
+      return null;
+    }
+  },
+
+  /**
+   * 특정 날짜의 종목 히스토리 조회
+   */
+  getStockHistory: async (
+    ticker: string,
+    date: string
+  ): Promise<FrontendUndervaluedStock | null> => {
+    try {
+      const apiStock = await undervaluedStocksApi.getHistory(ticker, date);
+      return toFrontendUndervaluedStock(apiStock);
+    } catch (error) {
+      console.error(`Failed to fetch stock history for ${ticker} on ${date}:`, error);
+      return null;
+    }
+  },
+
+  /**
+   * 날짜 범위의 종목 히스토리 조회
+   * @param ticker 종목 심볼
+   * @param dates 조회할 날짜 배열 (YYYY-MM-DD 형식)
+   */
+  getStockHistoryRange: async (
+    ticker: string,
+    dates: string[]
+  ): Promise<FrontendUndervaluedStock[]> => {
+    try {
+      const historyPromises = dates.map((date) =>
+        undervaluedStocksApi.getHistory(ticker, date).catch((err) => {
+          console.warn(`Failed to fetch history for ${ticker} on ${date}:`, err);
+          return null;
+        })
+      );
+
+      const results = await Promise.all(historyPromises);
+      const validResults = results.filter((r) => r !== null);
+      return toFrontendUndervaluedStocks(validResults);
+    } catch (error) {
+      console.error(`Failed to fetch stock history range for ${ticker}:`, error);
+      return [];
+    }
+  },
+
+  /**
+   * 날짜 범위 생성 유틸리티 (최근 N개월)
+   * @param endDate 종료일 (YYYY-MM-DD)
+   * @param months 개월 수
+   * @param interval 간격 (일 단위, 기본 7일)
+   */
+  generateDateRange: (
+    endDate: string,
+    months: number,
+    interval: number = 7
+  ): string[] => {
+    const end = new Date(endDate);
+    const start = new Date(endDate);
+    start.setMonth(start.getMonth() - months);
+
+    const dates: string[] = [];
+    const current = new Date(start);
+
+    while (current <= end) {
+      dates.push(current.toISOString().split('T')[0]);
+      current.setDate(current.getDate() + interval);
+    }
+
+    // 마지막 날짜가 endDate가 아니면 추가
+    if (dates[dates.length - 1] !== endDate) {
+      dates.push(endDate);
+    }
+
+    return dates;
+  },
 };
 
 // ============================================
