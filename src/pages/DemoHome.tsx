@@ -1199,6 +1199,11 @@ export default function DemoHome() {
     }));
   }, [undervaluedPage, undervaluedCategory]);
 
+  // 투자전략, 시장, 산업군, 검색어 변경 시 페이지를 1로 리셋
+  useEffect(() => {
+    setUndervaluedPage(1);
+  }, [undervaluedStrategy, undervaluedMarket, undervaluedIndustry, undervaluedSearchQuery]);
+
   useEffect(() => {
     setFilingsIndustry("전체");
   }, [filingsCategory]);
@@ -1682,6 +1687,17 @@ export default function DemoHome() {
                   const endIndex = startIndex + itemsPerPage;
                   const paginatedStocks = filteredStocks.slice(startIndex, endIndex);
 
+                  // 필터링 결과가 없을 때
+                  if (filteredStocks.length === 0) {
+                    return (
+                      <div className="col-span-full text-center py-16 bg-gray-50 rounded-xl border border-gray-200">
+                        <div className="text-6xl mb-4">🔍</div>
+                        <p className="text-gray-600 font-medium mb-2">선택한 투자전략에 맞는 종목이 없습니다</p>
+                        <p className="text-sm text-gray-500">다른 투자전략을 선택하거나 필터를 조정해보세요</p>
+                      </div>
+                    );
+                  }
+
                   return paginatedStocks.map((stock) => (
                     <BeginnerStockCard
                       key={stock.symbol}
@@ -1846,6 +1862,19 @@ export default function DemoHome() {
                         const endIndex = startIndex + itemsPerPage;
                         const paginatedStocks = filteredStocks.slice(startIndex, endIndex);
 
+                        // 필터링 결과가 없을 때
+                        if (filteredStocks.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan={12} className="px-4 py-16 text-center">
+                                <div className="text-6xl mb-4">🔍</div>
+                                <p className="text-gray-600 font-medium mb-2">선택한 투자전략에 맞는 종목이 없습니다</p>
+                                <p className="text-sm text-gray-500">다른 투자전략을 선택하거나 필터를 조정해보세요</p>
+                              </td>
+                            </tr>
+                          );
+                        }
+
                         return paginatedStocks.map((stock) => (
                           <tr
                             key={stock.symbol}
@@ -1942,7 +1971,8 @@ export default function DemoHome() {
                   !undervaluedSearchQuery ||
                   stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
                   stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
-                return matchMarket && matchCategory && matchIndustry && matchQuery;
+                const matchStrategy = matchesInvestmentStrategy(stock, undervaluedStrategy);
+                return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy;
               });
               const itemsPerPage = isBeginnerMode ? 12 : 30;
               const totalPages = Math.ceil(filteredStocks.length / itemsPerPage);
