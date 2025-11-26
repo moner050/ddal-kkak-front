@@ -526,11 +526,13 @@ const METRIC_DESCRIPTIONS: Record<string, string> = {
   "High_52W_Ratio": "52주 고가 대비 비율",
   "Low_52W_Ratio": "52주 저가 대비 비율",
   "Momentum_12M": "12개월 모멘텀",
-  "GrowthScore": "성장 점수 (0-100%)",
-  "QualityScore": "품질 점수 (0-100%)",
-  "ValueScore": "가치 점수 (0-100%)",
-  "MomentumScore": "모멘텀 점수 (0-100%)",
-  "TotalScore": "종합 점수 (0-100점)"
+  "GrowthScore": "성장 점수 (0-100점)",
+  "QualityScore": "품질 점수 (0-100점)",
+  "ValueScore": "가치 점수 (0-100점)",
+  "MomentumScore": "모멘텀 점수 (0-100점)",
+  "TotalScore": "종합 점수 (0-100점)",
+  "GrossMargins": "매출총이익률 - 높을수록 우수",
+  "NetMargins": "순이익률 - 높을수록 우수"
 };
 
 export default function DemoHome() {
@@ -2632,10 +2634,17 @@ export default function DemoHome() {
                     </div>
                     <div className="text-right sm:text-center self-center">
                       {stockInfo && (
-                        <div className="inline-block bg-white/40 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-4 border-2 border-white/60 shadow-2xl ring-2 ring-white/30">
-                          <div className="text-xs text-gray-800 mb-2 font-bold text-center bg-white/70 rounded-lg px-2 py-1 shadow-sm">AI 종합 점수</div>
-                          <AIScoreGauge score={stockInfo.aiScore} sentiment={stockInfo.sentiment} size="lg" />
-                        </div>
+                        <>
+                          {dataDate && (
+                            <div className="text-xs text-indigo-100 mb-2 text-right">
+                              📅 {new Date(dataDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} 기준
+                            </div>
+                          )}
+                          <div className="inline-block bg-white/40 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-4 border-2 border-white/60 shadow-2xl ring-2 ring-white/30">
+                            <div className="text-xs text-gray-800 mb-2 font-bold text-center bg-white/70 rounded-lg px-2 py-1 shadow-sm">AI 종합 점수</div>
+                            <AIScoreGauge score={stockInfo.aiScore} sentiment={stockInfo.sentiment} size="lg" />
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
