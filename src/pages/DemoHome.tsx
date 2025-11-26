@@ -1722,16 +1722,16 @@ export default function DemoHome() {
                               <span className={classNames("text-xs font-medium", getMetricColor("ROE", stock.ROE))}>{stock.ROE?.toFixed(1)}%</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("PER", stock.PER))}>{stock.PER?.toFixed(2)}</span>
+                              <span className={classNames("text-xs font-medium", getMetricColor("PER", stock.PER))}>{stock.PER?.toFixed(2)}%</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("PEG", stock.PEG))}>{stock.PEG?.toFixed(2)}</span>
+                              <span className={classNames("text-xs font-medium", getMetricColor("PEG", stock.PEG))}>{stock.PEG?.toFixed(2)}%</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("PBR", stock.PBR))}>{stock.PBR?.toFixed(2)}</span>
+                              <span className={classNames("text-xs font-medium", getMetricColor("PBR", stock.PBR))}>{stock.PBR?.toFixed(2)}%</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("PSR", stock.PSR))}>{stock.PSR?.toFixed(2)}</span>
+                              <span className={classNames("text-xs font-medium", getMetricColor("PSR", stock.PSR))}>{stock.PSR?.toFixed(2)}%</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
                               <span className={classNames("text-xs font-medium", getMetricColor("RevYoY", stock.RevYoY))}>{stock.RevYoY?.toFixed(1)}%</span>
