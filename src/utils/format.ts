@@ -1,6 +1,16 @@
 // 숫자 포맷팅 유틸리티
-export function formatNumber(num: number, options?: { compact?: boolean; decimals?: number }): string {
-  const { compact = false, decimals = 2 } = options || {};
+export function formatNumber(num: number, options?: { compact?: boolean; decimals?: number }): string;
+export function formatNumber(num: number, decimals?: number): string;
+export function formatNumber(num: number, optionsOrDecimals?: { compact?: boolean; decimals?: number } | number): string {
+  let compact = false;
+  let decimals = 2;
+
+  if (typeof optionsOrDecimals === 'number') {
+    decimals = optionsOrDecimals;
+  } else if (optionsOrDecimals) {
+    compact = optionsOrDecimals.compact || false;
+    decimals = optionsOrDecimals.decimals !== undefined ? optionsOrDecimals.decimals : 2;
+  }
 
   if (compact && Math.abs(num) >= 1000000) {
     return (num / 1000000).toFixed(decimals) + "M";
@@ -12,6 +22,32 @@ export function formatNumber(num: number, options?: { compact?: boolean; decimal
     minimumFractionDigits: 0,
     maximumFractionDigits: decimals
   });
+}
+
+// 통화 포맷팅 (달러, 원 등)
+export function formatCurrency(num: number, currency: "USD" | "KRW" = "USD", compact: boolean = false): string {
+  if (compact) {
+    if (Math.abs(num) >= 1000000000) {
+      return `${currency === "USD" ? "$" : "₩"}${(num / 1000000000).toFixed(2)}B`;
+    } else if (Math.abs(num) >= 1000000) {
+      return `${currency === "USD" ? "$" : "₩"}${(num / 1000000).toFixed(2)}M`;
+    } else if (Math.abs(num) >= 1000) {
+      return `${currency === "USD" ? "$" : "₩"}${(num / 1000).toFixed(2)}K`;
+    }
+  }
+
+  const symbol = currency === "USD" ? "$" : "₩";
+  return `${symbol}${num.toLocaleString("ko-KR", {
+    minimumFractionDigits: currency === "USD" ? 2 : 0,
+    maximumFractionDigits: currency === "USD" ? 2 : 0
+  })}`;
+}
+
+// 퍼센트 포맷팅
+export function formatPercent(num: number, decimals: number = 1): string {
+  if (!isFinite(num)) return "N/A";
+  const sign = num > 0 ? "+" : "";
+  return `${sign}${num.toFixed(decimals)}%`;
 }
 
 // 상대 시간 표시 (예: "5분 전", "2시간 전")
