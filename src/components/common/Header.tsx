@@ -46,12 +46,17 @@ export default function Header({ onLogoClick, onMyPageClick }: HeaderProps) {
             <div className="flex items-center gap-2">
               <button
                 onClick={onLogoClick}
-                className="text-left hover:opacity-80 transition-opacity cursor-pointer"
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
               >
-                <div className="text-base sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  DDalKKak
+                <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg shadow-sm">
+                  <span className="text-lg sm:text-xl">📊</span>
                 </div>
-                <div className="text-[8px] sm:text-[9px] text-gray-500 font-medium">AI 기업 분석 플랫폼</div>
+                <div className="flex flex-col">
+                  <div className="text-base sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    딸깍
+                  </div>
+                  <div className="text-[8px] sm:text-[9px] text-gray-500 font-medium hidden sm:block">Smart Investment</div>
+                </div>
               </button>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2">

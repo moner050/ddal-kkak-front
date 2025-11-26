@@ -386,6 +386,87 @@ function getCriticalMetrics(scoreType: string): string[] {
   return metricsMap[scoreType] || [];
 }
 
+// 투자전략 필터 함수
+function matchesInvestmentStrategy(stock: any, strategy: keyof typeof INVESTMENT_STRATEGIES): boolean {
+  const s = stock;
+
+  switch (strategy) {
+    case "undervalued_quality":
+      return (
+        (s.marketCap || 0) >= 2 &&  // 20억 달러 이상
+        (s.price || 0) >= 10 &&
+        (s.dollarVolume || 0) >= 5 &&  // 500만 달러
+        (s.PER || 0) < 25 &&
+        (s.PEG || 0) < 1.5 &&
+        (s.RevYoY || 0) > 5 &&
+        (s.EPS_Growth_3Y || 0) > 5 &&
+        (s.OpMarginTTM || 0) > 12 &&
+        (s.ROE || 0) > 15 &&
+        (s.FCF_Yield || 0) > 3
+      );
+
+    case "value_basic":
+      return (
+        (s.marketCap || 0) >= 0.5 &&  // 5억 달러 이상
+        (s.price || 0) >= 5 &&
+        (s.dollarVolume || 0) >= 1 &&  // 100만 달러
+        (s.PER || 0) < 30 &&
+        (s.PEG || 0) < 2.0 &&
+        (s.OpMarginTTM || 0) > 5 &&
+        (s.ROE || 0) > 8
+      );
+
+    case "value_strict":
+      return (
+        (s.marketCap || 0) >= 2 &&  // 20억 달러 이상
+        (s.price || 0) >= 5 &&
+        (s.dollarVolume || 0) >= 5 &&  // 500만 달러
+        (s.PER || 0) < 20 &&
+        (s.PEG || 0) < 1.5 &&
+        (s.RevYoY || 0) > 5 &&
+        (s.EPS_Growth_3Y || 0) > 5 &&
+        (s.OpMarginTTM || 0) > 10 &&
+        (s.ROE || 0) > 12 &&
+        (s.FCF_Yield || 0) > 2
+      );
+
+    case "growth_quality":
+      return (
+        (s.marketCap || 0) >= 1 &&  // 10억 달러 이상
+        (s.RevYoY || 0) > 15 &&
+        (s.EPS_Growth_3Y || 0) > 10 &&
+        (s.OpMarginTTM || 0) > 15 &&
+        (s.ROE || 0) > 15 &&
+        (s.PER || 0) < 40 &&
+        (s.PEG || 0) < 2.0
+      );
+
+    case "momentum":
+      return (
+        (s.price || 0) >= 10 &&
+        (s.dollarVolume || 0) >= 3 &&  // 300만 달러
+        (s.rvol || 0) > 1.3 &&
+        (s.rsi || 0) >= 40 && (s.rsi || 0) <= 70 &&
+        (s.ret20d || 0) > 3 &&
+        (s.high52wRatio || 0) > 70 &&
+        (s.macdHistogram || 0) > 0
+      );
+
+    case "swing":
+      return (
+        (s.price || 0) >= 5 &&
+        (s.dollarVolume || 0) >= 1 &&  // 100만 달러
+        (s.atr || 0) >= 2 && (s.atr || 0) <= 10 &&
+        (s.rsi || 0) >= 30 && (s.rsi || 0) <= 70 &&
+        (s.bbPosition || 0) >= 20 && (s.bbPosition || 0) <= 80 &&
+        (s.ret5d || 0) >= -5 && (s.ret5d || 0) <= 10
+      );
+
+    default:
+      return true;
+  }
+}
+
 // 재무 지표 평가 함수 (좋음: 초록색, 보통: 검정색, 나쁨: 빨간색)
 function getMetricColor(key: string, value: number): string {
   // 높을수록 좋은 지표들
@@ -1149,50 +1230,61 @@ export default function DemoHome() {
         >
           <main className="mx-auto max-w-7xl space-y-4 sm:space-y-6 px-3 sm:px-4 py-4 sm:py-6 pb-24">
             {/* Hero Section - 분석 플랫폼 소개 */}
-            <div className="rounded-2xl sm:rounded-3xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 sm:p-8 text-white shadow-xl">
-              <div className="mb-2 sm:mb-3">
-                <h1 className="text-lg sm:text-2xl font-extrabold">기업 분석 플랫폼</h1>
-                <p className="text-xs sm:text-sm text-indigo-100 mt-1">종목추천 · 공시 분석 · 투자 기회 탐색</p>
+            <div className="rounded-2xl sm:rounded-3xl border border-gray-200 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6 sm:p-10 shadow-lg">
+              <div className="mb-4 sm:mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-lg">
+                    <span className="text-2xl sm:text-4xl">📊</span>
+                  </div>
+                  <div>
+                    <h1 className="text-2xl sm:text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">딸깍</h1>
+                    <p className="text-xs sm:text-sm text-gray-600 font-medium">Smart Investment Platform</p>
+                  </div>
+                </div>
+                <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+                  데이터 기반의 종목 분석과 투자 인사이트를 제공합니다.<br className="hidden sm:inline" />
+                  <span className="text-gray-600"> 종합 평가 · 재무 분석 · 공시 정보를 한눈에 확인하세요.</span>
+                </p>
               </div>
-              <div className="mt-3 sm:mt-4 grid grid-cols-3 gap-2 sm:gap-4 text-center">
+              <div className="mt-4 sm:mt-6 grid grid-cols-3 gap-3 sm:gap-4">
                 <button
                   onClick={scrollToFeaturedSection}
-                  className="rounded-lg sm:rounded-xl bg-white/20 backdrop-blur p-2 sm:p-3 hover:bg-white/30 transition-all cursor-pointer"
+                  className="group rounded-xl bg-white border border-gray-200 p-3 sm:p-4 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer text-center"
                 >
-                  <div className="flex items-center justify-center gap-1 sm:gap-2">
-                    <span className="text-lg sm:text-2xl font-bold">{featuredStocks.length}</span>
-                    <div className="hidden sm:flex items-center gap-1">
-                      <span className="text-red-400 text-lg">↑</span>
-                      <span className="text-sm font-bold text-red-300">+5</span>
+                  <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
+                    <span className="text-xl sm:text-3xl font-bold text-blue-600">{featuredStocks.length}</span>
+                    <div className="hidden sm:flex items-center gap-0.5">
+                      <span className="text-emerald-500 text-base">↑</span>
+                      <span className="text-xs font-bold text-emerald-600">+5</span>
                     </div>
                   </div>
-                  <div className="text-[10px] sm:text-xs text-indigo-100 mt-1">주목 종목</div>
+                  <div className="text-[10px] sm:text-sm font-semibold text-gray-600 group-hover:text-blue-600 transition-colors">주목 종목</div>
                 </button>
                 <button
                   onClick={() => switchTab("filings")}
-                  className="rounded-lg sm:rounded-xl bg-white/20 backdrop-blur p-2 sm:p-3 hover:bg-white/30 transition-all cursor-pointer"
+                  className="group rounded-xl bg-white border border-gray-200 p-3 sm:p-4 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer text-center"
                 >
-                  <div className="flex items-center justify-center gap-1 sm:gap-2">
-                    <span className="text-lg sm:text-2xl font-bold">{filings.length}</span>
-                    <div className="hidden sm:flex items-center gap-1">
-                      <span className="text-red-400 text-lg">↑</span>
-                      <span className="text-sm font-bold text-red-300">+12</span>
+                  <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
+                    <span className="text-xl sm:text-3xl font-bold text-indigo-600">{filings.length}</span>
+                    <div className="hidden sm:flex items-center gap-0.5">
+                      <span className="text-emerald-500 text-base">↑</span>
+                      <span className="text-xs font-bold text-emerald-600">+12</span>
                     </div>
                   </div>
-                  <div className="text-[10px] sm:text-xs text-indigo-100 mt-1">공시 분석</div>
+                  <div className="text-[10px] sm:text-sm font-semibold text-gray-600 group-hover:text-indigo-600 transition-colors">공시 분석</div>
                 </button>
                 <button
                   onClick={() => switchTab("undervalued")}
-                  className="rounded-lg sm:rounded-xl bg-white/20 backdrop-blur p-2 sm:p-3 hover:bg-white/30 transition-all cursor-pointer"
+                  className="group rounded-xl bg-white border border-gray-200 p-3 sm:p-4 hover:border-purple-300 hover:shadow-md transition-all cursor-pointer text-center"
                 >
-                  <div className="flex items-center justify-center gap-1 sm:gap-2">
-                    <span className="text-lg sm:text-2xl font-bold">{undervaluedStocks.length}</span>
-                    <div className="hidden sm:flex items-center gap-1">
-                      <span className="text-red-400 text-lg">↑</span>
-                      <span className="text-sm font-bold text-red-300">+8</span>
+                  <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
+                    <span className="text-xl sm:text-3xl font-bold text-purple-600">{undervaluedStocks.length}</span>
+                    <div className="hidden sm:flex items-center gap-0.5">
+                      <span className="text-emerald-500 text-base">↑</span>
+                      <span className="text-xs font-bold text-emerald-600">+8</span>
                     </div>
                   </div>
-                  <div className="text-[10px] sm:text-xs text-indigo-100 mt-1">종목추천</div>
+                  <div className="text-[10px] sm:text-sm font-semibold text-gray-600 group-hover:text-purple-600 transition-colors">종목추천</div>
                 </button>
               </div>
             </div>
@@ -1573,7 +1665,8 @@ export default function DemoHome() {
                       !undervaluedSearchQuery ||
                       stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
                       stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
-                    return matchMarket && matchCategory && matchIndustry && matchQuery;
+                    const matchStrategy = matchesInvestmentStrategy(stock, undervaluedStrategy);
+                    return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy;
                   });
 
                   // Apply sorting - 초보자 모드는 무조건 종합 점수 높은 순
@@ -1733,7 +1826,8 @@ export default function DemoHome() {
                             !undervaluedSearchQuery ||
                             stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
                             stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
-                          return matchMarket && matchCategory && matchIndustry && matchQuery;
+                          const matchStrategy = matchesInvestmentStrategy(stock, undervaluedStrategy);
+                          return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy;
                         });
 
                         // Apply sorting
