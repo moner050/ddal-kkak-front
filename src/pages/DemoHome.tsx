@@ -365,6 +365,27 @@ function NewsSummaryTab() {
 // ======================= DemoHome (메인) =======================
 // TAB_KEYS와 TabKey는 ../types에서 import됨
 
+// 점수를 유망도 수준으로 변환하는 함수
+function getScoreLevel(score: number): { label: string; emoji: string } {
+  if (score >= 80) return { label: "매우 유망", emoji: "🌟" };
+  if (score >= 70) return { label: "유망", emoji: "⭐" };
+  if (score >= 60) return { label: "보통", emoji: "➖" };
+  if (score >= 50) return { label: "주의", emoji: "⚠️" };
+  return { label: "위험", emoji: "🚨" };
+}
+
+// 각 점수에 영향을 주는 크리티컬 지표 매핑
+function getCriticalMetrics(scoreType: string): string[] {
+  const metricsMap: Record<string, string[]> = {
+    "GrowthScore": ["RevYoY", "Revenue_Growth_3Y", "EPS_Growth_3Y", "EBITDA_Growth_3Y"],
+    "QualityScore": ["ROE", "ROA", "OpMarginTTM", "OperatingMargins"],
+    "ValueScore": ["PE", "PEG", "PB", "PS", "Discount"],
+    "MomentumScore": ["RET5", "RET20", "RET63", "RSI_14"],
+    "TotalScore": ["GrowthScore", "QualityScore", "ValueScore", "MomentumScore"]
+  };
+  return metricsMap[scoreType] || [];
+}
+
 // 재무 지표 평가 함수 (좋음: 초록색, 보통: 검정색, 나쁨: 빨간색)
 function getMetricColor(key: string, value: number): string {
   // 높을수록 좋은 지표들
@@ -543,8 +564,13 @@ export default function DemoHome() {
   const asOfKR = asOfUS;
   const asOf = asOfUS;
 
-  // 탭 상태
-  const [activeTab, setActiveTab] = useState<TabKey>("home");
+  // 탭 상태 (URL 파라미터에서 초기값 가져오기)
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    if (typeof window === "undefined") return "home";
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get("tab");
+    return TAB_KEYS.includes(tab as TabKey) ? (tab as TabKey) : "home";
+  });
 
   // API 데이터 상태
   const [featuredStocks, setFeaturedStocks] = useState<FrontendFeaturedStock[]>([]);
@@ -570,7 +596,7 @@ export default function DemoHome() {
   const [undervaluedIndustry, setUndervaluedIndustry] = useState("전체");
   const [undervaluedPage, setUndervaluedPage] = useState(1);
   const [undervaluedCategoryPages, setUndervaluedCategoryPages] = useState<Record<string, number>>({}); // 섹터별 페이지 상태 저장
-  const [undervaluedSortBy, setUndervaluedSortBy] = useState<string | null>("aiScore"); // 기본적으로 AI 점수 높은 순으로 정렬
+  const [undervaluedSortBy, setUndervaluedSortBy] = useState<string | null>("aiScore"); // 기본적으로 종합 점수 높은 순으로 정렬
   const [undervaluedSortDirection, setUndervaluedSortDirection] = useState<"asc" | "desc">("desc");
 
   // 공시 분석 페이지 필터
@@ -696,6 +722,43 @@ export default function DemoHome() {
     loadData();
   }, []);
 
+  // ✅ 초기 페이지 로드 시 현재 탭을 히스토리에 설정
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // 초기 상태 설정 (replaceState 사용하여 새 히스토리 엔트리를 만들지 않음)
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", activeTab);
+    window.history.replaceState({ tab: activeTab }, "", url.toString());
+  }, []); // 빈 배열: 최초 한 번만 실행
+
+  // ✅ 브라우저 뒤로가기/앞으로가기 버튼 감지
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+      if (state && state.tab && TAB_KEYS.includes(state.tab as TabKey)) {
+        setActiveTab(state.tab as TabKey);
+      } else {
+        // URL 파라미터에서 탭 정보 가져오기
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get("tab");
+        if (tab && TAB_KEYS.includes(tab as TabKey)) {
+          setActiveTab(tab as TabKey);
+        } else {
+          setActiveTab("home");
+        }
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
   // ✅ 탭별 스크롤 위치 저장용
   const scrollPositions = useRef<Record<TabKey, number>>({
     home: 0,
@@ -724,12 +787,19 @@ export default function DemoHome() {
     detail: detailRef,
   };
 
-  // ✅ 탭 전환 시: 현재 탭 스크롤 저장 → 다음 탭 스크롤 복원
+  // ✅ 탭 전환 시: 현재 탭 스크롤 저장 → 다음 탭 스크롤 복원 → 브라우저 히스토리 추가
   const switchTab = (next: TabKey) => {
     const currEl = refMap[activeTab].current;
     if (currEl) scrollPositions.current[activeTab] = currEl.scrollTop;
 
     setActiveTab(next);
+
+    // 브라우저 히스토리에 상태 추가
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", next);
+      window.history.pushState({ tab: next }, "", url.toString());
+    }
 
     // 다음 프레임에서 복원 (DOM 업데이트 후)
     requestAnimationFrame(() => {
@@ -831,7 +901,7 @@ export default function DemoHome() {
       "공시일": filing.date,
       "요약": filing.summary,
       "감정 분석": filing.sentiment === "POS" ? "긍정" : filing.sentiment === "NEG" ? "부정" : "중립",
-      "AI 점수": filing.aiScore,
+      "종합 점수": filing.aiScore,
       "신뢰도": `${(filing.confidence * 100).toFixed(1)}%`,
       "섹터": filing.category,
       "산업군": filing.industry || "-"
@@ -953,7 +1023,7 @@ export default function DemoHome() {
       "회사명": stock.name,
       "섹터": stock.category,
       "산업군": stock.industry,
-      "AI 점수": stock.aiScore,
+      "종합 점수": stock.aiScore,
       "감정 분석": stock.sentiment === "POS" ? "긍정" : stock.sentiment === "NEG" ? "부정" : "중립",
       "소개일": stock.introducedAt,
       "소개 후 수익률": `${stock.perfSinceIntro?.toFixed(1)}%`,
@@ -982,7 +1052,7 @@ export default function DemoHome() {
       { wch: 25 }, // C: 회사명
       { wch: 15 }, // D: 섹터
       { wch: 20 }, // E: 산업군
-      { wch: 10 }, // F: AI 점수
+      { wch: 10 }, // F: 종합 점수
       { wch: 12 }, // G: 감정 분석
       { wch: 12 }, // H: 소개일
       { wch: 15 }, // I: 소개 후 수익률
@@ -1078,10 +1148,10 @@ export default function DemoHome() {
           )}
         >
           <main className="mx-auto max-w-7xl space-y-4 sm:space-y-6 px-3 sm:px-4 py-4 sm:py-6 pb-24">
-            {/* Hero Section - AI 분석 플랫폼 소개 */}
+            {/* Hero Section - 분석 플랫폼 소개 */}
             <div className="rounded-2xl sm:rounded-3xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 sm:p-8 text-white shadow-xl">
               <div className="mb-2 sm:mb-3">
-                <h1 className="text-lg sm:text-2xl font-extrabold">AI 기업 분석 플랫폼</h1>
+                <h1 className="text-lg sm:text-2xl font-extrabold">기업 분석 플랫폼</h1>
                 <p className="text-xs sm:text-sm text-indigo-100 mt-1">종목추천 · 공시 분석 · 투자 기회 탐색</p>
               </div>
               <div className="mt-3 sm:mt-4 grid grid-cols-3 gap-2 sm:gap-4 text-center">
@@ -1294,7 +1364,7 @@ export default function DemoHome() {
             {/* 면책 조항 */}
             <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-center">
               <p className="text-xs text-gray-600">
-                ⚠️ 본 서비스는 AI 기반 분석 정보를 제공하며, 투자 권유나 자문이 아닙니다.<br />
+                ⚠️ 본 서비스는 분석 정보를 제공하며, 투자 권유나 자문이 아닙니다.<br />
                 모든 투자 결정은 투자자 본인의 판단과 책임 하에 이루어져야 합니다.
               </p>
             </div>
@@ -1506,7 +1576,7 @@ export default function DemoHome() {
                     return matchMarket && matchCategory && matchIndustry && matchQuery;
                   });
 
-                  // Apply sorting - 초보자 모드는 무조건 AI 점수 높은 순
+                  // Apply sorting - 초보자 모드는 무조건 종합 점수 높은 순
                   filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
                     const aVal = a.aiScore;
                     const bVal = b.aiScore;
@@ -1553,8 +1623,8 @@ export default function DemoHome() {
                         </th>
                         <th className="px-4 py-3 text-center text-xs">
                           <TooltipHeader
-                            label="AI 점수"
-                            tooltip="AI가 분석한 종합 투자 매력도 (0-100점)"
+                            label="종합 점수"
+                            tooltip="종합 투자 매력도 (0-100점)"
                             sortKey="aiScore"
                             currentSortKey={undervaluedSortBy}
                             sortDirection={undervaluedSortDirection}
@@ -1910,7 +1980,7 @@ export default function DemoHome() {
                         : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                     )}
                   >
-                    AI 점수 {filingsSortBy === "aiScore" && (filingsSortDirection === "asc" ? "↑" : "↓")}
+                    종합 점수 {filingsSortBy === "aiScore" && (filingsSortDirection === "asc" ? "↑" : "↓")}
                   </button>
                 </div>
               </div>
@@ -2070,7 +2140,7 @@ export default function DemoHome() {
                 <span>⭐</span>
                 관심 종목
               </h1>
-              <p className="mt-2 text-sm text-gray-600">즐겨찾기한 종목의 AI 분석을 한눈에 확인하세요</p>
+              <p className="mt-2 text-sm text-gray-600">즐겨찾기한 종목의 분석을 한눈에 확인하세요</p>
             </div>
 
             {(() => {
@@ -2194,7 +2264,7 @@ export default function DemoHome() {
                               산업군
                             </th>
                             <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                              AI 점수
+                              종합 점수
                             </th>
                             <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                               최근 공시 점수
@@ -2623,6 +2693,12 @@ export default function DemoHome() {
                         <p className="text-sm sm:text-base md:text-xl text-indigo-100 mb-2 sm:mb-3 truncate">
                           {stockDetail.Ticker} · {stockDetail.Sector}
                         </p>
+                        {/* 기업 간단 설명 (백엔드에서 제공 시 표시) */}
+                        {(stockInfo as any)?.description && (
+                          <p className="text-xs sm:text-sm text-indigo-100 mb-2 sm:mb-3 line-clamp-2">
+                            {(stockInfo as any).description}
+                          </p>
+                        )}
                         <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                           <div>
                             <div className="text-xs sm:text-sm text-indigo-200">현재가</div>
@@ -2644,7 +2720,7 @@ export default function DemoHome() {
                             </div>
                           )}
                           <div className="inline-block bg-white/40 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-4 border-2 border-white/60 shadow-2xl ring-2 ring-white/30">
-                            <div className="text-xs text-gray-800 mb-2 font-bold text-center bg-white/70 rounded-lg px-2 py-1 shadow-sm">AI 종합 점수</div>
+                            <div className="text-xs text-gray-800 mb-2 font-bold text-center bg-white/70 rounded-lg px-2 py-1 shadow-sm">종합 점수</div>
                             <AIScoreGauge score={stockInfo.aiScore} sentiment={stockInfo.sentiment} size="lg" />
                           </div>
                         </>
@@ -2712,17 +2788,62 @@ export default function DemoHome() {
                     <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
                       <h2 className="text-lg font-bold text-gray-900 mb-4">🏆 종합 평가</h2>
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        {["GrowthScore", "QualityScore", "ValueScore", "MomentumScore", "TotalScore"].map(key => (
-                          <div key={key} className="text-center p-4 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
-                            <div className="text-xs font-semibold text-gray-700 mb-1">{key.replace("Score", "")}</div>
-                            {METRIC_DESCRIPTIONS[key] && (
-                              <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
-                            )}
-                            <div className={classNames("text-3xl font-bold", typeof stockDetail[key] === "number" ? getMetricColor(key, stockDetail[key]) : "text-gray-900")}>
-                              {typeof stockDetail[key] === "number" ? stockDetail[key].toFixed(0) : stockDetail[key]}
+                        {["GrowthScore", "QualityScore", "ValueScore", "MomentumScore", "TotalScore"].map(key => {
+                          const value = stockDetail[key];
+                          const isNumber = typeof value === "number";
+                          const scoreLevel = isNumber ? getScoreLevel(value) : null;
+                          const criticalMetrics = getCriticalMetrics(key);
+
+                          return (
+                            <div key={key} className="text-center p-4 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
+                              <div className="text-xs font-semibold text-gray-700 mb-1">{key.replace("Score", "")}</div>
+                              {METRIC_DESCRIPTIONS[key] && (
+                                <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
+                              )}
+                              <div className={classNames("text-3xl font-bold", isNumber ? getMetricColor(key, value) : "text-gray-900")}>
+                                {isNumber ? value.toFixed(0) : value}
+                              </div>
+                              {scoreLevel && (
+                                <div className="mt-2 text-xs font-semibold">
+                                  <span className="mr-1">{scoreLevel.emoji}</span>
+                                  <span className={classNames(
+                                    value >= 80 ? "text-emerald-600" :
+                                    value >= 70 ? "text-blue-600" :
+                                    value >= 60 ? "text-gray-600" :
+                                    value >= 50 ? "text-orange-600" :
+                                    "text-red-600"
+                                  )}>{scoreLevel.label}</span>
+                                </div>
+                              )}
+                              {/* 크리티컬 지표 표시 */}
+                              {criticalMetrics.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-gray-200">
+                                  <div className="text-[10px] text-gray-600 mb-1">주요 영향 지표</div>
+                                  <div className="flex flex-wrap gap-1 justify-center">
+                                    {criticalMetrics.map(metric => {
+                                      const metricValue = stockDetail[metric];
+                                      const metricColor = typeof metricValue === "number" ? getMetricColor(metric, metricValue) : "text-gray-600";
+                                      return (
+                                        <span
+                                          key={metric}
+                                          className={classNames(
+                                            "text-[9px] px-1.5 py-0.5 rounded font-semibold",
+                                            metricColor.includes("emerald") ? "bg-emerald-100 text-emerald-700" :
+                                            metricColor.includes("red") ? "bg-red-100 text-red-700" :
+                                            "bg-gray-100 text-gray-700"
+                                          )}
+                                          title={METRIC_DESCRIPTIONS[metric] || metric}
+                                        >
+                                          {metric.replace(/_/g, " ").replace("Score", "")}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 
