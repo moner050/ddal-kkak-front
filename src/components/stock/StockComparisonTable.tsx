@@ -142,7 +142,7 @@ const StockComparisonTable: React.FC<StockComparisonTableProps> = ({
                       <div className={getChangeColor(changeData.change)}>
                         <div>{changeData.change > 0 ? "▲" : changeData.change < 0 ? "▼" : "―"}</div>
                         <div className="text-xs">
-                          {formatPercent(changeData.changePercent)}%
+                          {formatPercent(changeData.changePercent)}
                         </div>
                       </div>
                     ) : (

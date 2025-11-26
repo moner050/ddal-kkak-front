@@ -214,7 +214,7 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
 
   const chartMetricOptions = [
     { value: "price", label: "주가", unit: "USD" },
-    { value: "totalScore", label: "AI 종합점수", unit: "" },
+    { value: "totalScore", label: "종합점수", unit: "" },
     { value: "pe", label: "PER", unit: "" },
     { value: "roe", label: "ROE", unit: "%" },
   ];
