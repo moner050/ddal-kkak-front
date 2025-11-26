@@ -64,6 +64,7 @@ import FeaturedStockCard from "../components/stock/FeaturedStockCard";
 import FilingAnalysisCard from "../components/stock/FilingAnalysisCard";
 import FilingCard from "../components/stock/FilingCard";
 import BeginnerStockCard from "../components/stock/BeginnerStockCard";
+import StockPriceVisualization from "../components/stock/StockPriceVisualization";
 
 // Import news components
 import NewsImportanceBadge from "../components/news/NewsImportanceBadge";
@@ -590,7 +591,7 @@ export default function DemoHome() {
 
   // 종목 상세 페이지 상태
   const [detailSymbol, setDetailSymbol] = useState<string>("");
-  const [detailTab, setDetailTab] = useState<"info" | "filings">("info");
+  const [detailTab, setDetailTab] = useState<"info" | "filings" | "chart">("info");
   const [detailLogoError, setDetailLogoError] = useState(false);
 
   // 저평가/관심 탭 로고 에러 상태
@@ -661,9 +662,9 @@ export default function DemoHome() {
       try {
         console.log('🔄 Loading API data...');
 
-        // Featured Stocks 로드
+        // Featured Stocks 로드 (5개만 표시)
         setIsLoadingFeatured(true);
-        const featured = await featuredService.getFeatured(10);
+        const featured = await featuredService.getFeatured(5);
         setFeaturedStocks(featured);
         console.log('✅ Featured stocks loaded:', featured.length);
         setIsLoadingFeatured(false);
@@ -1252,41 +1253,43 @@ export default function DemoHome() {
               </div>
             </section>
 
-            {/* 시장 현황 요약 */}
-            <section>
-              <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
-                📈 시장 현황
-              </h2>
-              {/* 주요 지수 */}
-              <div className="grid gap-4 md:grid-cols-2 mb-4">
-                <LineChartCard title="S&P 500" unit="" asOf={asOf} data={mockSP500} />
-                <LineChartCard title="코스피" unit="" asOf={asOf} data={mockKOSPI} />
-              </div>
-              {/* 금리 및 변동성 */}
-              <div className="grid gap-4 md:grid-cols-2 mb-4">
-                <LineChartCard title="미국 10년물 국채수익률" unit="%" asOf={asOf} data={mockUS10Y} />
-                <LineChartCard title="VIX (변동성지수)" unit="" asOf={asOf} data={mockVIX} />
-              </div>
-              {/* 원자재 및 암호화폐 */}
-              <div className="grid gap-4 md:grid-cols-2 mb-4">
-                <LineChartCard title="비트코인" unit="USD" asOf={asOf} data={mockBTC} />
-                <LineChartCard title="WTI 원유" unit="USD/bbl" asOf={asOf} data={mockWTI} />
-              </div>
-              {/* 환율 및 금 */}
-              <div className="grid gap-4 md:grid-cols-2 mb-4">
-                <LineChartCard title="원·달러 환율" unit="KRW" asOf={asOf} data={mockUSDKRW} />
-                <LineChartCard title="금 시세" unit="USD/oz" asOf={asOf} data={mockGoldUSD} />
-              </div>
-              {/* 버핏지수 */}
-              <div className="grid gap-4 md:grid-cols-2 mb-4">
-                <BuffettCard title="미국 버핏지수" asOf={asOf} data={usBuffettSeries} />
-                <BuffettCard title="한국 버핏지수" asOf={asOf} data={krBuffettSeries} />
-              </div>
-              {/* 공포·탐욕 지수 */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <FearGreedCard title="미국 공포·탐욕 지수" index={fearGreedUS} asOf={asOfUS} variant="US" series={usFearGreedSeries} />
-              </div>
-            </section>
+            {/* 시장 현황 요약 - 추후 구현 예정으로 임시 숨김 처리 */}
+            {false && (
+              <section>
+                <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
+                  📈 시장 현황
+                </h2>
+                {/* 주요 지수 */}
+                <div className="grid gap-4 md:grid-cols-2 mb-4">
+                  <LineChartCard title="S&P 500" unit="" asOf={asOf} data={mockSP500} />
+                  <LineChartCard title="코스피" unit="" asOf={asOf} data={mockKOSPI} />
+                </div>
+                {/* 금리 및 변동성 */}
+                <div className="grid gap-4 md:grid-cols-2 mb-4">
+                  <LineChartCard title="미국 10년물 국채수익률" unit="%" asOf={asOf} data={mockUS10Y} />
+                  <LineChartCard title="VIX (변동성지수)" unit="" asOf={asOf} data={mockVIX} />
+                </div>
+                {/* 원자재 및 암호화폐 */}
+                <div className="grid gap-4 md:grid-cols-2 mb-4">
+                  <LineChartCard title="비트코인" unit="USD" asOf={asOf} data={mockBTC} />
+                  <LineChartCard title="WTI 원유" unit="USD/bbl" asOf={asOf} data={mockWTI} />
+                </div>
+                {/* 환율 및 금 */}
+                <div className="grid gap-4 md:grid-cols-2 mb-4">
+                  <LineChartCard title="원·달러 환율" unit="KRW" asOf={asOf} data={mockUSDKRW} />
+                  <LineChartCard title="금 시세" unit="USD/oz" asOf={asOf} data={mockGoldUSD} />
+                </div>
+                {/* 버핏지수 */}
+                <div className="grid gap-4 md:grid-cols-2 mb-4">
+                  <BuffettCard title="미국 버핏지수" asOf={asOf} data={usBuffettSeries} />
+                  <BuffettCard title="한국 버핏지수" asOf={asOf} data={krBuffettSeries} />
+                </div>
+                {/* 공포·탐욕 지수 */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FearGreedCard title="미국 공포·탐욕 지수" index={fearGreedUS} asOf={asOfUS} variant="US" series={usFearGreedSeries} />
+                </div>
+              </section>
+            )}
 
             {/* 면책 조항 */}
             <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-center">
@@ -2666,6 +2669,18 @@ export default function DemoHome() {
                       <span className="sm:hidden">📊 정보</span>
                     </button>
                     <button
+                      onClick={() => setDetailTab("chart")}
+                      className={classNames(
+                        "flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold transition-all",
+                        detailTab === "chart"
+                          ? "bg-indigo-600 text-white shadow-lg"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      )}
+                    >
+                      <span className="hidden sm:inline">📈 주가 추이</span>
+                      <span className="sm:hidden">📈 차트</span>
+                    </button>
+                    <button
                       onClick={() => setDetailTab("filings")}
                       className={classNames(
                         "flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold transition-all",
@@ -2674,8 +2689,8 @@ export default function DemoHome() {
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       )}
                     >
-                      <span className="hidden sm:inline">📈 공시 분석 요약</span>
-                      <span className="sm:hidden">📈 공시</span>
+                      <span className="hidden sm:inline">📋 공시 분석</span>
+                      <span className="sm:hidden">📋 공시</span>
                     </button>
                   </div>
                   {detailTab === "info" && (
@@ -2821,6 +2836,15 @@ export default function DemoHome() {
                         })}
                       </div>
                     </div>
+                  </div>
+                ) : detailTab === "chart" ? (
+                  /* 주가 추이 차트 탭 */
+                  <div>
+                    <StockPriceVisualization
+                      ticker={detailSymbol}
+                      companyName={String(stockDetail.Name)}
+                      initialMaxDate={stockInfo?.dataDate}
+                    />
                   </div>
                 ) : (
                   <div className="space-y-4">
