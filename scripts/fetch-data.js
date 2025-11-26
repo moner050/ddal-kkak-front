@@ -194,16 +194,23 @@ async function fetchAllData() {
 
         try {
           // 특정 날짜의 전체 종목 데이터 조회
-          // 옵션 1: profile API 사용 (날짜 파라미터 포함)
-          const historicalResponse = await apiClient.get('/api/undervalued-stocks/profile/ALL/paging', {
+          // 옵션 1: export API에 date 파라미터 추가 시도
+          const historicalResponse = await apiClient.get('/api/undervalued-stocks/export', {
             params: {
-              page: 1,
-              size: 10000,
+              limit: 10000,
               date: date,
             },
           });
 
-          const stocksData = historicalResponse.data.stocks || historicalResponse.data.content || [];
+          // 응답 구조 디버깅
+          console.log(`     Response keys: ${Object.keys(historicalResponse.data).join(', ')}`);
+
+          const stocksData = historicalResponse.data.stocks || [];
+
+          // 데이터가 비어있으면 경고
+          if (stocksData.length === 0) {
+            console.warn(`     ⚠️ No stocks returned for ${date} - API may not support date parameter`);
+          }
 
           // 날짜별 파일로 저장
           const filename = `${date}.json`;
