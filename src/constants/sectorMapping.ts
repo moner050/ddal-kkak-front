@@ -39,6 +39,8 @@ export const INDUSTRY_MAPPING: Record<string, string> = {
   "Solar": "태양광",
   "Semiconductor Equipment & Materials": "반도체 장비",
   "Electronics & Computer Distribution": "전자기기",
+  "Consumer Electronics": "가전",
+  "Scientific & Technical Instruments": "과학·기술 장비",
 
   // 커뮤니케이션 서비스
   "Telecom Services": "통신",
@@ -69,6 +71,10 @@ export const INDUSTRY_MAPPING: Record<string, string> = {
   "Gambling": "호텔·레저",
   "Recreational Vehicles": "자동차",
   "Footwear & Accessories": "의류",
+  "Luxury Goods": "명품",
+  "Home Improvement Retail": "홈인테리어",
+  "Department Stores": "백화점",
+  "Textile Manufacturing": "섬유",
 
   // 필수소비재
   "Education & Training Services": "교육서비스",
@@ -82,6 +88,7 @@ export const INDUSTRY_MAPPING: Record<string, string> = {
   "Confectioners": "식품",
   "Food Distribution": "식품",
   "Beverages - Brewers": "음료",
+  "Beverages - Wineries & Distilleries": "주류",
 
   // 헬스케어
   "Medical Care Facilities": "의료서비스",
@@ -92,6 +99,8 @@ export const INDUSTRY_MAPPING: Record<string, string> = {
   "Drug Manufacturers - General": "제약",
   "Medical Devices": "의료기기",
   "Medical Instruments & Supplies": "의료기기",
+  "Medical Distribution": "의료유통",
+  "Healthcare Plans": "의료보험",
 
   // 금융
   "Banks - Regional": "은행",
@@ -107,6 +116,7 @@ export const INDUSTRY_MAPPING: Record<string, string> = {
   "Banks - Diversified": "은행",
   "Capital Markets": "증권",
   "Insurance - Specialty": "보험",
+  "Insurance Brokers": "보험중개",
 
   // 산업재
   "Marine Shipping": "운송",
@@ -126,6 +136,13 @@ export const INDUSTRY_MAPPING: Record<string, string> = {
   "Staffing & Employment Services": "인력서비스",
   "Building Products & Equipment": "건설",
   "Conglomerates": "복합기업",
+  "Integrated Freight & Logistics": "물류",
+  "Industrial Distribution": "산업유통",
+  "Business Equipment & Supplies": "사무기기",
+  "Pollution & Treatment Controls": "환경",
+  "Trucking": "운송",
+  "Tools & Accessories": "공구",
+  "Waste Management": "폐기물처리",
 
   // 소재
   "Gold": "금속",
@@ -139,6 +156,9 @@ export const INDUSTRY_MAPPING: Record<string, string> = {
   "Coking Coal": "석탄",
   "Other Industrial Metals & Mining": "금속",
   "Chemicals": "화학",
+  "Paper & Paper Products": "제지",
+  "Aluminum": "금속",
+  "Other Precious Metals & Mining": "귀금속",
 
   // 에너지
   "Oil & Gas Midstream": "석유·가스",
@@ -148,6 +168,7 @@ export const INDUSTRY_MAPPING: Record<string, string> = {
   "Thermal Coal": "석탄",
   "Oil & Gas Integrated": "석유·가스",
   "Uranium": "우라늄",
+  "Oil & Gas Equipment & Services": "석유·가스 장비",
 
   // 유틸리티
   "Utilities - Regulated Electric": "전력",
@@ -168,6 +189,8 @@ export const INDUSTRY_MAPPING: Record<string, string> = {
   "REIT - Hotel & Motel": "리츠",
   "REIT - Diversified": "리츠",
   "REIT - Office": "리츠",
+  "Real Estate - Development": "부동산 개발",
+  "Real Estate - Diversified": "부동산 개발",
 };
 
 /**
