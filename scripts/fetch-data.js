@@ -141,7 +141,117 @@ async function fetchAllData() {
       });
     }
 
-    // 4. 메타데이터 저장
+    // 4. 주가 히스토리 데이터 (Featured 종목의 3개월 데이터)
+    console.log('\n📈 Fetching stock price history...');
+    try {
+      // 최신 데이터 날짜 조회
+      const latestDateResponse = await apiClient.get('/api/undervalued-stocks/latest-date');
+      const latestDate = latestDateResponse.data.latestDate;
+
+      if (!latestDate) {
+        throw new Error('Latest date not available');
+      }
+
+      console.log(`   Latest data date: ${latestDate}`);
+
+      // 날짜 범위 생성 (3개월, 주 단위)
+      const generateDateRange = (endDate, months, interval = 7) => {
+        const end = new Date(endDate);
+        const start = new Date(endDate);
+        start.setMonth(start.getMonth() - months);
+
+        const dates = [];
+        const current = new Date(start);
+
+        while (current <= end) {
+          dates.push(current.toISOString().split('T')[0]);
+          current.setDate(current.getDate() + interval);
+        }
+
+        if (dates[dates.length - 1] !== endDate) {
+          dates.push(endDate);
+        }
+
+        return dates;
+      };
+
+      const dates = generateDateRange(latestDate, 3, 7);
+      console.log(`   Generated ${dates.length} dates to fetch`);
+
+      // Featured stocks 목록 가져오기
+      const featuredResponse = await apiClient.get('/api/undervalued-stocks/featured', {
+        params: { limit: 10 },
+      });
+
+      const featuredStocks = featuredResponse.data;
+      console.log(`   Featured stocks: ${featuredStocks.length}`);
+
+      // 각 종목의 히스토리 데이터 수집
+      const stockHistories = {};
+      let totalFetched = 0;
+
+      for (const stock of featuredStocks) {
+        const ticker = stock.ticker || stock.symbol;
+        console.log(`   Fetching history for ${ticker}...`);
+
+        const historyData = [];
+
+        for (const date of dates) {
+          try {
+            const historyResponse = await apiClient.get(
+              `/api/undervalued-stocks/${ticker}/history`,
+              { params: { date } }
+            );
+            historyData.push(historyResponse.data);
+            totalFetched++;
+          } catch (err) {
+            console.warn(`     ⚠ Failed to fetch ${ticker} on ${date}: ${err.message}`);
+          }
+        }
+
+        stockHistories[ticker] = {
+          ticker,
+          name: stock.name || stock.companyName,
+          dataPoints: historyData.length,
+          history: historyData,
+        };
+
+        console.log(`     ✓ ${ticker}: ${historyData.length}/${dates.length} data points`);
+      }
+
+      saveJSON('stock-histories.json', {
+        lastUpdated: new Date().toISOString(),
+        latestDate: latestDate,
+        dateRange: {
+          start: dates[0],
+          end: dates[dates.length - 1],
+          interval: 7,
+          totalDates: dates.length,
+        },
+        totalStocks: Object.keys(stockHistories).length,
+        totalDataPoints: totalFetched,
+        stocks: stockHistories,
+      });
+
+      metadata.sources.stockHistories = {
+        count: Object.keys(stockHistories).length,
+        dataPoints: totalFetched,
+        updatedAt: new Date().toISOString(),
+      };
+
+      console.log(`   ✓ Stock histories saved: ${Object.keys(stockHistories).length} stocks, ${totalFetched} total data points`);
+    } catch (error) {
+      console.error('   ✗ Failed to fetch stock histories:', error.message);
+      saveJSON('stock-histories.json', {
+        lastUpdated: new Date().toISOString(),
+        latestDate: null,
+        totalStocks: 0,
+        totalDataPoints: 0,
+        stocks: {},
+      });
+    }
+
+    // 5. 메타데이터 저장
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     metadata.duration = `${duration}s`;
     saveJSON('metadata.json', metadata);

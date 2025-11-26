@@ -30,21 +30,36 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedChartMetric, setSelectedChartMetric] = useState<"price" | "totalScore" | "pe" | "roe">("price");
 
-  // 최신 데이터 날짜 조회
+  // 최신 데이터 날짜 조회 (정적 JSON 우선, 없으면 API)
   useEffect(() => {
     const fetchLatestDate = async () => {
       if (!initialMaxDate) {
+        // 1. 정적 JSON에서 최신 날짜 조회 시도
+        try {
+          const staticHistories = await stockService.loadStaticHistories();
+          if (staticHistories.latestDate) {
+            setMaxDate(staticHistories.latestDate);
+            const dates = stockService.generateDateRange(staticHistories.latestDate, 3, 7);
+            if (dates.length > 0) {
+              setDateRange({ start: dates[0], end: staticHistories.latestDate });
+            }
+            return;
+          }
+        } catch (error) {
+          console.warn("Failed to load from static JSON, falling back to API:", error);
+        }
+
+        // 2. 폴백: API에서 조회
         const latestDate = await stockService.getLatestDataDate();
         if (latestDate) {
           setMaxDate(latestDate);
-          // 기본으로 3개월 범위 설정
           const dates = stockService.generateDateRange(latestDate, 3, 7);
           if (dates.length > 0) {
             setDateRange({ start: dates[0], end: latestDate });
           }
         }
       } else {
-        // 기본으로 3개월 범위 설정
+        // initialMaxDate가 제공된 경우
         const dates = stockService.generateDateRange(initialMaxDate, 3, 7);
         if (dates.length > 0) {
           setDateRange({ start: dates[0], end: initialMaxDate });
@@ -55,13 +70,26 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
     fetchLatestDate();
   }, [initialMaxDate]);
 
-  // 날짜 범위 변경 시 데이터 로드
+  // 날짜 범위 변경 시 데이터 로드 (정적 JSON 우선, 없으면 API)
   useEffect(() => {
     if (!dateRange) return;
 
     const loadHistoryData = async () => {
       setIsLoading(true);
       try {
+        // 1. 정적 JSON에서 조회 시도
+        const staticData = await stockService.getStaticHistory(ticker);
+
+        if (staticData && staticData.length > 0) {
+          console.log(`✅ Loaded ${staticData.length} history data points from static JSON for ${ticker}`);
+          setHistoryData(staticData);
+          setIsLoading(false);
+          return;
+        }
+
+        console.warn(`No static data for ${ticker}, falling back to API...`);
+
+        // 2. 폴백: API에서 조회
         const dates = stockService.generateDateRange(
           dateRange.end,
           getMonthsDiff(dateRange.start, dateRange.end),
@@ -69,6 +97,7 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
         );
 
         const data = await stockService.getStockHistoryRange(ticker, dates);
+        console.log(`✅ Loaded ${data.length} history data points from API for ${ticker}`);
         setHistoryData(data);
       } catch (error) {
         console.error("Failed to load history data:", error);

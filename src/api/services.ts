@@ -268,6 +268,62 @@ export const stockService = {
 
     return dates;
   },
+
+  /**
+   * 정적 JSON 파일에서 종목 히스토리 데이터 로드
+   * 빌드 타임에 생성된 stock-histories.json 파일 사용
+   */
+  loadStaticHistories: async (): Promise<{
+    lastUpdated: string;
+    latestDate: string | null;
+    stocks: Record<string, {
+      ticker: string;
+      name: string;
+      dataPoints: number;
+      history: any[];
+    }>;
+  }> => {
+    try {
+      const response = await fetch('/data/stock-histories.json');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return {
+        lastUpdated: data.lastUpdated,
+        latestDate: data.latestDate,
+        stocks: data.stocks || {},
+      };
+    } catch (error) {
+      console.error('Failed to load stock histories from static JSON:', error);
+      return {
+        lastUpdated: new Date().toISOString(),
+        latestDate: null,
+        stocks: {},
+      };
+    }
+  },
+
+  /**
+   * 특정 종목의 히스토리 데이터를 정적 JSON에서 조회
+   * @param ticker 종목 심볼
+   */
+  getStaticHistory: async (ticker: string): Promise<FrontendUndervaluedStock[]> => {
+    try {
+      const historyData = await stockService.loadStaticHistories();
+      const stockHistory = historyData.stocks[ticker];
+
+      if (!stockHistory || !stockHistory.history) {
+        console.warn(`No static history found for ${ticker}`);
+        return [];
+      }
+
+      return toFrontendUndervaluedStocks(stockHistory.history);
+    } catch (error) {
+      console.error(`Failed to get static history for ${ticker}:`, error);
+      return [];
+    }
+  },
 };
 
 // ============================================
