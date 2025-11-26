@@ -566,7 +566,8 @@ export default function DemoHome() {
   const [undervaluedCategory, setUndervaluedCategory] = useState("전체");
   const [undervaluedIndustry, setUndervaluedIndustry] = useState("전체");
   const [undervaluedPage, setUndervaluedPage] = useState(1);
-  const [undervaluedSortBy, setUndervaluedSortBy] = useState<string | null>(null);
+  const [undervaluedCategoryPages, setUndervaluedCategoryPages] = useState<Record<string, number>>({}); // 섹터별 페이지 상태 저장
+  const [undervaluedSortBy, setUndervaluedSortBy] = useState<string | null>("aiScore"); // 기본적으로 AI 점수 높은 순으로 정렬
   const [undervaluedSortDirection, setUndervaluedSortDirection] = useState<"asc" | "desc">("desc");
 
   // 공시 분석 페이지 필터
@@ -1028,10 +1029,21 @@ export default function DemoHome() {
     });
   }, [filingCatUS, filingCatKR, rankCatUS, rankCatKR, filingSentUS, filingSentKR]);
 
-  // 카테고리 변경 시 산업군 리셋
+  // 카테고리 변경 시 산업군 리셋 및 페이지 복원
   useEffect(() => {
     setUndervaluedIndustry("전체");
+    // 새 섹터의 저장된 페이지로 복원 (없으면 1페이지)
+    const savedPage = undervaluedCategoryPages[undervaluedCategory] || 1;
+    setUndervaluedPage(savedPage);
   }, [undervaluedCategory]);
+
+  // 페이지 변경 시 현재 섹터의 페이지 저장
+  useEffect(() => {
+    setUndervaluedCategoryPages(prev => ({
+      ...prev,
+      [undervaluedCategory]: undervaluedPage
+    }));
+  }, [undervaluedPage, undervaluedCategory]);
 
   useEffect(() => {
     setFilingsIndustry("전체");
@@ -1531,8 +1543,14 @@ export default function DemoHome() {
                         <th className="px-4 py-3 text-left text-xs">
                           섹터
                         </th>
-                        <th className="px-4 py-3 text-left text-xs">
-                          산업군
+                        <th className="px-4 py-3 text-center text-xs">
+                          <TooltipHeader
+                            label="산업군"
+                            sortKey="industry"
+                            currentSortKey={undervaluedSortBy}
+                            sortDirection={undervaluedSortDirection}
+                            onSort={handleUndervaluedSort}
+                          />
                         </th>
                         <th className="px-4 py-3 text-center text-xs">
                           <TooltipHeader
