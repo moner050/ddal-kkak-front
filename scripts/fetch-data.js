@@ -194,9 +194,9 @@ async function fetchAllData() {
 
         try {
           // 특정 날짜의 전체 종목 데이터 조회
-          const historicalResponse = await apiClient.get('/api/undervalued-stocks/by-profile/paged', {
+          // 옵션 1: profile API 사용 (날짜 파라미터 포함)
+          const historicalResponse = await apiClient.get('/api/undervalued-stocks/profile/ALL/paging', {
             params: {
-              profile: 'ALL',
               page: 1,
               size: 10000,
               date: date,
