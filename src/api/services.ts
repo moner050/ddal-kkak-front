@@ -268,6 +268,127 @@ export const stockService = {
 
     return dates;
   },
+
+  /**
+   * 사용 가능한 날짜 목록 조회 (metadata.json에서)
+   */
+  getAvailableDates: async (): Promise<string[]> => {
+    try {
+      const response = await fetch('/data/metadata.json');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const metadata = await response.json();
+      return metadata.sources?.historicalData?.dates || [];
+    } catch (error) {
+      console.error('Failed to load available dates:', error);
+      return [];
+    }
+  },
+
+  /**
+   * 특정 날짜의 전체 종목 데이터 로드
+   * @param date YYYY-MM-DD 형식
+   */
+  loadStocksByDate: async (date: string): Promise<FrontendUndervaluedStock[]> => {
+    try {
+      const response = await fetch(`/data/undervalued-stocks/${date}.json`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return toFrontendUndervaluedStocks(data.stocks || []);
+    } catch (error) {
+      console.error(`Failed to load stocks for date ${date}:`, error);
+      return [];
+    }
+  },
+
+  /**
+   * 여러 날짜의 전체 종목 데이터 로드
+   * @param dates 날짜 배열 (YYYY-MM-DD 형식)
+   */
+  loadStocksMultipleDates: async (dates: string[]): Promise<{
+    [date: string]: FrontendUndervaluedStock[];
+  }> => {
+    try {
+      const results: { [date: string]: FrontendUndervaluedStock[] } = {};
+
+      const promises = dates.map(async (date) => {
+        const stocks = await stockService.loadStocksByDate(date);
+        return { date, stocks };
+      });
+
+      const dataArray = await Promise.all(promises);
+
+      dataArray.forEach(({ date, stocks }) => {
+        results[date] = stocks;
+      });
+
+      return results;
+    } catch (error) {
+      console.error('Failed to load multiple dates:', error);
+      return {};
+    }
+  },
+
+  /**
+   * 특정 종목의 히스토리 데이터 추출 (날짜별 파일에서)
+   * @param ticker 종목 심볼
+   * @param dates 조회할 날짜 배열
+   */
+  getStaticHistory: async (ticker: string, dates?: string[]): Promise<FrontendUndervaluedStock[]> => {
+    try {
+      // 날짜가 지정되지 않으면 사용 가능한 모든 날짜 조회
+      const targetDates = dates || (await stockService.getAvailableDates());
+
+      if (targetDates.length === 0) {
+        console.warn('No historical dates available');
+        return [];
+      }
+
+      // 여러 날짜의 데이터 로드
+      const dateDataMap = await stockService.loadStocksMultipleDates(targetDates);
+
+      // 각 날짜에서 해당 종목 추출
+      const history: FrontendUndervaluedStock[] = [];
+
+      targetDates.forEach((date) => {
+        const stocksOnDate = dateDataMap[date] || [];
+        const stockData = stocksOnDate.find((s) => s.symbol === ticker);
+
+        if (stockData) {
+          history.push({
+            ...stockData,
+            dataDate: date, // 날짜 정보 명시
+          });
+        }
+      });
+
+      console.log(`✅ Loaded ${history.length} historical data points for ${ticker}`);
+      return history;
+    } catch (error) {
+      console.error(`Failed to get static history for ${ticker}:`, error);
+      return [];
+    }
+  },
+
+  /**
+   * 최신 데이터 날짜 조회 (정적 파일에서)
+   */
+  getLatestDateFromStatic: async (): Promise<string | null> => {
+    try {
+      const dates = await stockService.getAvailableDates();
+      if (dates.length === 0) return null;
+
+      // 날짜 정렬 후 최신 날짜 반환
+      const sortedDates = dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+      return sortedDates[0];
+    } catch (error) {
+      console.error('Failed to get latest date from static:', error);
+      return null;
+    }
+  },
 };
 
 // ============================================
