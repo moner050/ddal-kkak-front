@@ -71,8 +71,8 @@ const StockComparisonTable: React.FC<StockComparisonTableProps> = ({
   };
 
   // 변화량 계산
-  const calculateChange = (metric: string, firstValue?: number, lastValue?: number) => {
-    if (firstValue === undefined || lastValue === undefined) return null;
+  const calculateChange = (metric: string, firstValue?: number | null, lastValue?: number | null) => {
+    if (firstValue == null || lastValue == null) return null;
     const change = lastValue - firstValue;
     const changePercent = (change / firstValue) * 100;
     return { change, changePercent };
@@ -126,13 +126,13 @@ const StockComparisonTable: React.FC<StockComparisonTableProps> = ({
                   {meta.label}
                 </td>
                 {snapshots.map((snapshot, idx) => {
-                  const value = snapshot[metric as keyof StockSnapshot] as number | undefined;
+                  const value = snapshot[metric as keyof StockSnapshot] as number | undefined | null;
                   return (
                     <td
                       key={`cell-${metric}-${idx}`}
                       className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-900"
                     >
-                      {value !== undefined ? meta.format(value) : "-"}
+                      {meta.format(value)}
                     </td>
                   );
                 })}

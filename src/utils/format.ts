@@ -1,7 +1,10 @@
 // 숫자 포맷팅 유틸리티
 export function formatNumber(num: number, options?: { compact?: boolean; decimals?: number }): string;
 export function formatNumber(num: number, decimals?: number): string;
-export function formatNumber(num: number, optionsOrDecimals?: { compact?: boolean; decimals?: number } | number): string {
+export function formatNumber(num: number | null | undefined, optionsOrDecimals?: { compact?: boolean; decimals?: number } | number): string {
+  // null/undefined 체크
+  if (num == null || !isFinite(num)) return "-";
+
   let compact = false;
   let decimals = 2;
 
@@ -25,7 +28,10 @@ export function formatNumber(num: number, optionsOrDecimals?: { compact?: boolea
 }
 
 // 통화 포맷팅 (달러, 원 등)
-export function formatCurrency(num: number, currency: "USD" | "KRW" = "USD", compact: boolean = false): string {
+export function formatCurrency(num: number | null | undefined, currency: "USD" | "KRW" = "USD", compact: boolean = false): string {
+  // null/undefined 체크
+  if (num == null || !isFinite(num)) return "-";
+
   if (compact) {
     if (Math.abs(num) >= 1000000000) {
       return `${currency === "USD" ? "$" : "₩"}${(num / 1000000000).toFixed(2)}B`;
@@ -44,8 +50,9 @@ export function formatCurrency(num: number, currency: "USD" | "KRW" = "USD", com
 }
 
 // 퍼센트 포맷팅
-export function formatPercent(num: number, decimals: number = 1): string {
-  if (!isFinite(num)) return "N/A";
+export function formatPercent(num: number | null | undefined, decimals: number = 1): string {
+  // null/undefined 체크
+  if (num == null || !isFinite(num)) return "-";
   const sign = num > 0 ? "+" : "";
   return `${sign}${num.toFixed(decimals)}%`;
 }
