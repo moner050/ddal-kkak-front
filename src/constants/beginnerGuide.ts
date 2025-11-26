@@ -14,9 +14,9 @@ export const METRIC_BEGINNER_GUIDE: Record<string, {
   interpretation: (value: number) => { level: 'good' | 'normal' | 'bad'; text: string };
 }> = {
   aiScore: {
-    name: 'AI 투자 점수',
-    shortDesc: 'AI가 분석한 종합 투자 매력도',
-    fullDesc: '기업의 재무 건전성, 성장성, 밸류에이션 등 다양한 지표를 AI가 종합 분석하여 0~100점으로 산출한 점수입니다. 점수가 높을수록 투자 매력도가 높다고 판단됩니다.',
+    name: '종합 투자 점수',
+    shortDesc: '종합 투자 매력도',
+    fullDesc: '기업의 재무 건전성, 성장성, 밸류에이션 등 다양한 지표를 종합 분석하여 0~100점으로 산출한 점수입니다. 점수가 높을수록 투자 매력도가 높다고 판단됩니다.',
     goodRange: '70점 이상 추천',
     interpretation: (value) => {
       if (value >= 80) return { level: 'good', text: '매우 우수 - 투자 매력도 높음' };
@@ -135,7 +135,7 @@ export const METRIC_BEGINNER_GUIDE: Record<string, {
   }
 };
 
-// AI Score 해석 텍스트
+// 종합 점수 해석 텍스트
 export const AI_SCORE_INTERPRETATION = {
   getLabel: (score: number): string => {
     if (score >= 85) return '매우 우수';
