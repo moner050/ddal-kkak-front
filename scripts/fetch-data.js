@@ -141,8 +141,9 @@ async function fetchAllData() {
       });
     }
 
-    // 4. 주가 히스토리 데이터 (Featured 종목의 3개월 데이터)
-    console.log('\n📈 Fetching stock price history...');
+    // 4. 날짜별 전체 종목 히스토리 데이터 (분산 저장)
+    console.log('\n📈 Fetching historical stock data by date...');
+    const historicalDates = [];
     try {
       // 최신 데이터 날짜 조회
       const latestDateResponse = await apiClient.get('/api/undervalued-stocks/latest-date');
@@ -178,77 +179,72 @@ async function fetchAllData() {
       const dates = generateDateRange(latestDate, 3, 7);
       console.log(`   Generated ${dates.length} dates to fetch`);
 
-      // Featured stocks 목록 가져오기
-      const featuredResponse = await apiClient.get('/api/undervalued-stocks/featured', {
-        params: { limit: 10 },
-      });
-
-      const featuredStocks = featuredResponse.data;
-      console.log(`   Featured stocks: ${featuredStocks.length}`);
-
-      // 각 종목의 히스토리 데이터 수집
-      const stockHistories = {};
-      let totalFetched = 0;
-
-      for (const stock of featuredStocks) {
-        const ticker = stock.ticker || stock.symbol;
-        console.log(`   Fetching history for ${ticker}...`);
-
-        const historyData = [];
-
-        for (const date of dates) {
-          try {
-            const historyResponse = await apiClient.get(
-              `/api/undervalued-stocks/${ticker}/history`,
-              { params: { date } }
-            );
-            historyData.push(historyResponse.data);
-            totalFetched++;
-          } catch (err) {
-            console.warn(`     ⚠ Failed to fetch ${ticker} on ${date}: ${err.message}`);
-          }
-        }
-
-        stockHistories[ticker] = {
-          ticker,
-          name: stock.name || stock.companyName,
-          dataPoints: historyData.length,
-          history: historyData,
-        };
-
-        console.log(`     ✓ ${ticker}: ${historyData.length}/${dates.length} data points`);
+      // undervalued-stocks 디렉토리 생성
+      const historicalDir = path.join(DATA_DIR, 'undervalued-stocks');
+      if (!fs.existsSync(historicalDir)) {
+        fs.mkdirSync(historicalDir, { recursive: true });
+        console.log('   ✓ Created undervalued-stocks directory');
       }
 
-      saveJSON('stock-histories.json', {
-        lastUpdated: new Date().toISOString(),
-        latestDate: latestDate,
-        dateRange: {
-          start: dates[0],
-          end: dates[dates.length - 1],
-          interval: 7,
-          totalDates: dates.length,
-        },
-        totalStocks: Object.keys(stockHistories).length,
-        totalDataPoints: totalFetched,
-        stocks: stockHistories,
-      });
+      // 각 날짜별로 전체 종목 데이터 수집
+      let successCount = 0;
+      for (let i = 0; i < dates.length; i++) {
+        const date = dates[i];
+        console.log(`   [${i + 1}/${dates.length}] Fetching data for ${date}...`);
 
-      metadata.sources.stockHistories = {
-        count: Object.keys(stockHistories).length,
-        dataPoints: totalFetched,
+        try {
+          // 특정 날짜의 전체 종목 데이터 조회
+          const historicalResponse = await apiClient.get('/api/undervalued-stocks/by-profile/paged', {
+            params: {
+              profile: 'ALL',
+              page: 1,
+              size: 10000,
+              date: date,
+            },
+          });
+
+          const stocksData = historicalResponse.data.stocks || historicalResponse.data.content || [];
+
+          // 날짜별 파일로 저장
+          const filename = `${date}.json`;
+          const filePath = path.join(historicalDir, filename);
+
+          fs.writeFileSync(filePath, JSON.stringify({
+            date: date,
+            lastUpdated: new Date().toISOString(),
+            totalCount: stocksData.length,
+            stocks: stocksData,
+          }, null, 2), 'utf-8');
+
+          historicalDates.push(date);
+          successCount++;
+          console.log(`     ✓ Saved ${stocksData.length} stocks to ${filename}`);
+        } catch (err) {
+          console.error(`     ✗ Failed to fetch data for ${date}: ${err.message}`);
+        }
+
+        // API 부하 방지를 위한 딜레이 (100ms)
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      metadata.sources.historicalData = {
+        dates: historicalDates,
+        totalDates: historicalDates.length,
+        dateRange: {
+          start: historicalDates[0],
+          end: historicalDates[historicalDates.length - 1],
+        },
         updatedAt: new Date().toISOString(),
       };
 
-      console.log(`   ✓ Stock histories saved: ${Object.keys(stockHistories).length} stocks, ${totalFetched} total data points`);
+      console.log(`   ✓ Historical data saved: ${successCount}/${dates.length} dates`);
     } catch (error) {
-      console.error('   ✗ Failed to fetch stock histories:', error.message);
-      saveJSON('stock-histories.json', {
-        lastUpdated: new Date().toISOString(),
-        latestDate: null,
-        totalStocks: 0,
-        totalDataPoints: 0,
-        stocks: {},
-      });
+      console.error('   ✗ Failed to fetch historical data:', error.message);
+      metadata.sources.historicalData = {
+        dates: [],
+        totalDates: 0,
+        updatedAt: new Date().toISOString(),
+      };
     }
 
     // 5. 메타데이터 저장

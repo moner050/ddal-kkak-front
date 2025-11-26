@@ -30,23 +30,33 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedChartMetric, setSelectedChartMetric] = useState<"price" | "totalScore" | "pe" | "roe">("price");
 
-  // 최신 데이터 날짜 조회 (정적 JSON 우선, 없으면 API)
+  // 최신 데이터 날짜 조회 (정적 날짜별 파일 우선)
   useEffect(() => {
     const fetchLatestDate = async () => {
       if (!initialMaxDate) {
-        // 1. 정적 JSON에서 최신 날짜 조회 시도
+        // 1. 정적 파일에서 사용 가능한 날짜 조회
         try {
-          const staticHistories = await stockService.loadStaticHistories();
-          if (staticHistories.latestDate) {
-            setMaxDate(staticHistories.latestDate);
-            const dates = stockService.generateDateRange(staticHistories.latestDate, 3, 7);
-            if (dates.length > 0) {
-              setDateRange({ start: dates[0], end: staticHistories.latestDate });
+          const availableDates = await stockService.getAvailableDates();
+          if (availableDates.length > 0) {
+            // 최신 날짜 사용
+            const sortedDates = availableDates.sort((a, b) =>
+              new Date(b).getTime() - new Date(a).getTime()
+            );
+            const latestDate = sortedDates[0];
+
+            setMaxDate(latestDate);
+
+            // 사용 가능한 모든 날짜 사용 (이미 분산 저장되어 있음)
+            if (sortedDates.length > 1) {
+              setDateRange({
+                start: sortedDates[sortedDates.length - 1],
+                end: latestDate
+              });
             }
             return;
           }
         } catch (error) {
-          console.warn("Failed to load from static JSON, falling back to API:", error);
+          console.warn("Failed to load from static files, falling back to API:", error);
         }
 
         // 2. 폴백: API에서 조회
@@ -70,21 +80,37 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
     fetchLatestDate();
   }, [initialMaxDate]);
 
-  // 날짜 범위 변경 시 데이터 로드 (정적 JSON 우선, 없으면 API)
+  // 날짜 범위 변경 시 데이터 로드 (날짜별 파일에서)
   useEffect(() => {
     if (!dateRange) return;
 
     const loadHistoryData = async () => {
       setIsLoading(true);
       try {
-        // 1. 정적 JSON에서 조회 시도
-        const staticData = await stockService.getStaticHistory(ticker);
+        // 1. 사용 가능한 날짜 조회
+        const availableDates = await stockService.getAvailableDates();
 
-        if (staticData && staticData.length > 0) {
-          console.log(`✅ Loaded ${staticData.length} history data points from static JSON for ${ticker}`);
-          setHistoryData(staticData);
-          setIsLoading(false);
-          return;
+        if (availableDates.length > 0) {
+          // 날짜 범위에 맞는 날짜 필터링
+          const startDate = new Date(dateRange.start);
+          const endDate = new Date(dateRange.end);
+
+          const filteredDates = availableDates.filter((date) => {
+            const d = new Date(date);
+            return d >= startDate && d <= endDate;
+          });
+
+          if (filteredDates.length > 0) {
+            // 날짜별 파일에서 해당 종목 히스토리 조회
+            const staticData = await stockService.getStaticHistory(ticker, filteredDates);
+
+            if (staticData && staticData.length > 0) {
+              console.log(`✅ Loaded ${staticData.length} data points from date-separated files for ${ticker}`);
+              setHistoryData(staticData);
+              setIsLoading(false);
+              return;
+            }
+          }
         }
 
         console.warn(`No static data for ${ticker}, falling back to API...`);
@@ -97,7 +123,7 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
         );
 
         const data = await stockService.getStockHistoryRange(ticker, dates);
-        console.log(`✅ Loaded ${data.length} history data points from API for ${ticker}`);
+        console.log(`✅ Loaded ${data.length} data points from API for ${ticker}`);
         setHistoryData(data);
       } catch (error) {
         console.error("Failed to load history data:", error);
