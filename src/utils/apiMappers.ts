@@ -210,11 +210,11 @@ export const toFrontendUndervaluedStock = (
     marketCap: apiStock.marketCap,
     confidence: apiStock.confidence,
     passedProfiles: apiStock.passedProfiles,
-    growthScore: apiStock.growthScore,
-    qualityScore: apiStock.qualityScore,
-    valueScore: apiStock.valueScore,
-    momentumScore: apiStock.momentumScore,
-    totalScore: apiStock.totalScore,
+    growthScore: apiStock.growthScore ? apiStock.growthScore * 100 : undefined,
+    qualityScore: apiStock.qualityScore ? apiStock.qualityScore * 100 : undefined,
+    valueScore: apiStock.valueScore ? apiStock.valueScore * 100 : undefined,
+    momentumScore: apiStock.momentumScore ? apiStock.momentumScore * 100 : undefined,
+    totalScore: apiStock.totalScore, // 이미 0-100 범위
     // 추가 밸류에이션 지표
     dollarVolume: apiStock.dollarVolume,
     divYield: apiStock.divYield ? apiStock.divYield * 100 : undefined,
