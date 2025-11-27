@@ -2460,7 +2460,7 @@ export default function DemoHome() {
                               {METRIC_DESCRIPTIONS[key] && (
                                 <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                               )}
-                              <div className="text-xl font-bold text-gray-900">{displayValue}</div>
+                              <div className={classNames("text-xl font-bold", colorClass)}>{displayValue}</div>
                             </div>
                           );
                         })}
@@ -2490,7 +2490,7 @@ export default function DemoHome() {
                                 {METRIC_DESCRIPTIONS[key] && (
                                   <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                                 )}
-                                <div className="text-2xl font-bold text-gray-900">{displayValue}</div>
+                                <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
                               </div>
                             );
                           })}
@@ -2518,7 +2518,7 @@ export default function DemoHome() {
                                 {METRIC_DESCRIPTIONS[key] && (
                                   <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                                 )}
-                                <div className="text-2xl font-bold text-gray-900">{displayValue}</div>
+                                <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
                               </div>
                             );
                           })}
@@ -2565,7 +2565,7 @@ export default function DemoHome() {
                               {METRIC_DESCRIPTIONS[key] && (
                                 <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                               )}
-                              <div className="text-lg font-bold text-gray-900">{displayValue}</div>
+                              <div className={classNames("text-lg font-bold", colorClass)}>{displayValue}</div>
                             </div>
                           );
                         })}
