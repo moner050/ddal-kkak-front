@@ -541,6 +541,23 @@ export const exchangeRateApi = {
 };
 
 // ============================================
+// Analytics API
+// ============================================
+
+export const analyticsApi = {
+  /**
+   * 접속 로그 전송
+   */
+  sendVisitLog: async (data: import('./types').VisitLogRequest): Promise<import('./types').VisitLogResponse> => {
+    const response = await apiClient.post<import('./types').VisitLogResponse>(
+      '/api/v1/analytics/visit',
+      data
+    );
+    return response.data;
+  },
+};
+
+// ============================================
 // Export All APIs
 // ============================================
 
@@ -552,6 +569,7 @@ export const api = {
   undervaluedStocks: undervaluedStocksApi,
   backtest: backtestApi,
   exchangeRate: exchangeRateApi,
+  analytics: analyticsApi,
 };
 
 export default api;
