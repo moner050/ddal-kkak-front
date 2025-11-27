@@ -581,6 +581,17 @@ function getMetricColor(key: string, value: number): string {
   return "text-gray-900";
 }
 
+// 지표 상태 레이블 및 스타일 반환
+function getMetricStatus(colorClass: string): { label: string; bgClass: string; textClass: string } {
+  if (colorClass.includes("emerald")) {
+    return { label: "좋음", bgClass: "bg-emerald-100", textClass: "text-emerald-700" };
+  }
+  if (colorClass.includes("red")) {
+    return { label: "나쁨", bgClass: "bg-red-100", textClass: "text-red-700" };
+  }
+  return { label: "보통", bgClass: "bg-gray-100", textClass: "text-gray-700" };
+}
+
 // 메트릭 설명 매핑
 const METRIC_DESCRIPTIONS: Record<string, string> = {
   "Ticker": "티커 심볼",
@@ -1459,9 +1470,9 @@ export default function DemoHome() {
             )}
 
             {/* 면책 조항 */}
-            <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-center">
-              <p className="text-xs text-gray-600">
-                ⚠️ 본 서비스는 분석 정보를 제공하며, 투자 권유나 자문이 아닙니다.<br />
+            <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 md:p-6 text-center">
+              <p className="text-xs md:text-sm text-gray-600 leading-relaxed max-w-4xl mx-auto">
+                ⚠️ 본 서비스는 분석 정보를 제공하며, 투자 권유나 자문이 아닙니다.
                 모든 투자 결정은 투자자 본인의 판단과 책임 하에 이루어져야 합니다.
               </p>
             </div>
@@ -2982,13 +2993,19 @@ export default function DemoHome() {
                           if ((key === "Discount" || key === "DivYield" || key === "PayoutRatio") && typeof value === "number") displayValue = value.toFixed(1) + "%";
                           if ((key === "PE" || key === "PEG" || key === "PB" || key === "PS" || key === "FCF_Yield") && typeof value === "number") displayValue = value.toFixed(2) + "%";
                           const colorClass = typeof value === "number" ? getMetricColor(key, value) : "text-gray-900";
+                          const status = getMetricStatus(colorClass);
                           return (
                             <div key={key} className="p-4 rounded-lg bg-gray-50">
-                              <div className="text-xs font-semibold text-gray-700 mb-1">{key.replace(/_/g, " ")}</div>
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="text-xs font-semibold text-gray-700">{key.replace(/_/g, " ")}</div>
+                                <span className={classNames("text-[9px] px-1.5 py-0.5 rounded font-semibold", status.bgClass, status.textClass)}>
+                                  {status.label}
+                                </span>
+                              </div>
                               {METRIC_DESCRIPTIONS[key] && (
                                 <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                               )}
-                              <div className={classNames("text-xl font-bold", colorClass)}>{displayValue}</div>
+                              <div className="text-xl font-bold text-gray-900">{displayValue}</div>
                             </div>
                           );
                         })}
@@ -3006,13 +3023,19 @@ export default function DemoHome() {
                             if (typeof value !== "number") return null;
                             const displayValue = value.toFixed(1) + "%";
                             const colorClass = getMetricColor(key, value);
+                            const status = getMetricStatus(colorClass);
                             return (
                               <div key={key} className="p-4 rounded-lg bg-gray-50">
-                                <div className="text-xs font-semibold text-gray-700 mb-1">{key.replace(/_/g, " ")}</div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="text-xs font-semibold text-gray-700">{key.replace(/_/g, " ")}</div>
+                                  <span className={classNames("text-[9px] px-1.5 py-0.5 rounded font-semibold", status.bgClass, status.textClass)}>
+                                    {status.label}
+                                  </span>
+                                </div>
                                 {METRIC_DESCRIPTIONS[key] && (
                                   <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                                 )}
-                                <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
+                                <div className="text-2xl font-bold text-gray-900">{displayValue}</div>
                               </div>
                             );
                           })}
@@ -3028,13 +3051,19 @@ export default function DemoHome() {
                             if (typeof value !== "number") return null;
                             const displayValue = value.toFixed(1) + "%";
                             const colorClass = getMetricColor(key, value);
+                            const status = getMetricStatus(colorClass);
                             return (
                               <div key={key} className="p-4 rounded-lg bg-gray-50">
-                                <div className="text-xs font-semibold text-gray-700 mb-1">{key.replace(/_/g, " ")}</div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="text-xs font-semibold text-gray-700">{key.replace(/_/g, " ")}</div>
+                                  <span className={classNames("text-[9px] px-1.5 py-0.5 rounded font-semibold", status.bgClass, status.textClass)}>
+                                    {status.label}
+                                  </span>
+                                </div>
                                 {METRIC_DESCRIPTIONS[key] && (
                                   <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                                 )}
-                                <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
+                                <div className="text-2xl font-bold text-gray-900">{displayValue}</div>
                               </div>
                             );
                           })}
@@ -3069,13 +3098,19 @@ export default function DemoHome() {
                             }
                           }
 
+                          const status = getMetricStatus(colorClass);
                           return (
                             <div key={key} className="p-4 rounded-lg bg-gray-50">
-                              <div className="text-xs font-semibold text-gray-700 mb-1">{key.replace(/_/g, " ")}</div>
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="text-xs font-semibold text-gray-700">{key.replace(/_/g, " ")}</div>
+                                <span className={classNames("text-[9px] px-1.5 py-0.5 rounded font-semibold", status.bgClass, status.textClass)}>
+                                  {status.label}
+                                </span>
+                              </div>
                               {METRIC_DESCRIPTIONS[key] && (
                                 <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
                               )}
-                              <div className={classNames("text-lg font-bold", colorClass)}>{displayValue}</div>
+                              <div className="text-lg font-bold text-gray-900">{displayValue}</div>
                             </div>
                           );
                         })}
