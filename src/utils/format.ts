@@ -98,3 +98,19 @@ export function heatColor(pct: number) {
 export function classNames(...args: Array<string | false | null | undefined>) {
   return args.filter(Boolean).join(" ");
 }
+
+// 날짜 범위 체크 유틸리티
+export function inDateRange(iso: string, startDate?: string, endDate?: string): boolean {
+  if (!startDate && !endDate) return true;
+  const datePart = (iso || "").split(" ")[0];
+  const d = new Date(`${datePart}T00:00:00`);
+  if (startDate) {
+    const s = new Date(`${startDate}T00:00:00`);
+    if (d < s) return false;
+  }
+  if (endDate) {
+    const e = new Date(`${endDate}T23:59:59`);
+    if (d > e) return false;
+  }
+  return true;
+}
