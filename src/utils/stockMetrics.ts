@@ -113,118 +113,220 @@ export function matchesInvestmentStrategy(stock: any, strategy: keyof typeof INV
 }
 
 /**
- * 재무 지표 평가 함수 (좋음: 초록색, 보통: 검정색, 나쁨: 빨간색)
+ * 재무 지표 평가 함수 (가이드 기준 적용)
+ * 반환값: Tailwind CSS 색상 클래스
  */
 export function getMetricColor(key: string, value: number): string {
-  // 높을수록 좋은 지표들
-  if (key === "ROE" || key === "ROA") {
-    if (value >= 15) return "text-emerald-600";
-    if (value >= 10) return "text-gray-900";
-    return "text-red-600";
+  // 1. 기업 규모 지표
+  if (key === "MktCap") {
+    if (value >= 10) return "text-emerald-600"; // Large Cap
+    if (value >= 2) return "text-blue-600"; // Mid Cap
+    return "text-orange-600"; // Small Cap
   }
 
-  if (key === "OpMarginTTM" || key === "OperatingMargins") {
-    if (value >= 20) return "text-emerald-600";
-    if (value >= 10) return "text-gray-900";
-    return "text-red-600";
+  if (key === "DollarVol") {
+    if (value >= 50) return "text-emerald-600"; // 유동성 우수
+    if (value >= 10) return "text-gray-900"; // 보통
+    return "text-red-600"; // 유동성 리스크
   }
 
-  if (key === "RevYoY" || key === "Revenue_Growth_3Y" || key === "EPS_Growth_3Y" || key === "EBITDA_Growth_3Y") {
-    if (value >= 20) return "text-emerald-600";
-    if (value >= 10) return "text-gray-900";
-    if (value >= 0) return "text-gray-900";
-    return "text-red-600";
+  // 2. 밸류에이션 지표 (낮을수록 저평가)
+  if (key === "PE" || key === "PER") {
+    if (value < 0) return "text-red-600"; // 적자
+    if (value <= 15) return "text-emerald-600"; // 저평가
+    if (value <= 25) return "text-gray-900"; // 적정
+    return "text-red-600"; // 고평가
   }
 
+  if (key === "PEG") {
+    if (value < 1.0) return "text-emerald-600"; // 저평가
+    if (value <= 2.0) return "text-gray-900"; // 적정
+    return "text-red-600"; // 고평가
+  }
+
+  if (key === "PB" || key === "PBR") {
+    if (value < 1.0) return "text-emerald-600"; // 저평가
+    if (value <= 3.0) return "text-gray-900"; // 적정
+    return "text-red-600"; // 고평가
+  }
+
+  if (key === "PS" || key === "PSR") {
+    if (value < 1.0) return "text-emerald-600"; // 저평가
+    if (value <= 2.0) return "text-gray-900"; // 적정
+    return "text-red-600"; // 고평가
+  }
+
+  if (key === "EV_EBITDA") {
+    if (value < 10) return "text-emerald-600"; // 저평가
+    if (value <= 15) return "text-gray-900"; // 적정
+    return "text-red-600"; // 고평가
+  }
+
+  // 3. 현금흐름 & 배당 지표
   if (key === "FCF_Yield") {
-    if (value >= 5) return "text-emerald-600";
-    if (value >= 2) return "text-gray-900";
-    return "text-red-600";
+    if (value < 0) return "text-red-600"; // 현금 소진
+    if (value > 8) return "text-emerald-600"; // 우수
+    if (value >= 4) return "text-blue-600"; // 양호
+    return "text-gray-900"; // 보통
   }
 
   if (key === "DivYield") {
-    if (value === 0) return "text-gray-900";
-    if (value >= 4) return "text-emerald-600";
-    if (value >= 2) return "text-gray-900";
-    return "text-gray-900";
+    if (value === 0) return "text-gray-500"; // 배당 미지급
+    if (value > 4) return "text-emerald-600"; // 고배당
+    if (value >= 2) return "text-gray-900"; // 보통
+    return "text-gray-700"; // 저배당
   }
 
+  if (key === "PayoutRatio") {
+    if (value > 100) return "text-red-600"; // 위험 (차입 배당)
+    if (value > 80) return "text-orange-600"; // 주의
+    if (value >= 30 && value <= 60) return "text-emerald-600"; // 안정적
+    return "text-gray-900"; // 보통
+  }
+
+  // 4. 수익성 지표 (높을수록 좋음)
+  if (key === "ROE") {
+    if (value > 20) return "text-emerald-600"; // 우수
+    if (value >= 15) return "text-blue-600"; // 양호
+    if (value >= 10) return "text-gray-900"; // 보통
+    return "text-red-600"; // 미흡
+  }
+
+  if (key === "ROA") {
+    if (value > 10) return "text-emerald-600"; // 우수
+    if (value >= 5) return "text-blue-600"; // 양호
+    if (value >= 2) return "text-gray-900"; // 보통
+    return "text-red-600"; // 미흡
+  }
+
+  if (key === "OpMarginTTM" || key === "OperatingMargins") {
+    if (value > 20) return "text-emerald-600"; // 우수
+    if (value >= 10) return "text-blue-600"; // 양호
+    if (value >= 5) return "text-gray-900"; // 보통
+    return "text-red-600"; // 미흡
+  }
+
+  if (key === "GrossMargins") {
+    if (value > 50) return "text-emerald-600"; // 우수
+    if (value >= 30) return "text-blue-600"; // 양호
+    if (value >= 20) return "text-gray-900"; // 보통
+    return "text-red-600"; // 미흡
+  }
+
+  if (key === "NetMargins") {
+    if (value > 15) return "text-emerald-600"; // 우수
+    if (value >= 10) return "text-blue-600"; // 양호
+    if (value >= 5) return "text-gray-900"; // 보통
+    return "text-red-600"; // 미흡
+  }
+
+  // 5. 성장성 지표 (높을수록 좋음)
+  if (key === "RevYoY" || key === "Revenue_Growth_3Y" || key === "EPS_Growth_3Y" || key === "EBITDA_Growth_3Y") {
+    if (value > 20) return "text-emerald-600"; // 고성장
+    if (value >= 10) return "text-blue-600"; // 성장
+    if (value >= 5) return "text-gray-900"; // 보통
+    if (value >= 0) return "text-orange-600"; // 정체
+    return "text-red-600"; // 역성장
+  }
+
+  // 6. 기술적 지표 (이동평균선)
+  if (key === "SMA20" || key === "SMA50" || key === "SMA200") {
+    if (value > 5) return "text-emerald-600"; // 강세
+    if (value >= -5) return "text-gray-900"; // 중립
+    return "text-red-600"; // 약세
+  }
+
+  // 7. 모멘텀 & 변동성 지표
+  if (key === "RSI_14") {
+    if (value > 70) return "text-red-600"; // 과매수
+    if (value >= 30) return "text-emerald-600"; // 중립
+    return "text-blue-600"; // 과매도 (반등 가능성)
+  }
+
+  if (key === "MACD_Histogram") {
+    if (value > 0) return "text-emerald-600"; // 매수신호
+    return "text-red-600"; // 매도신호
+  }
+
+  if (key === "BB_Position") {
+    if (value > 0.8) return "text-red-600"; // 과매수
+    if (value >= 0.2) return "text-gray-900"; // 중립
+    return "text-blue-600"; // 과매도
+  }
+
+  // 8. 수익률 지표
+  if (key === "RET5" || key === "RET20" || key === "RET63" || key === "Momentum_12M") {
+    if (value > 10) return "text-emerald-600"; // 강세
+    if (value >= 0) return "text-gray-900"; // 보통
+    return "text-red-600"; // 약세
+  }
+
+  if (key === "Volatility_21D") {
+    if (value < 20) return "text-emerald-600"; // 안정적
+    if (value <= 40) return "text-gray-900"; // 보통
+    return "text-red-600"; // 고위험
+  }
+
+  if (key === "High_52W_Ratio") {
+    if (value > 0.9) return "text-emerald-600"; // 고점권
+    if (value >= 0.7) return "text-gray-900"; // 중간
+    return "text-orange-600"; // 저점권
+  }
+
+  if (key === "Low_52W_Ratio") {
+    if (value > 1.5) return "text-emerald-600"; // 상승
+    if (value >= 1.2) return "text-gray-900"; // 보통
+    return "text-orange-600"; // 저점권
+  }
+
+  // 9. 거래 & 리스크 지표
+  if (key === "RVOL") {
+    if (value > 2.0) return "text-emerald-600"; // 급증
+    if (value >= 1.2) return "text-blue-600"; // 활발
+    if (value >= 0.8) return "text-gray-900"; // 보통
+    return "text-red-600"; // 저조
+  }
+
+  if (key === "Beta") {
+    if (value > 1.2) return "text-orange-600"; // 고변동
+    if (value >= 0.8) return "text-gray-900"; // 시장추종
+    return "text-blue-600"; // 저변동 (방어주)
+  }
+
+  if (key === "ShortPercent") {
+    if (value > 10) return "text-orange-600"; // 높음 (숏스퀴즈 가능성)
+    if (value >= 5) return "text-gray-900"; // 보통
+    return "text-emerald-600"; // 낮음
+  }
+
+  // 10. 소유구조 지표
+  if (key === "InsiderOwnership") {
+    if (value > 20) return "text-emerald-600"; // 높음 (이해관계 일치)
+    if (value >= 10) return "text-gray-900"; // 보통
+    return "text-orange-600"; // 낮음
+  }
+
+  if (key === "InstitutionOwnership") {
+    if (value > 70) return "text-emerald-600"; // 높음 (기관 선호)
+    if (value >= 40) return "text-gray-900"; // 보통
+    return "text-orange-600"; // 낮음
+  }
+
+  // 11. 종합 평가 지표
   if (key === "Discount") {
-    if (value >= 20) return "text-emerald-600"; // 저평가
-    if (value >= 0) return "text-gray-900";
+    if (value > 20) return "text-emerald-600"; // 저평가
+    if (value >= -10) return "text-gray-900"; // 적정
     return "text-red-600"; // 고평가
   }
 
   if (key.includes("Score")) {
-    if (value >= 80) return "text-emerald-600";
-    if (value >= 60) return "text-gray-900";
-    return "text-red-600";
+    if (value > 70) return "text-emerald-600"; // 우수
+    if (value >= 50) return "text-blue-600"; // 양호
+    if (value >= 30) return "text-gray-900"; // 보통
+    return "text-red-600"; // 미흡
   }
 
-  // 낮을수록 좋은 지표들
-  if (key === "PE" || key === "PER") {
-    if (value <= 15) return "text-emerald-600";
-    if (value <= 25) return "text-gray-900";
-    return "text-red-600";
-  }
-
-  if (key === "PEG") {
-    if (value <= 1) return "text-emerald-600";
-    if (value <= 2) return "text-gray-900";
-    return "text-red-600";
-  }
-
-  if (key === "PB" || key === "PBR") {
-    if (value <= 2) return "text-emerald-600";
-    if (value <= 4) return "text-gray-900";
-    return "text-red-600";
-  }
-
-  if (key === "PS" || key === "PSR") {
-    if (value <= 2) return "text-emerald-600";
-    if (value <= 5) return "text-gray-900";
-    return "text-red-600";
-  }
-
-  if (key === "EV_EBITDA") {
-    if (value <= 10) return "text-emerald-600";
-    if (value <= 15) return "text-gray-900";
-    return "text-red-600";
-  }
-
-  if (key === "Beta") {
-    if (value <= 1) return "text-emerald-600";
-    if (value <= 1.5) return "text-gray-900";
-    return "text-red-600";
-  }
-
-  if (key === "ShortPercent") {
-    if (value <= 5) return "text-emerald-600";
-    if (value <= 10) return "text-gray-900";
-    return "text-red-600";
-  }
-
-  // 적절한 범위가 있는 지표들
-  if (key === "InsiderOwnership" || key === "InstitutionOwnership") {
-    if (value >= 10 && value <= 50) return "text-emerald-600";
-    if ((value >= 5 && value < 10) || (value > 50 && value <= 70)) return "text-gray-900";
-    return "text-red-600";
-  }
-
-  if (key === "PayoutRatio") {
-    if (value >= 30 && value <= 60) return "text-emerald-600";
-    if ((value >= 20 && value < 30) || (value > 60 && value <= 80)) return "text-gray-900";
-    return "text-red-600";
-  }
-
-  // RSI (과매수/과매도 지표)
-  if (key === "RSI_14") {
-    if (value >= 40 && value <= 60) return "text-emerald-600"; // 중립
-    if ((value >= 30 && value < 40) || (value > 60 && value <= 70)) return "text-gray-900";
-    return "text-red-600"; // 과매도(<30) 또는 과매수(>70)
-  }
-
-  // 기본값: 중립 (가격, 시가총액, 거래량 등)
+  // 기본값: 중립
   return "text-gray-900";
 }
 
@@ -233,10 +335,16 @@ export function getMetricColor(key: string, value: number): string {
  */
 export function getMetricStatus(colorClass: string): { label: string; bgClass: string; textClass: string } {
   if (colorClass.includes("emerald")) {
-    return { label: "좋음", bgClass: "bg-emerald-100", textClass: "text-emerald-700" };
+    return { label: "우수", bgClass: "bg-emerald-100", textClass: "text-emerald-700" };
+  }
+  if (colorClass.includes("blue")) {
+    return { label: "양호", bgClass: "bg-blue-100", textClass: "text-blue-700" };
   }
   if (colorClass.includes("red")) {
-    return { label: "나쁨", bgClass: "bg-red-100", textClass: "text-red-700" };
+    return { label: "미흡", bgClass: "bg-red-100", textClass: "text-red-700" };
+  }
+  if (colorClass.includes("orange")) {
+    return { label: "주의", bgClass: "bg-orange-100", textClass: "text-orange-700" };
   }
   return { label: "보통", bgClass: "bg-gray-100", textClass: "text-gray-700" };
 }
