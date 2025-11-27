@@ -579,29 +579,3 @@ export interface ApiEndpoints {
   // Exchange Rate
   getExchangeRate: (symbol: string) => Promise<ExchangeRate>;
 }
-
-// ============================================
-// Analytics & Visit Tracking
-// ============================================
-
-export interface VisitLogRequest {
-  timestamp: string;
-  sessionId: string;
-  userAgent: string;
-  platform: string;
-  screenWidth: number;
-  screenHeight: number;
-  language: string;
-  referrer: string;
-  timezone: string;
-  isReturningVisitor: boolean;
-}
-
-export interface VisitLogResponse {
-  success: boolean;
-  message: string;
-  data?: {
-    id: string;
-    timestamp: string;
-  };
-}
