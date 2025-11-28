@@ -90,7 +90,7 @@ import NewsSummaryTab from "../components/pages/DemoHome/NewsSummaryTab";
 import { METRIC_BEGINNER_GUIDE, AI_SCORE_INTERPRETATION } from "../constants/beginnerGuide";
 
 // Import sector performance service and component
-import { loadSectorPerformances, type SectorPerformance } from "../services/sectorPerformance";
+import { loadSectorPerformances, type SectorPerformance, type SectorPerformanceResult } from "../services/sectorPerformance";
 import SectorPerformanceCard from "../components/charts/SectorPerformanceCard";
 
 // Import modal components
@@ -128,6 +128,8 @@ export default function DemoHome() {
   const [filings, setFilings] = useState<FrontendFiling[]>([]);
   const [undervaluedStocks, setUndervaluedStocks] = useState<FrontendUndervaluedStock[]>([]);
   const [sectorPerformances, setSectorPerformances] = useState<SectorPerformance[]>([]);
+  const [sectorTodayDate, setSectorTodayDate] = useState<string>('');
+  const [sectorYesterdayDate, setSectorYesterdayDate] = useState<string>('');
   const [isLoadingFeatured, setIsLoadingFeatured] = useState(false);
   const [isLoadingFilings, setIsLoadingFilings] = useState(false);
   const [isLoadingUndervalued, setIsLoadingUndervalued] = useState(false);
@@ -267,9 +269,11 @@ export default function DemoHome() {
 
         // Sector Performances 로드
         setIsLoadingSectorPerformances(true);
-        const performances = await loadSectorPerformances();
-        setSectorPerformances(performances);
-        console.log('✅ Sector performances loaded:', performances.length);
+        const sectorResult = await loadSectorPerformances();
+        setSectorPerformances(sectorResult.performances);
+        setSectorTodayDate(sectorResult.todayDate);
+        setSectorYesterdayDate(sectorResult.yesterdayDate);
+        console.log('✅ Sector performances loaded:', sectorResult.performances.length);
         setIsLoadingSectorPerformances(false);
       } catch (error) {
         console.error('❌ Failed to load API data:', error);
@@ -812,6 +816,8 @@ export default function DemoHome() {
                 performances={sectorPerformances}
                 onSectorClick={handleSectorClick}
                 loading={isLoadingSectorPerformances}
+                todayDate={sectorTodayDate}
+                yesterdayDate={sectorYesterdayDate}
               />
             </section>
 
