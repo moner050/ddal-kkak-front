@@ -89,6 +89,10 @@ import NewsSummaryTab from "../components/pages/DemoHome/NewsSummaryTab";
 // Import beginner guide constants
 import { METRIC_BEGINNER_GUIDE, AI_SCORE_INTERPRETATION } from "../constants/beginnerGuide";
 
+// Import sector performance service and component
+import { loadSectorPerformances, type SectorPerformance } from "../services/sectorPerformance";
+import SectorPerformanceCard from "../components/charts/SectorPerformanceCard";
+
 // Import modal components
 import LoginModal from "../components/modals/LoginModal";
 import SignupModal from "../components/modals/SignupModal";
@@ -123,9 +127,11 @@ export default function DemoHome() {
   const [featuredStocks, setFeaturedStocks] = useState<FrontendFeaturedStock[]>([]);
   const [filings, setFilings] = useState<FrontendFiling[]>([]);
   const [undervaluedStocks, setUndervaluedStocks] = useState<FrontendUndervaluedStock[]>([]);
+  const [sectorPerformances, setSectorPerformances] = useState<SectorPerformance[]>([]);
   const [isLoadingFeatured, setIsLoadingFeatured] = useState(false);
   const [isLoadingFilings, setIsLoadingFilings] = useState(false);
   const [isLoadingUndervalued, setIsLoadingUndervalued] = useState(false);
+  const [isLoadingSectorPerformances, setIsLoadingSectorPerformances] = useState(false);
 
   // 데이터 업데이트 날짜
   const [dataLastUpdated, setDataLastUpdated] = useState<string>('');
@@ -258,11 +264,19 @@ export default function DemoHome() {
         console.log('✅ Undervalued stocks loaded:', stocksData.stocks.length);
         console.log('📅 Data date:', stocksData.dataDate, '| Last updated:', stocksData.lastUpdated);
         setIsLoadingUndervalued(false);
+
+        // Sector Performances 로드
+        setIsLoadingSectorPerformances(true);
+        const performances = await loadSectorPerformances();
+        setSectorPerformances(performances);
+        console.log('✅ Sector performances loaded:', performances.length);
+        setIsLoadingSectorPerformances(false);
       } catch (error) {
         console.error('❌ Failed to load API data:', error);
         setIsLoadingFeatured(false);
         setIsLoadingFilings(false);
         setIsLoadingUndervalued(false);
+        setIsLoadingSectorPerformances(false);
       }
     };
 
@@ -361,6 +375,18 @@ export default function DemoHome() {
       const sectionTop = featuredSectionRef.current.offsetTop;
       homeRef.current.scrollTo({ top: sectionTop - 20, behavior: 'smooth' });
     }
+  };
+
+  // ✅ GICS 섹터 클릭 핸들러 - 주식추천 페이지로 이동하며 해당 섹터 필터링
+  const handleSectorClick = (sector: string) => {
+    // 섹터를 카테고리로 설정
+    setUndervaluedCategory(sector);
+    // 산업은 전체로 초기화
+    setUndervaluedIndustry("전체");
+    // 페이지는 1페이지로 초기화
+    setUndervaluedPage(1);
+    // 주식추천 탭으로 이동
+    switchTab("undervalued");
   };
 
   // 시그널 섹션 카테고리(미국/한국) + 감성
@@ -759,6 +785,15 @@ export default function DemoHome() {
                 </button>
               </div>
             </div>
+
+            {/* GICS 섹터별 동향 */}
+            <section>
+              <SectorPerformanceCard
+                performances={sectorPerformances}
+                onSectorClick={handleSectorClick}
+                loading={isLoadingSectorPerformances}
+              />
+            </section>
 
             {/* 오늘의 주목 종목 */}
             <section ref={featuredSectionRef}>
