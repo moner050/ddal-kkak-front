@@ -41,7 +41,7 @@ function calculateSectorAvgPrice(stocks: FrontendUndervaluedStock[], sector: str
   if (sectorStocks.length === 0) return 0;
 
   const totalPrice = sectorStocks.reduce((sum, stock) => {
-    return sum + (stock.currentPrice || 0);
+    return sum + (stock.price || 0);
   }, 0);
 
   return totalPrice / sectorStocks.length;
@@ -89,17 +89,27 @@ export function calculateSectorPerformances(
   return performances.sort((a, b) => b.changePercent - a.changePercent);
 }
 
+export interface SectorPerformanceResult {
+  performances: SectorPerformance[];
+  todayDate: string;
+  yesterdayDate: string;
+}
+
 /**
  * 오늘과 어제 데이터를 로드하여 섹터별 성과 계산
  */
-export async function loadSectorPerformances(): Promise<SectorPerformance[]> {
+export async function loadSectorPerformances(): Promise<SectorPerformanceResult> {
   try {
     // 1. 사용 가능한 날짜 목록 조회
     const availableDates = await stockService.getAvailableDates();
 
     if (availableDates.length < 2) {
       console.warn('Not enough historical data for sector performance');
-      return [];
+      return {
+        performances: [],
+        todayDate: '',
+        yesterdayDate: '',
+      };
     }
 
     // 날짜 정렬 (최신순)
@@ -120,7 +130,11 @@ export async function loadSectorPerformances(): Promise<SectorPerformance[]> {
 
     if (todayStocks.length === 0 || yesterdayStocks.length === 0) {
       console.warn('Failed to load stocks for sector performance calculation');
-      return [];
+      return {
+        performances: [],
+        todayDate,
+        yesterdayDate,
+      };
     }
 
     // 3. 섹터별 성과 계산
@@ -130,10 +144,18 @@ export async function loadSectorPerformances(): Promise<SectorPerformance[]> {
       `✅ Calculated performances for ${performances.length} sectors (${todayStocks.length} stocks today, ${yesterdayStocks.length} yesterday)`
     );
 
-    return performances;
+    return {
+      performances,
+      todayDate,
+      yesterdayDate,
+    };
   } catch (error) {
     console.error('Failed to load sector performances:', error);
-    return [];
+    return {
+      performances: [],
+      todayDate: '',
+      yesterdayDate: '',
+    };
   }
 }
 
