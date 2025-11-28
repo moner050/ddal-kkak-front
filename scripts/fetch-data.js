@@ -42,6 +42,14 @@ function saveJSON(filename, data) {
 }
 
 /**
+ * 파일 존재 여부 확인
+ */
+function fileExists(filename) {
+  const filePath = path.join(DATA_DIR, filename);
+  return fs.existsSync(filePath);
+}
+
+/**
  * 메인 데이터 fetch 함수
  */
 async function fetchAllData() {
@@ -55,19 +63,41 @@ async function fetchAllData() {
   try {
     // 1. 저평가 우량주 데이터 (10000개)
     console.log('\n📊 Fetching undervalued stocks...');
+
+    let latestDataDate = null;
+
     try {
       const undervaluedResponse = await apiClient.get('/api/undervalued-stocks/export', {
         params: { limit: 10000 },
       });
 
-      saveJSON('undervalued-stocks.json', {
+      const stocksData = {
         lastUpdated: undervaluedResponse.data.lastUpdated,
         dataDate: undervaluedResponse.data.dataDate,
         totalCount: undervaluedResponse.data.totalCount,
         stocks: undervaluedResponse.data.stocks,
-      });
+      };
+
+      saveJSON('undervalued-stocks.json', stocksData);
+
+      // historical data 디렉토리에도 오늘 날짜로 저장하여 중복 방지
+      const historicalDir = path.join(DATA_DIR, 'undervalued-stocks');
+      if (!fs.existsSync(historicalDir)) {
+        fs.mkdirSync(historicalDir, { recursive: true });
+      }
+
+      const todayFile = `${undervaluedResponse.data.dataDate}.json`;
+      const todayFilePath = path.join(historicalDir, todayFile);
+      fs.writeFileSync(todayFilePath, JSON.stringify({
+        date: undervaluedResponse.data.dataDate,
+        lastUpdated: new Date().toISOString(),
+        totalCount: undervaluedResponse.data.totalCount,
+        stocks: undervaluedResponse.data.stocks,
+      }, null, 2), 'utf-8');
+      console.log(`   ✓ Also saved to ${todayFile} (avoiding duplicate fetch later)`);
 
       metadata.dataDate = undervaluedResponse.data.dataDate;
+      latestDataDate = undervaluedResponse.data.dataDate;
       metadata.sources.undervaluedStocks = {
         count: undervaluedResponse.data.totalCount,
         updatedAt: undervaluedResponse.data.lastUpdated,
@@ -145,9 +175,12 @@ async function fetchAllData() {
     console.log('\n📈 Fetching historical stock data by date...');
     const historicalDates = [];
     try {
-      // 최신 데이터 날짜 조회
-      const latestDateResponse = await apiClient.get('/api/undervalued-stocks/latest-date');
-      const latestDate = latestDateResponse.data.latestDate;
+      // latestDataDate가 없으면 최신 데이터 날짜 조회
+      let latestDate = latestDataDate;
+      if (!latestDate) {
+        const latestDateResponse = await apiClient.get('/api/undervalued-stocks/latest-date');
+        latestDate = latestDateResponse.data.latestDate;
+      }
 
       if (!latestDate) {
         throw new Error('Latest date not available');
@@ -155,8 +188,8 @@ async function fetchAllData() {
 
       console.log(`   Latest data date: ${latestDate}`);
 
-      // 날짜 범위 생성 (3개월, 주 단위)
-      const generateDateRange = (endDate, months, interval = 7) => {
+      // 날짜 범위 생성 (1개월, 일 단위)
+      const generateDateRange = (endDate, months, interval = 1) => {
         const end = new Date(endDate);
         const start = new Date(endDate);
         start.setMonth(start.getMonth() - months);
@@ -169,15 +202,12 @@ async function fetchAllData() {
           current.setDate(current.getDate() + interval);
         }
 
-        if (dates[dates.length - 1] !== endDate) {
-          dates.push(endDate);
-        }
-
-        return dates;
+        // 오늘 날짜는 이미 위에서 저장했으므로 제외
+        return dates.filter(date => date !== endDate);
       };
 
-      const dates = generateDateRange(latestDate, 3, 7);
-      console.log(`   Generated ${dates.length} dates to fetch`);
+      const dates = generateDateRange(latestDate, 1, 1);
+      console.log(`   Generated ${dates.length} dates to fetch (excluding today: ${latestDate})`);
 
       // undervalued-stocks 디렉토리 생성
       const historicalDir = path.join(DATA_DIR, 'undervalued-stocks');
@@ -188,22 +218,30 @@ async function fetchAllData() {
 
       // 각 날짜별로 전체 종목 데이터 수집
       let successCount = 0;
+      let skippedCount = 0;
       for (let i = 0; i < dates.length; i++) {
         const date = dates[i];
+        const filename = `${date}.json`;
+        const filePath = path.join(historicalDir, filename);
+
+        // 이미 파일이 존재하면 스킵
+        if (fs.existsSync(filePath)) {
+          console.log(`   [${i + 1}/${dates.length}] Skipping ${date} (already exists)`);
+          historicalDates.push(date);
+          skippedCount++;
+          continue;
+        }
+
         console.log(`   [${i + 1}/${dates.length}] Fetching data for ${date}...`);
 
         try {
           // 특정 날짜의 전체 종목 데이터 조회
-          // 옵션 1: export API에 date 파라미터 추가 시도
           const historicalResponse = await apiClient.get('/api/undervalued-stocks/export', {
             params: {
               limit: 10000,
               date: date,
             },
           });
-
-          // 응답 구조 디버깅
-          console.log(`     Response keys: ${Object.keys(historicalResponse.data).join(', ')}`);
 
           const stocksData = historicalResponse.data.stocks || [];
 
@@ -213,9 +251,6 @@ async function fetchAllData() {
           }
 
           // 날짜별 파일로 저장
-          const filename = `${date}.json`;
-          const filePath = path.join(historicalDir, filename);
-
           fs.writeFileSync(filePath, JSON.stringify({
             date: date,
             lastUpdated: new Date().toISOString(),
@@ -237,14 +272,14 @@ async function fetchAllData() {
       metadata.sources.historicalData = {
         dates: historicalDates,
         totalDates: historicalDates.length,
-        dateRange: {
+        dateRange: historicalDates.length > 0 ? {
           start: historicalDates[0],
           end: historicalDates[historicalDates.length - 1],
-        },
+        } : null,
         updatedAt: new Date().toISOString(),
       };
 
-      console.log(`   ✓ Historical data saved: ${successCount}/${dates.length} dates`);
+      console.log(`   ✓ Historical data: ${successCount} fetched, ${skippedCount} skipped (${successCount + skippedCount}/${dates.length} total)`);
     } catch (error) {
       console.error('   ✗ Failed to fetch historical data:', error.message);
       metadata.sources.historicalData = {
