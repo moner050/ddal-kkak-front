@@ -143,7 +143,7 @@ export default function DemoHome() {
 
   // 종목추천 페이지 필터
   const [undervaluedSearchQuery, setUndervaluedSearchQuery] = useState("");
-  const [undervaluedStrategy, setUndervaluedStrategy] = useState<"undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing">("undervalued_quality");
+  const [undervaluedStrategies, setUndervaluedStrategies] = useState<Array<"undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing">>([]); // 빈 배열 = 전체 표시
   const [undervaluedMarket, setUndervaluedMarket] = useState<"전체" | "US" | "KR">("전체");
   const [undervaluedCategory, setUndervaluedCategory] = useState("전체");
   const [undervaluedIndustry, setUndervaluedIndustry] = useState("전체");
@@ -389,6 +389,21 @@ export default function DemoHome() {
     switchTab("undervalued");
   };
 
+  // ✅ 투자 전략 토글 핸들러
+  const toggleStrategy = (strategy: "undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing") => {
+    setUndervaluedStrategies(prev => {
+      if (prev.includes(strategy)) {
+        // 이미 선택되어 있으면 제거
+        return prev.filter(s => s !== strategy);
+      } else {
+        // 선택되어 있지 않으면 추가
+        return [...prev, strategy];
+      }
+    });
+    // 페이지는 1페이지로 초기화
+    setUndervaluedPage(1);
+  };
+
   // 시그널 섹션 카테고리(미국/한국) + 감성
   const [filingCatUS, setFilingCatUS] = useState("전체");
   const [filingCatKR, setFilingCatKR] = useState("전체");
@@ -559,34 +574,39 @@ export default function DemoHome() {
   };
 
   // 종목추천 목록을 엑셀로 다운로드 (파이썬 소스와 동일한 형식)
-  const exportUndervaluedToExcel = (stocks: any[], strategy: string) => {
+  const exportUndervaluedToExcel = (stocks: any[], strategies: string[]) => {
     if (stocks.length === 0) {
       alert("다운로드할 데이터가 없습니다.");
       return;
     }
 
     const wb = XLSX.utils.book_new();
-    const strategyInfo = INVESTMENT_STRATEGIES[strategy as keyof typeof INVESTMENT_STRATEGIES];
 
     // 전략 정보 시트 생성
     const headerData: any[] = [];
 
-    // 1행: 전략 이름
-    headerData.push({ A: `📊 ${strategyInfo.name}` });
+    if (strategies.length === 0) {
+      // 전략이 선택되지 않은 경우
+      headerData.push({ A: `📊 전체 종목` });
+      headerData.push({});
+      headerData.push({ A: '📋 필터 기준: 전체 종목 (전략 필터 없음)' });
+    } else {
+      // 선택된 전략들 표시
+      headerData.push({ A: `📊 선택된 투자 전략 (${strategies.length}개)` });
+      headerData.push({});
 
-    // 2행: 빈 행
-    headerData.push({});
-
-    // 3행: 필터 기준 헤더
-    headerData.push({ A: '📋 필터 기준:' });
-
-    // 4행 이후: 각 필터 기준
-    strategyInfo.criteria.forEach(criterion => {
-      headerData.push({ A: `• ${criterion}` });
-    });
+      strategies.forEach((strategy, index) => {
+        const strategyInfo = INVESTMENT_STRATEGIES[strategy as keyof typeof INVESTMENT_STRATEGIES];
+        headerData.push({ A: `${index + 1}. ${strategyInfo.name}` });
+        headerData.push({ A: '   필터 기준:' });
+        strategyInfo.criteria.forEach(criterion => {
+          headerData.push({ A: `   • ${criterion}` });
+        });
+        headerData.push({});
+      });
+    }
 
     // 빈 행 추가
-    headerData.push({});
     headerData.push({});
 
     // 데이터 가공
@@ -994,11 +1014,16 @@ export default function DemoHome() {
                       let filteredStocks = undervaluedStocks.filter((stock) => {
                         const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
                         const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
+                        const matchIndustry = undervaluedIndustry === "전체" || stock.industry === undervaluedIndustry;
                         const matchQuery =
                           !undervaluedSearchQuery ||
                           stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
                           stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
-                        return matchMarket && matchCategory && matchQuery;
+                        // 전략 필터링: 빈 배열이면 모든 종목 표시, 선택된 전략이 있으면 모든 전략에 부합해야 함 (AND 조건)
+                        const matchStrategy =
+                          undervaluedStrategies.length === 0 ||
+                          undervaluedStrategies.every((strategy) => matchesInvestmentStrategy(stock, strategy));
+                        return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy;
                       });
 
                       // Apply sorting
@@ -1012,7 +1037,7 @@ export default function DemoHome() {
                         });
                       }
 
-                      exportUndervaluedToExcel(filteredStocks, undervaluedStrategy);
+                      exportUndervaluedToExcel(filteredStocks, undervaluedStrategies);
                     }}
                     className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-md"
                   >
@@ -1039,46 +1064,68 @@ export default function DemoHome() {
               </div>
             </div>
 
-            {/* 투자 전략 선택 */}
+            {/* 투자 전략 선택 (다중 선택 토글) */}
             <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 space-y-4">
               <div>
-                <div className="text-xs sm:text-sm text-gray-600 mb-3 font-semibold">📋 투자 전략 선택</div>
+                <div className="text-xs sm:text-sm text-gray-600 mb-1 font-semibold">📋 투자 전략 선택 (다중 선택 가능)</div>
+                <div className="text-[10px] sm:text-xs text-gray-500 mb-3">전략을 클릭하여 선택/해제할 수 있습니다. 아무것도 선택하지 않으면 모든 종목이 표시됩니다.</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {Object.entries(INVESTMENT_STRATEGIES).map(([key, strategy]) => (
-                    <button
-                      key={key}
-                      onClick={() => setUndervaluedStrategy(key as any)}
-                      className={classNames(
-                        "text-left p-4 rounded-lg border-2 transition-all",
-                        undervaluedStrategy === key
-                          ? "bg-indigo-50 border-indigo-600 shadow-md"
-                          : "bg-white border-gray-200 hover:border-indigo-300 hover:bg-gray-50"
-                      )}
-                    >
-                      <div className={classNames(
-                        "text-sm font-bold mb-1",
-                        undervaluedStrategy === key ? "text-indigo-700" : "text-gray-900"
-                      )}>
-                        {strategy.name}
-                      </div>
-                      <div className="text-xs text-gray-600">{strategy.description}</div>
-                    </button>
-                  ))}
+                  {Object.entries(INVESTMENT_STRATEGIES).map(([key, strategy]) => {
+                    const isSelected = undervaluedStrategies.includes(key as any);
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => toggleStrategy(key as any)}
+                        className={classNames(
+                          "text-left p-4 rounded-lg border-2 transition-all",
+                          isSelected
+                            ? "bg-indigo-50 border-indigo-600 shadow-md"
+                            : "bg-white border-gray-200 hover:border-indigo-300 hover:bg-gray-50"
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className={classNames(
+                            "text-sm font-bold mb-1",
+                            isSelected ? "text-indigo-700" : "text-gray-900"
+                          )}>
+                            {strategy.name}
+                          </div>
+                          {isSelected && (
+                            <div className="flex-shrink-0 w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-600">{strategy.description}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* 선택된 전략의 필터 기준 표시 */}
-              <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
-                <div className="text-xs font-bold text-blue-900 mb-2">📌 {INVESTMENT_STRATEGIES[undervaluedStrategy].name} 필터 기준</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {INVESTMENT_STRATEGIES[undervaluedStrategy].criteria.map((criterion, idx) => (
-                    <div key={idx} className="text-xs text-blue-800 flex items-start gap-1">
-                      <span>•</span>
-                      <span>{criterion}</span>
+              {undervaluedStrategies.length > 0 && (
+                <div className="space-y-3">
+                  {undervaluedStrategies.map((strategyKey) => (
+                    <div key={strategyKey} className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+                      <div className="text-xs font-bold text-blue-900 mb-2">📌 {INVESTMENT_STRATEGIES[strategyKey].name} 필터 기준</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {INVESTMENT_STRATEGIES[strategyKey].criteria.map((criterion, idx) => (
+                          <div key={idx} className="text-xs text-blue-800 flex items-start gap-1">
+                            <span>•</span>
+                            <span>{criterion}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              )}
+              {undervaluedStrategies.length === 0 && (
+                <div className="rounded-lg bg-gray-50 border border-gray-200 p-4 text-center">
+                  <div className="text-xs text-gray-600">전략을 선택하지 않았습니다. 모든 종목이 표시됩니다.</div>
+                </div>
+              )}
             </div>
 
             {/* 검색 및 필터 */}
@@ -1171,7 +1218,10 @@ export default function DemoHome() {
                       !undervaluedSearchQuery ||
                       stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
                       stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
-                    const matchStrategy = matchesInvestmentStrategy(stock, undervaluedStrategy);
+                    // 전략 필터링: 빈 배열이면 모든 종목 표시, 선택된 전략이 있으면 모든 전략에 부합해야 함 (AND 조건)
+                    const matchStrategy =
+                      undervaluedStrategies.length === 0 ||
+                      undervaluedStrategies.every((strategy) => matchesInvestmentStrategy(stock, strategy));
                     return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy;
                   });
 
@@ -1343,7 +1393,10 @@ export default function DemoHome() {
                             !undervaluedSearchQuery ||
                             stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
                             stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
-                          const matchStrategy = matchesInvestmentStrategy(stock, undervaluedStrategy);
+                          // 전략 필터링: 빈 배열이면 모든 종목 표시, 선택된 전략이 있으면 모든 전략에 부합해야 함 (AND 조건)
+                          const matchStrategy =
+                            undervaluedStrategies.length === 0 ||
+                            undervaluedStrategies.every((strategy) => matchesInvestmentStrategy(stock, strategy));
                           return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy;
                         });
 
@@ -1472,7 +1525,10 @@ export default function DemoHome() {
                   !undervaluedSearchQuery ||
                   stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
                   stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
-                const matchStrategy = matchesInvestmentStrategy(stock, undervaluedStrategy);
+                // 전략 필터링: 빈 배열이면 모든 종목 표시, 선택된 전략이 있으면 모든 전략에 부합해야 함 (AND 조건)
+                const matchStrategy =
+                  undervaluedStrategies.length === 0 ||
+                  undervaluedStrategies.every((strategy) => matchesInvestmentStrategy(stock, strategy));
                 return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy;
               });
               const itemsPerPage = isBeginnerMode ? 12 : 30;
