@@ -711,10 +711,10 @@ export default function DemoHome() {
     }));
   }, [undervaluedPage, undervaluedCategory]);
 
-  // 투자전략, 시장, 산업군, 검색어 변경 시 페이지를 1로 리셋
+  // 투자전략, 시장, 카테고리, 산업군, 검색어 변경 시 페이지를 1로 리셋
   useEffect(() => {
     setUndervaluedPage(1);
-  }, [undervaluedStrategy, undervaluedMarket, undervaluedIndustry, undervaluedSearchQuery]);
+  }, [undervaluedStrategies, undervaluedMarket, undervaluedCategory, undervaluedIndustry, undervaluedSearchQuery]);
 
   useEffect(() => {
     setFilingsIndustry("전체");
