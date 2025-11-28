@@ -12,12 +12,16 @@ interface SectorPerformanceCardProps {
   performances: SectorPerformance[];
   onSectorClick?: (sector: string) => void;
   loading?: boolean;
+  todayDate?: string;
+  yesterdayDate?: string;
 }
 
 const SectorPerformanceCard: React.FC<SectorPerformanceCardProps> = ({
   performances,
   onSectorClick,
   loading = false,
+  todayDate,
+  yesterdayDate,
 }) => {
   if (loading) {
     return (
@@ -45,9 +49,16 @@ const SectorPerformanceCard: React.FC<SectorPerformanceCardProps> = ({
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
         <h3 className="text-lg font-semibold">GICS 섹터별 동향</h3>
-        <p className="text-xs text-gray-500">전일 대비 변동률</p>
+        <div className="flex flex-col items-start sm:items-end gap-1">
+          <p className="text-xs text-gray-500">전일 대비 변동률</p>
+          {todayDate && yesterdayDate && (
+            <p className="text-[10px] text-gray-400">
+              {new Date(yesterdayDate).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })} → {new Date(todayDate).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
