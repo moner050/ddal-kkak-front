@@ -90,8 +90,15 @@ import NewsSummaryTab from "../components/pages/DemoHome/NewsSummaryTab";
 import { METRIC_BEGINNER_GUIDE, AI_SCORE_INTERPRETATION } from "../constants/beginnerGuide";
 
 // Import sector performance service and component
-import { loadSectorPerformances, type SectorPerformance, type SectorPerformanceResult } from "../services/sectorPerformance";
+import {
+  loadSectorPerformances,
+  loadYearlySectorPerformances,
+  type SectorPerformance,
+  type SectorPerformanceResult,
+  type YearlySectorPerformanceResult
+} from "../services/sectorPerformance";
 import SectorPerformanceCard from "../components/charts/SectorPerformanceCard";
+import SectorYearlyPerformanceCard from "../components/charts/SectorYearlyPerformanceCard";
 
 // Import modal components
 import LoginModal from "../components/modals/LoginModal";
@@ -104,6 +111,14 @@ import EmptyState from "../components/utils/EmptyState";
 import QuickActionsBar from "../components/utils/QuickActionsBar";
 import TooltipHeader from "../components/utils/TooltipHeader";
 import MetricTooltip from "../components/utils/MetricTooltip";
+
+// Import custom hooks
+import { useDemoHomeData } from "../hooks/useDemoHomeData";
+import { useTabManagement } from "../hooks/useTabManagement";
+import { useFiltersAndSort } from "../hooks/useFiltersAndSort";
+import { useFavorites } from "../hooks/useFavorites";
+import { useBeginnerMode } from "../hooks/useBeginnerMode";
+import { useRecentStocks } from "../hooks/useRecentStocks";
 
 // ======================= DemoHome (메인) =======================
 // TAB_KEYS와 TabKey는 ../types에서 import됨
@@ -130,10 +145,20 @@ export default function DemoHome() {
   const [sectorPerformances, setSectorPerformances] = useState<SectorPerformance[]>([]);
   const [sectorTodayDate, setSectorTodayDate] = useState<string>('');
   const [sectorYesterdayDate, setSectorYesterdayDate] = useState<string>('');
+  const [yearlySectorPerformances, setYearlySectorPerformances] = useState<YearlySectorPerformanceResult>({
+    monthlyData: [],
+    summaries: [],
+    startDate: '2025-01-01',
+    endDate: new Date().toISOString().split('T')[0],
+    bestSector: null,
+    worstSector: null,
+    avgReturn: 0,
+  });
   const [isLoadingFeatured, setIsLoadingFeatured] = useState(false);
   const [isLoadingFilings, setIsLoadingFilings] = useState(false);
   const [isLoadingUndervalued, setIsLoadingUndervalued] = useState(false);
   const [isLoadingSectorPerformances, setIsLoadingSectorPerformances] = useState(false);
+  const [isLoadingYearlySectorPerformances, setIsLoadingYearlySectorPerformances] = useState(false);
 
   // 데이터 업데이트 날짜
   const [dataLastUpdated, setDataLastUpdated] = useState<string>('');
@@ -275,12 +300,20 @@ export default function DemoHome() {
         setSectorYesterdayDate(sectorResult.yesterdayDate);
         console.log('✅ Sector performances loaded:', sectorResult.performances.length);
         setIsLoadingSectorPerformances(false);
+
+        // Yearly Sector Performances 로드 (2025-01-01 ~ 현재)
+        setIsLoadingYearlySectorPerformances(true);
+        const yearlyResult = await loadYearlySectorPerformances('2025-01-01');
+        setYearlySectorPerformances(yearlyResult);
+        console.log('✅ Yearly sector performances loaded:', yearlyResult.summaries.length);
+        setIsLoadingYearlySectorPerformances(false);
       } catch (error) {
         console.error('❌ Failed to load API data:', error);
         setIsLoadingFeatured(false);
         setIsLoadingFilings(false);
         setIsLoadingUndervalued(false);
         setIsLoadingSectorPerformances(false);
+        setIsLoadingYearlySectorPerformances(false);
       }
     };
 
@@ -818,6 +851,14 @@ export default function DemoHome() {
                 loading={isLoadingSectorPerformances}
                 todayDate={sectorTodayDate}
                 yesterdayDate={sectorYesterdayDate}
+              />
+            </section>
+
+            {/* GICS 섹터별 연간 성과 (2025년) */}
+            <section>
+              <SectorYearlyPerformanceCard
+                data={yearlySectorPerformances}
+                loading={isLoadingYearlySectorPerformances}
               />
             </section>
 

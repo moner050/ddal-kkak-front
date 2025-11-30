@@ -1,0 +1,162 @@
+/**
+ * DemoHome 데이터 로딩 Custom Hook
+ *
+ * API 데이터 로딩 로직을 분리하여 관리합니다.
+ * - Featured Stocks
+ * - Filings
+ * - Undervalued Stocks
+ * - Sector Performances (일일)
+ * - Yearly Sector Performances (연간)
+ */
+
+import { useState, useEffect } from 'react';
+import { stockService, featuredService, filingService } from '../api/services';
+import {
+  loadSectorPerformances,
+  loadYearlySectorPerformances,
+  type SectorPerformance,
+  type YearlySectorPerformanceResult
+} from '../services/sectorPerformance';
+import type {
+  FrontendUndervaluedStock,
+  FrontendFeaturedStock,
+  FrontendFiling
+} from '../utils/apiMappers';
+
+export interface UseDemoHomeDataReturn {
+  // Featured Stocks
+  featuredStocks: FrontendFeaturedStock[];
+  isLoadingFeatured: boolean;
+
+  // Filings
+  filings: FrontendFiling[];
+  isLoadingFilings: boolean;
+
+  // Undervalued Stocks
+  undervaluedStocks: FrontendUndervaluedStock[];
+  isLoadingUndervalued: boolean;
+  dataLastUpdated: string;
+  dataDate: string;
+
+  // Sector Performances
+  sectorPerformances: SectorPerformance[];
+  sectorTodayDate: string;
+  sectorYesterdayDate: string;
+  isLoadingSectorPerformances: boolean;
+
+  // Yearly Sector Performances
+  yearlySectorPerformances: YearlySectorPerformanceResult;
+  isLoadingYearlySectorPerformances: boolean;
+}
+
+/**
+ * DemoHome 데이터 로딩 hook
+ */
+export function useDemoHomeData(): UseDemoHomeDataReturn {
+  // Featured Stocks
+  const [featuredStocks, setFeaturedStocks] = useState<FrontendFeaturedStock[]>([]);
+  const [isLoadingFeatured, setIsLoadingFeatured] = useState(false);
+
+  // Filings
+  const [filings, setFilings] = useState<FrontendFiling[]>([]);
+  const [isLoadingFilings, setIsLoadingFilings] = useState(false);
+
+  // Undervalued Stocks
+  const [undervaluedStocks, setUndervaluedStocks] = useState<FrontendUndervaluedStock[]>([]);
+  const [isLoadingUndervalued, setIsLoadingUndervalued] = useState(false);
+  const [dataLastUpdated, setDataLastUpdated] = useState<string>('');
+  const [dataDate, setDataDate] = useState<string>('');
+
+  // Sector Performances
+  const [sectorPerformances, setSectorPerformances] = useState<SectorPerformance[]>([]);
+  const [sectorTodayDate, setSectorTodayDate] = useState<string>('');
+  const [sectorYesterdayDate, setSectorYesterdayDate] = useState<string>('');
+  const [isLoadingSectorPerformances, setIsLoadingSectorPerformances] = useState(false);
+
+  // Yearly Sector Performances
+  const [yearlySectorPerformances, setYearlySectorPerformances] = useState<YearlySectorPerformanceResult>({
+    monthlyData: [],
+    summaries: [],
+    startDate: '2025-01-01',
+    endDate: new Date().toISOString().split('T')[0],
+    bestSector: null,
+    worstSector: null,
+    avgReturn: 0,
+  });
+  const [isLoadingYearlySectorPerformances, setIsLoadingYearlySectorPerformances] = useState(false);
+
+  // 데이터 로드
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        console.log('🔄 Loading API data...');
+
+        // Featured Stocks 로드 (5개만 표시)
+        setIsLoadingFeatured(true);
+        const featured = await featuredService.getFeatured(5);
+        setFeaturedStocks(featured);
+        console.log('✅ Featured stocks loaded:', featured.length);
+        setIsLoadingFeatured(false);
+
+        // Filings 로드
+        setIsLoadingFilings(true);
+        const filingsData = await filingService.getLatest(20);
+        setFilings(filingsData);
+        console.log('✅ Filings loaded:', filingsData.length);
+        setIsLoadingFilings(false);
+
+        // Undervalued Stocks 로드 (정적 데이터 Export)
+        setIsLoadingUndervalued(true);
+        const stocksData = await stockService.exportAllStocks(1000);
+        setUndervaluedStocks(stocksData.stocks);
+        setDataLastUpdated(stocksData.lastUpdated);
+        setDataDate(stocksData.dataDate);
+        console.log('✅ Undervalued stocks loaded:', stocksData.stocks.length);
+        console.log('📅 Data date:', stocksData.dataDate, '| Last updated:', stocksData.lastUpdated);
+        setIsLoadingUndervalued(false);
+
+        // Sector Performances 로드
+        setIsLoadingSectorPerformances(true);
+        const sectorResult = await loadSectorPerformances();
+        setSectorPerformances(sectorResult.performances);
+        setSectorTodayDate(sectorResult.todayDate);
+        setSectorYesterdayDate(sectorResult.yesterdayDate);
+        console.log('✅ Sector performances loaded:', sectorResult.performances.length);
+        setIsLoadingSectorPerformances(false);
+
+        // Yearly Sector Performances 로드 (2025-01-01 ~ 현재)
+        setIsLoadingYearlySectorPerformances(true);
+        const yearlyResult = await loadYearlySectorPerformances('2025-01-01');
+        setYearlySectorPerformances(yearlyResult);
+        console.log('✅ Yearly sector performances loaded:', yearlyResult.summaries.length);
+        setIsLoadingYearlySectorPerformances(false);
+      } catch (error) {
+        console.error('❌ Failed to load API data:', error);
+        setIsLoadingFeatured(false);
+        setIsLoadingFilings(false);
+        setIsLoadingUndervalued(false);
+        setIsLoadingSectorPerformances(false);
+        setIsLoadingYearlySectorPerformances(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  return {
+    featuredStocks,
+    isLoadingFeatured,
+    filings,
+    isLoadingFilings,
+    undervaluedStocks,
+    isLoadingUndervalued,
+    dataLastUpdated,
+    dataDate,
+    sectorPerformances,
+    sectorTodayDate,
+    sectorYesterdayDate,
+    isLoadingSectorPerformances,
+    yearlySectorPerformances,
+    isLoadingYearlySectorPerformances,
+  };
+}
