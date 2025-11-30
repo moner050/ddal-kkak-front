@@ -65,7 +65,7 @@ const SectorPerformanceCard: React.FC<SectorPerformanceCardProps> = ({
         {performances.map((perf) => (
           <button
             key={perf.sector}
-            onClick={() => onSectorClick?.(perf.sector)}
+            onClick={() => onSectorClick?.(perf.sectorKr)}
             className={classNames(
               'p-3 rounded-lg border-2 transition-all duration-200',
               'hover:shadow-md hover:scale-105 cursor-pointer',

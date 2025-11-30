@@ -36,7 +36,9 @@ export interface SectorPerformance {
  * 특정 섹터의 평균 가격 계산
  */
 function calculateSectorAvgPrice(stocks: FrontendUndervaluedStock[], sector: string): number {
-  const sectorStocks = stocks.filter((s) => s.gicsSector === sector);
+  // sector는 영문명, stock.category는 한글명이므로 한글로 변환해서 비교
+  const sectorKr = toKoreanSector(sector);
+  const sectorStocks = stocks.filter((s) => s.category === sectorKr);
 
   if (sectorStocks.length === 0) return 0;
 
@@ -69,7 +71,7 @@ export function calculateSectorPerformances(
         ? ((todayAvgPrice - yesterdayAvgPrice) / yesterdayAvgPrice) * 100
         : 0;
 
-    const stockCount = todayStocks.filter((s) => s.gicsSector === sector).length;
+    const stockCount = todayStocks.filter((s) => s.category === toKoreanSector(sector)).length;
 
     let trend: 'up' | 'down' | 'neutral' = 'neutral';
     if (changePercent > 0.1) trend = 'up';
