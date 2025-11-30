@@ -90,8 +90,15 @@ import NewsSummaryTab from "../components/pages/DemoHome/NewsSummaryTab";
 import { METRIC_BEGINNER_GUIDE, AI_SCORE_INTERPRETATION } from "../constants/beginnerGuide";
 
 // Import sector performance service and component
-import { loadSectorPerformances, type SectorPerformance, type SectorPerformanceResult } from "../services/sectorPerformance";
+import {
+  loadSectorPerformances,
+  loadYearlySectorPerformances,
+  type SectorPerformance,
+  type SectorPerformanceResult,
+  type YearlySectorPerformanceResult
+} from "../services/sectorPerformance";
 import SectorPerformanceCard from "../components/charts/SectorPerformanceCard";
+import SectorYearlyPerformanceCard from "../components/charts/SectorYearlyPerformanceCard";
 
 // Import modal components
 import LoginModal from "../components/modals/LoginModal";
@@ -105,6 +112,14 @@ import QuickActionsBar from "../components/utils/QuickActionsBar";
 import TooltipHeader from "../components/utils/TooltipHeader";
 import MetricTooltip from "../components/utils/MetricTooltip";
 
+// Import custom hooks
+import { useDemoHomeData } from "../hooks/useDemoHomeData";
+import { useTabManagement } from "../hooks/useTabManagement";
+import { useFiltersAndSort } from "../hooks/useFiltersAndSort";
+import { useFavorites } from "../hooks/useFavorites";
+import { useBeginnerMode } from "../hooks/useBeginnerMode";
+import { useRecentStocks } from "../hooks/useRecentStocks";
+
 // ======================= DemoHome (메인) =======================
 // TAB_KEYS와 TabKey는 ../types에서 import됨
 
@@ -115,265 +130,122 @@ export default function DemoHome() {
   const asOfKR = asOfUS;
   const asOf = asOfUS;
 
-  // 탭 상태 (URL 파라미터에서 초기값 가져오기)
-  const [activeTab, setActiveTab] = useState<TabKey>(() => {
-    if (typeof window === "undefined") return "home";
-    const urlParams = new URLSearchParams(window.location.search);
-    const tab = urlParams.get("tab");
-    return TAB_KEYS.includes(tab as TabKey) ? (tab as TabKey) : "home";
-  });
+  // ===== Custom Hooks =====
 
-  // API 데이터 상태
-  const [featuredStocks, setFeaturedStocks] = useState<FrontendFeaturedStock[]>([]);
-  const [filings, setFilings] = useState<FrontendFiling[]>([]);
-  const [undervaluedStocks, setUndervaluedStocks] = useState<FrontendUndervaluedStock[]>([]);
-  const [sectorPerformances, setSectorPerformances] = useState<SectorPerformance[]>([]);
-  const [sectorTodayDate, setSectorTodayDate] = useState<string>('');
-  const [sectorYesterdayDate, setSectorYesterdayDate] = useState<string>('');
-  const [isLoadingFeatured, setIsLoadingFeatured] = useState(false);
-  const [isLoadingFilings, setIsLoadingFilings] = useState(false);
-  const [isLoadingUndervalued, setIsLoadingUndervalued] = useState(false);
-  const [isLoadingSectorPerformances, setIsLoadingSectorPerformances] = useState(false);
+  // 데이터 로딩
+  const {
+    featuredStocks,
+    isLoadingFeatured,
+    filings,
+    isLoadingFilings,
+    undervaluedStocks,
+    isLoadingUndervalued,
+    dataLastUpdated,
+    dataDate,
+    sectorPerformances,
+    sectorTodayDate,
+    sectorYesterdayDate,
+    isLoadingSectorPerformances,
+    yearlySectorPerformances,
+    isLoadingYearlySectorPerformances,
+  } = useDemoHomeData();
 
-  // 데이터 업데이트 날짜
-  const [dataLastUpdated, setDataLastUpdated] = useState<string>('');
-  const [dataDate, setDataDate] = useState<string>('');
+  // 탭 관리
+  const {
+    activeTab,
+    setActiveTab,
+    switchTab,
+    homeRef,
+    undervaluedRef,
+    filingsRef,
+    watchlistRef,
+    detailRef,
+    scrollPositions,
+  } = useTabManagement();
 
-  // 홈 화면 필터
-  const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
-  const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
+  // 필터 및 정렬
+  const {
+    undervaluedSearchQuery,
+    setUndervaluedSearchQuery,
+    undervaluedStrategies,
+    setUndervaluedStrategies,
+    undervaluedMarket,
+    setUndervaluedMarket,
+    undervaluedCategory,
+    setUndervaluedCategory,
+    undervaluedIndustry,
+    setUndervaluedIndustry,
+    undervaluedPage,
+    setUndervaluedPage,
+    undervaluedCategoryPages,
+    setUndervaluedCategoryPages,
+    undervaluedSortBy,
+    setUndervaluedSortBy,
+    undervaluedSortDirection,
+    setUndervaluedSortDirection,
+    filingsSearchQuery,
+    setFilingsSearchQuery,
+    filingsPage,
+    setFilingsPage,
+    filingsSortBy,
+    setFilingsSortBy,
+    filingsSortDirection,
+    setFilingsSortDirection,
+    filingsSentimentFilter,
+    setFilingsSentimentFilter,
+    filingsMarketFilter,
+    setFilingsMarketFilter,
+    filingsCategory,
+    setFilingsCategory,
+    filingsIndustry,
+    setFilingsIndustry,
+    watchlistSearchQuery,
+    setWatchlistSearchQuery,
+    watchlistMarket,
+    setWatchlistMarket,
+    watchlistCategory,
+    setWatchlistCategory,
+    watchlistIndustry,
+    setWatchlistIndustry,
+    handleUndervaluedSort,
+    handleFilingsSort,
+    toggleStrategy,
+  } = useFiltersAndSort();
 
-  // 종목추천 페이지 필터
-  const [undervaluedSearchQuery, setUndervaluedSearchQuery] = useState("");
-  const [undervaluedStrategies, setUndervaluedStrategies] = useState<Array<"undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing">>([]); // 빈 배열 = 전체 표시
-  const [undervaluedMarket, setUndervaluedMarket] = useState<"전체" | "US" | "KR">("전체");
-  const [undervaluedCategory, setUndervaluedCategory] = useState("전체");
-  const [undervaluedIndustry, setUndervaluedIndustry] = useState("전체");
-  const [undervaluedPage, setUndervaluedPage] = useState(1);
-  const [undervaluedCategoryPages, setUndervaluedCategoryPages] = useState<Record<string, number>>({}); // 섹터별 페이지 상태 저장
-  const [undervaluedSortBy, setUndervaluedSortBy] = useState<string | null>("aiScore"); // 기본적으로 종합 점수 높은 순으로 정렬
-  const [undervaluedSortDirection, setUndervaluedSortDirection] = useState<"asc" | "desc">("desc");
+  // 즐겨찾기
+  const { favorites, toggleFavorite } = useFavorites();
 
-  // 공시 분석 페이지 필터
-  const [filingsSearchQuery, setFilingsSearchQuery] = useState("");
-  const [filingsPage, setFilingsPage] = useState(1);
-  const [filingsSortBy, setFilingsSortBy] = useState<string | null>(null);
-  const [filingsSortDirection, setFilingsSortDirection] = useState<"asc" | "desc">("desc");
-  const [filingsSentimentFilter, setFilingsSentimentFilter] = useState<"ALL" | "POS" | "NEG" | "NEU">("ALL");
-  const [filingsMarketFilter, setFilingsMarketFilter] = useState<"전체" | "US" | "KR">("전체");
-  const [filingsCategory, setFilingsCategory] = useState("전체");
-  const [filingsIndustry, setFilingsIndustry] = useState("전체");
+  // 초보자 모드
+  const { isBeginnerMode, handleBeginnerModeToggle } = useBeginnerMode();
 
-  // 관심 종목 페이지 필터
-  const [watchlistSearchQuery, setWatchlistSearchQuery] = useState("");
-  const [watchlistMarket, setWatchlistMarket] = useState<"전체" | "US" | "KR">("전체");
-  const [watchlistCategory, setWatchlistCategory] = useState("전체");
-  const [watchlistIndustry, setWatchlistIndustry] = useState("전체");
-
-  // 종목 상세 페이지 상태
+  // 종목 상세 페이지 상태 (hooks에 포함되지 않은 독립적인 상태들)
   const [detailSymbol, setDetailSymbol] = useState<string>("");
   const [detailTab, setDetailTab] = useState<"info" | "filings" | "chart">("info");
   const [detailLogoError, setDetailLogoError] = useState(false);
 
-  // 저평가/관심 탭 로고 에러 상태
+  // 최근 본 종목
+  const { recentStocks } = useRecentStocks(detailSymbol);
+
+  // 로고 에러 상태
   const [logoErrors, setLogoErrors] = useState<Record<string, boolean>>({});
 
-  // ✅ 초보자 모드 상태 (localStorage에 저장)
-  const [isBeginnerMode, setIsBeginnerMode] = useState<boolean>(() => {
-    if (typeof window === "undefined") return true; // 기본값: 초보자 모드
-    try {
-      const saved = localStorage.getItem("ddal-kkak-beginner-mode");
-      return saved !== null ? JSON.parse(saved) : true;
-    } catch {
-      return true;
-    }
-  });
+  // 홈 화면 필터 (hooks에 포함되지 않은 홈 화면 전용 상태)
+  const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
+  const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
 
-  // 초보자 모드 변경 시 localStorage에 저장
-  const handleBeginnerModeToggle = (value: boolean) => {
-    setIsBeginnerMode(value);
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("ddal-kkak-beginner-mode", JSON.stringify(value));
-      } catch (e) {
-        console.error("Failed to save beginner mode:", e);
-      }
-    }
-  };
-
-  // ✅ 최근 본 종목 (최대 5개, localStorage 활용)
-  const [recentStocks, setRecentStocks] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const saved = localStorage.getItem("ddal-kkak-recent-stocks");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  // detailSymbol이 변경될 때마다 최근 본 종목에 추가
+  // 로고 에러 초기화 (detailSymbol 변경 시)
   useEffect(() => {
-    if (!detailSymbol) return;
-
-    // 로고 에러 상태 초기화
-    setDetailLogoError(false);
-
-    setRecentStocks(prev => {
-      // 중복 제거하고 최신 항목을 맨 앞에 추가
-      const filtered = prev.filter(s => s !== detailSymbol);
-      const updated = [detailSymbol, ...filtered].slice(0, 5);
-
-      // localStorage에 저장
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("ddal-kkak-recent-stocks", JSON.stringify(updated));
-        } catch (e) {
-          console.error("Failed to save recent stocks:", e);
-        }
-      }
-
-      return updated;
-    });
+    if (detailSymbol) {
+      setDetailLogoError(false);
+    }
   }, [detailSymbol]);
 
-  // API 데이터 로드
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        console.log('🔄 Loading API data...');
+  // ===== 기타 상태 및 핸들러 =====
 
-        // Featured Stocks 로드 (5개만 표시)
-        setIsLoadingFeatured(true);
-        const featured = await featuredService.getFeatured(5);
-        setFeaturedStocks(featured);
-        console.log('✅ Featured stocks loaded:', featured.length);
-        setIsLoadingFeatured(false);
-
-        // Filings 로드
-        setIsLoadingFilings(true);
-        const filingsData = await filingService.getLatest(20);
-        setFilings(filingsData);
-        console.log('✅ Filings loaded:', filingsData.length);
-        setIsLoadingFilings(false);
-
-        // Undervalued Stocks 로드 (정적 데이터 Export)
-        setIsLoadingUndervalued(true);
-        const stocksData = await stockService.exportAllStocks(1000);
-        setUndervaluedStocks(stocksData.stocks);
-        setDataLastUpdated(stocksData.lastUpdated);
-        setDataDate(stocksData.dataDate);
-        console.log('✅ Undervalued stocks loaded:', stocksData.stocks.length);
-        console.log('📅 Data date:', stocksData.dataDate, '| Last updated:', stocksData.lastUpdated);
-        setIsLoadingUndervalued(false);
-
-        // Sector Performances 로드
-        setIsLoadingSectorPerformances(true);
-        const sectorResult = await loadSectorPerformances();
-        setSectorPerformances(sectorResult.performances);
-        setSectorTodayDate(sectorResult.todayDate);
-        setSectorYesterdayDate(sectorResult.yesterdayDate);
-        console.log('✅ Sector performances loaded:', sectorResult.performances.length);
-        setIsLoadingSectorPerformances(false);
-      } catch (error) {
-        console.error('❌ Failed to load API data:', error);
-        setIsLoadingFeatured(false);
-        setIsLoadingFilings(false);
-        setIsLoadingUndervalued(false);
-        setIsLoadingSectorPerformances(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  // ✅ 초기 페이지 로드 시 현재 탭을 히스토리에 설정
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // 초기 상태 설정 (replaceState 사용하여 새 히스토리 엔트리를 만들지 않음)
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", activeTab);
-    window.history.replaceState({ tab: activeTab }, "", url.toString());
-  }, []); // 빈 배열: 최초 한 번만 실행
-
-  // ✅ 브라우저 뒤로가기/앞으로가기 버튼 감지
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const handlePopState = (event: PopStateEvent) => {
-      const state = event.state;
-      if (state && state.tab && TAB_KEYS.includes(state.tab as TabKey)) {
-        setActiveTab(state.tab as TabKey);
-      } else {
-        // URL 파라미터에서 탭 정보 가져오기
-        const urlParams = new URLSearchParams(window.location.search);
-        const tab = urlParams.get("tab");
-        if (tab && TAB_KEYS.includes(tab as TabKey)) {
-          setActiveTab(tab as TabKey);
-        } else {
-          setActiveTab("home");
-        }
-      }
-    };
-
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, []);
-
-  // ✅ 탭별 스크롤 위치 저장용
-  const scrollPositions = useRef<Record<TabKey, number>>({
-    home: 0,
-    undervalued: 0,
-    filings: 0,
-    watchlist: 0,
-    detail: 0,
-  });
-
-  // ✅ 탭별 개별 스크롤 컨테이너 ref
-  const homeRef = useRef<HTMLDivElement>(null);
-  const undervaluedRef = useRef<HTMLDivElement>(null);
-  const filingsRef = useRef<HTMLDivElement>(null);
-  const watchlistRef = useRef<HTMLDivElement>(null);
-  const detailRef = useRef<HTMLDivElement>(null);
-
-  // ✅ 홈 페이지 내 섹션 ref
+  // 홈 페이지 내 섹션 ref
   const featuredSectionRef = useRef<HTMLDivElement>(null);
 
-  // 2) ⬇️ 여기 타입을 RefObject<HTMLDivElement> → MutableRefObject<HTMLDivElement | null> 로 수정
-  const refMap: Record<TabKey, React.MutableRefObject<HTMLDivElement | null>> = {
-    home: homeRef,
-    undervalued: undervaluedRef,
-    filings: filingsRef,
-    watchlist: watchlistRef,
-    detail: detailRef,
-  };
-
-  // ✅ 탭 전환 시: 현재 탭 스크롤 저장 → 다음 탭 스크롤 복원 → 브라우저 히스토리 추가
-  const switchTab = (next: TabKey) => {
-    const currEl = refMap[activeTab].current;
-    if (currEl) scrollPositions.current[activeTab] = currEl.scrollTop;
-
-    setActiveTab(next);
-
-    // 브라우저 히스토리에 상태 추가
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      url.searchParams.set("tab", next);
-      window.history.pushState({ tab: next }, "", url.toString());
-    }
-
-    // 다음 프레임에서 복원 (DOM 업데이트 후)
-    requestAnimationFrame(() => {
-      const nextEl = refMap[next].current;
-      if (nextEl) nextEl.scrollTo({ top: scrollPositions.current[next] || 0 });
-    });
-  };
-
-  // ✅ 홈 페이지 내 섹션으로 스크롤 이동
+  // 홈 페이지 내 섹션으로 스크롤 이동
   const scrollToFeaturedSection = () => {
     if (featuredSectionRef.current && homeRef.current) {
       const sectionTop = featuredSectionRef.current.offsetTop;
@@ -381,31 +253,12 @@ export default function DemoHome() {
     }
   };
 
-  // ✅ GICS 섹터 클릭 핸들러 - 주식추천 페이지로 이동하며 해당 섹터 필터링
+  // GICS 섹터 클릭 핸들러 - 주식추천 페이지로 이동하며 해당 섹터 필터링
   const handleSectorClick = (sector: string) => {
-    // 섹터를 카테고리로 설정
     setUndervaluedCategory(sector);
-    // 산업은 전체로 초기화
     setUndervaluedIndustry("전체");
-    // 페이지는 1페이지로 초기화
     setUndervaluedPage(1);
-    // 주식추천 탭으로 이동
     switchTab("undervalued");
-  };
-
-  // ✅ 투자 전략 토글 핸들러
-  const toggleStrategy = (strategy: "undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing") => {
-    setUndervaluedStrategies(prev => {
-      if (prev.includes(strategy)) {
-        // 이미 선택되어 있으면 제거
-        return prev.filter(s => s !== strategy);
-      } else {
-        // 선택되어 있지 않으면 추가
-        return [...prev, strategy];
-      }
-    });
-    // 페이지는 1페이지로 초기화
-    setUndervaluedPage(1);
   };
 
   // 시그널 섹션 카테고리(미국/한국) + 감성
@@ -417,58 +270,6 @@ export default function DemoHome() {
   // 랭킹 섹션 카테고리(미국/한국)
   const [rankCatUS, setRankCatUS] = useState("전체");
   const [rankCatKR, setRankCatKR] = useState("전체");
-
-  // 즐겨찾기
-  const [favorites, setFavorites] = useState<Record<string, boolean>>(() => {
-    // Load favorites from cookie on mount
-    const cookieValue = getCookie('ddal-kkak-favorites');
-    if (cookieValue) {
-      try {
-        return JSON.parse(decodeURIComponent(cookieValue));
-      } catch (e) {
-        return {};
-      }
-    }
-    return {};
-  });
-  const favoriteDebounceRef = useRef<Record<string, boolean>>({});
-
-  const toggleFavorite = (symbol: string) => {
-    // Prevent rapid clicks (1 second debounce)
-    if (favoriteDebounceRef.current[symbol]) return;
-
-    favoriteDebounceRef.current[symbol] = true;
-    const newFavorites = { ...favorites, [symbol]: !favorites[symbol] };
-    setFavorites(newFavorites);
-
-    // Save to cookie
-    setCookie('ddal-kkak-favorites', encodeURIComponent(JSON.stringify(newFavorites)));
-
-    setTimeout(() => {
-      favoriteDebounceRef.current[symbol] = false;
-    }, 1000);
-  };
-
-  // 정렬 핸들러
-  const handleUndervaluedSort = (key: string) => {
-    if (undervaluedSortBy === key) {
-      setUndervaluedSortDirection(undervaluedSortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setUndervaluedSortBy(key);
-      setUndervaluedSortDirection("desc");
-    }
-    setUndervaluedPage(1); // Reset to first page on sort
-  };
-
-  const handleFilingsSort = (key: string) => {
-    if (filingsSortBy === key) {
-      setFilingsSortDirection(filingsSortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setFilingsSortBy(key);
-      setFilingsSortDirection("desc");
-    }
-    setFilingsPage(1); // Reset to first page on sort
-  };
 
   // 종목 상세 페이지 열기
   const openStockDetail = (symbol: string, tab: "info" | "filings" = "info") => {
@@ -818,6 +619,14 @@ export default function DemoHome() {
                 loading={isLoadingSectorPerformances}
                 todayDate={sectorTodayDate}
                 yesterdayDate={sectorYesterdayDate}
+              />
+            </section>
+
+            {/* GICS 섹터별 연간 성과 (2025년) */}
+            <section>
+              <SectorYearlyPerformanceCard
+                data={yearlySectorPerformances}
+                loading={isLoadingYearlySectorPerformances}
               />
             </section>
 
