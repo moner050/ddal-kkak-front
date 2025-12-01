@@ -219,6 +219,7 @@ async function fetchAllData() {
       // 각 날짜별로 전체 종목 데이터 수집
       let successCount = 0;
       let skippedCount = 0;
+      let emptyCount = 0;
       for (let i = 0; i < dates.length; i++) {
         const date = dates[i];
         const filename = `${date}.json`;
@@ -245,9 +246,11 @@ async function fetchAllData() {
 
           const stocksData = historicalResponse.data.stocks || [];
 
-          // 데이터가 비어있으면 경고
+          // 데이터가 비어있으면 파일 저장하지 않음
           if (stocksData.length === 0) {
-            console.warn(`     ⚠️ No stocks returned for ${date} - API may not support date parameter`);
+            emptyCount++;
+            console.warn(`     ⚠️ No stocks returned for ${date} - skipping file creation`);
+            continue;
           }
 
           // 날짜별 파일로 저장
@@ -279,7 +282,7 @@ async function fetchAllData() {
         updatedAt: new Date().toISOString(),
       };
 
-      console.log(`   ✓ Historical data: ${successCount} fetched, ${skippedCount} skipped (${successCount + skippedCount}/${dates.length} total)`);
+      console.log(`   ✓ Historical data: ${successCount} fetched, ${skippedCount} skipped, ${emptyCount} empty (${successCount + skippedCount + emptyCount}/${dates.length} total)`);
     } catch (error) {
       console.error('   ✗ Failed to fetch historical data:', error.message);
       metadata.sources.historicalData = {
