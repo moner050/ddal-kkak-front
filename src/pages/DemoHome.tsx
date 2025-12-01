@@ -568,47 +568,6 @@ export default function DemoHome() {
                   <span className="text-gray-600"> 종합 평가 · 재무 분석 · 공시 정보를 한눈에 확인하세요.</span>
                 </p>
               </div>
-              <div className="mt-4 sm:mt-6 grid grid-cols-3 gap-3 sm:gap-4">
-                <button
-                  onClick={scrollToFeaturedSection}
-                  className="group rounded-xl bg-white border border-gray-200 p-3 sm:p-4 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer text-center"
-                >
-                  <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
-                    <span className="text-xl sm:text-3xl font-bold text-blue-600">{featuredStocks.length}</span>
-                    <div className="hidden sm:flex items-center gap-0.5">
-                      <span className="text-emerald-500 text-base">↑</span>
-                      <span className="text-xs font-bold text-emerald-600">+5</span>
-                    </div>
-                  </div>
-                  <div className="text-[10px] sm:text-sm font-semibold text-gray-600 group-hover:text-blue-600 transition-colors">주목 종목</div>
-                </button>
-                <button
-                  onClick={() => switchTab("filings")}
-                  className="group rounded-xl bg-white border border-gray-200 p-3 sm:p-4 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer text-center"
-                >
-                  <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
-                    <span className="text-xl sm:text-3xl font-bold text-indigo-600">{filings.length}</span>
-                    <div className="hidden sm:flex items-center gap-0.5">
-                      <span className="text-emerald-500 text-base">↑</span>
-                      <span className="text-xs font-bold text-emerald-600">+12</span>
-                    </div>
-                  </div>
-                  <div className="text-[10px] sm:text-sm font-semibold text-gray-600 group-hover:text-indigo-600 transition-colors">공시 분석</div>
-                </button>
-                <button
-                  onClick={() => switchTab("undervalued")}
-                  className="group rounded-xl bg-white border border-gray-200 p-3 sm:p-4 hover:border-purple-300 hover:shadow-md transition-all cursor-pointer text-center"
-                >
-                  <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
-                    <span className="text-xl sm:text-3xl font-bold text-purple-600">{undervaluedStocks.length}</span>
-                    <div className="hidden sm:flex items-center gap-0.5">
-                      <span className="text-emerald-500 text-base">↑</span>
-                      <span className="text-xs font-bold text-emerald-600">+8</span>
-                    </div>
-                  </div>
-                  <div className="text-[10px] sm:text-sm font-semibold text-gray-600 group-hover:text-purple-600 transition-colors">종목추천</div>
-                </button>
-              </div>
             </div>
 
             {/* GICS 섹터별 동향 */}

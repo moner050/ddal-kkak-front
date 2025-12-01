@@ -175,9 +175,9 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
       case "totalScore":
         return data.totalScore || 0;
       case "pe":
-        return data.pe || 0;
+        return data.PER || 0;
       case "roe":
-        return data.roe || 0;
+        return data.ROE || 0;
       default:
         return 0;
     }
@@ -196,9 +196,9 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
       date: d.dataDate,
       price: d.price,
       marketCap: d.marketCap,
-      pe: d.pe,
-      pb: d.pb,
-      roe: d.roe,
+      pe: d.PER,
+      pb: d.PBR,
+      roe: d.ROE,
       totalScore: d.totalScore,
       growthScore: d.growthScore,
       valueScore: d.valueScore,
