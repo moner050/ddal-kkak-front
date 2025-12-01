@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { classNames } from '../../utils/format';
 import { METRIC_BEGINNER_GUIDE, AI_SCORE_INTERPRETATION } from '../../constants/beginnerGuide';
 import AIScoreGauge from './AIScoreGauge';
+import ThreePointSummary from './ThreePointSummary';
+import PriceGuideBand from './PriceGuideBand';
 
 interface BeginnerStockCardProps {
   stock: {
@@ -13,6 +15,7 @@ interface BeginnerStockCardProps {
     logoUrl?: string;
     aiScore: number;
     sentiment: 'POS' | 'NEG' | 'NEU';
+    price?: number;
     ROE: number;
     PER: number;
     PEG: number;
@@ -197,6 +200,25 @@ export default function BeginnerStockCard({
           {scoreInterpretation.getDescription(stock.aiScore)}
         </div>
       </div>
+
+      {/* 3줄 요약 */}
+      <div className="mb-4">
+        <ThreePointSummary
+          reason={`높은 ROE(${stock.ROE.toFixed(1)}%)와 안정적인 PER(${stock.PER.toFixed(1)}) 보유`}
+          opportunity={`${stock.category} 섹터의 성장세 지속`}
+          caution={stock.PEG > 2 ? "PEG 비율이 다소 높아 밸류에이션 주의 필요" : "시장 전체 변동성에 유의"}
+        />
+      </div>
+
+      {/* 가격 가이드 */}
+      {stock.price && (
+        <div className="mb-4">
+          <PriceGuideBand
+            currentPrice={stock.price}
+            currency={stock.market === 'US' ? '$' : '₩'}
+          />
+        </div>
+      )}
 
       {/* 핵심 지표 그리드 - 초보자용 4개 핵심 지표 */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
