@@ -78,6 +78,7 @@ import CategoryPager from "../components/news/CategoryPager";
 // Import common components
 import Header from "../components/common/Header";
 import BottomNav from "../components/common/BottomNav";
+import Footer from "../components/common/Footer";
 import CategoryChips from "../components/common/CategoryChips";
 import Pagination from "../components/common/Pagination";
 import BeginnerModeToggle from "../components/common/BeginnerModeToggle";
@@ -103,6 +104,7 @@ import SectorYearlyPerformanceCard from "../components/charts/SectorYearlyPerfor
 // Import modal components
 import LoginModal from "../components/modals/LoginModal";
 import SignupModal from "../components/modals/SignupModal";
+import ComingSoonModal from "../components/modals/ComingSoonModal";
 
 // Import utility components
 import { LoadingSkeleton, CardSkeleton } from "../components/utils/LoadingSkeleton";
@@ -563,6 +565,15 @@ export default function DemoHome() {
                     <p className="text-xs sm:text-sm text-gray-600 font-medium">Smart Investment Platform</p>
                   </div>
                 </div>
+
+                {/* 슬로건 */}
+                <div className="mb-4 sm:mb-5">
+                  <h2 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900 leading-snug">
+                    복잡한 분석 없이 딸깍!<br className="sm:hidden" />
+                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> 주식 초보를 위한 가장 쉬운 종목 추천</span>
+                  </h2>
+                </div>
+
                 <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                   데이터 기반의 종목 분석과 투자 인사이트를 제공합니다.<br className="hidden sm:inline" />
                   <span className="text-gray-600"> 종합 평가 · 재무 분석 · 공시 정보를 한눈에 확인하세요.</span>
@@ -760,6 +771,9 @@ export default function DemoHome() {
                 모든 투자 결정은 투자자 본인의 판단과 책임 하에 이루어져야 합니다.
               </p>
             </div>
+
+            {/* Footer */}
+            <Footer />
           </main>
         </div>
 
@@ -1318,6 +1332,9 @@ export default function DemoHome() {
                 />
               );
             })()}
+
+            {/* Footer */}
+            <Footer />
           </main>
         </div>
 
@@ -1578,6 +1595,9 @@ export default function DemoHome() {
                 />
               );
             })()}
+
+            {/* Footer */}
+            <Footer />
           </main>
         </div>
 
@@ -1811,6 +1831,9 @@ export default function DemoHome() {
                 </div>
               );
             })()}
+
+            {/* Footer */}
+            <Footer />
           </main>
         </div>
 
