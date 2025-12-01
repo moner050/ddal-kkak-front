@@ -68,6 +68,8 @@ import FilingAnalysisCard from "../components/stock/FilingAnalysisCard";
 import FilingCard from "../components/stock/FilingCard";
 import BeginnerStockCard from "../components/stock/BeginnerStockCard";
 import StockPriceVisualization from "../components/stock/StockPriceVisualization";
+import ThreePointSummary from "../components/stock/ThreePointSummary";
+import PriceGuideBand from "../components/stock/PriceGuideBand";
 
 // Import news components
 import NewsImportanceBadge from "../components/news/NewsImportanceBadge";
@@ -2206,6 +2208,46 @@ export default function DemoHome() {
                     </div>
                   </div>
                 </div>
+
+                {/* 3줄 요약 & 가격 가이드 */}
+                {stockInfo && (
+                  <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* 3줄 요약 */}
+                    <ThreePointSummary
+                      reason={
+                        stockInfo.ROE && stockInfo.PER
+                          ? `ROE ${stockInfo.ROE.toFixed(1)}%, PER ${stockInfo.PER.toFixed(1)} - ${
+                              stockInfo.ROE > 15 ? '우수한' : stockInfo.ROE > 10 ? '양호한' : '적정한'
+                            } 수익성 보유`
+                          : `AI 평가 ${stockInfo.aiScore}점 - ${
+                              stockInfo.aiScore >= 80 ? '매우 우수한' : stockInfo.aiScore >= 60 ? '우수한' : '양호한'
+                            } 종목`
+                      }
+                      opportunity={
+                        stockInfo.RevYoY
+                          ? `${stockDetail.Sector} 섹터, 매출 YoY ${stockInfo.RevYoY > 0 ? '+' : ''}${stockInfo.RevYoY.toFixed(1)}% 성장`
+                          : `${stockDetail.Sector} 섹터의 성장 잠재력`
+                      }
+                      caution={
+                        stockInfo.PEG && stockInfo.PEG > 2
+                          ? `PEG ${stockInfo.PEG.toFixed(2)} - 밸류에이션 부담 주의`
+                          : stockInfo.volatility && stockInfo.volatility > 0.5
+                          ? `변동성 ${(stockInfo.volatility * 100).toFixed(1)}% - 리스크 관리 필요`
+                          : '전반적인 시장 변동성에 유의'
+                      }
+                    />
+
+                    {/* 가격 가이드 */}
+                    {stockDetail.Price && (
+                      <PriceGuideBand
+                        currentPrice={stockDetail.Price}
+                        currency={stockInfo.market === 'US' ? '$' : '₩'}
+                        buyPrice={stockDetail.Price * 0.92}
+                        targetPrice={stockDetail.Price * 1.25}
+                      />
+                    )}
+                  </div>
+                )}
 
                 {/* 탭 네비게이션 */}
                 <div className="mb-6 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
