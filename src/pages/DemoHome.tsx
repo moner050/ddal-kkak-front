@@ -70,6 +70,8 @@ import BeginnerStockCard from "../components/stock/BeginnerStockCard";
 import StockPriceVisualization from "../components/stock/StockPriceVisualization";
 import ThreePointSummary from "../components/stock/ThreePointSummary";
 import PriceGuideBand from "../components/stock/PriceGuideBand";
+import EnhancedThreePointSummary from "../components/stock/EnhancedThreePointSummary";
+import EnhancedPriceGuideBand from "../components/stock/EnhancedPriceGuideBand";
 
 // Import news components
 import NewsImportanceBadge from "../components/news/NewsImportanceBadge";
@@ -123,6 +125,7 @@ import { useFiltersAndSort } from "../hooks/useFiltersAndSort";
 import { useFavorites } from "../hooks/useFavorites";
 import { useBeginnerMode } from "../hooks/useBeginnerMode";
 import { useRecentStocks } from "../hooks/useRecentStocks";
+import { useStockRecommendation } from "../hooks/useStockRecommendation";
 
 // ======================= DemoHome (메인) =======================
 // TAB_KEYS와 TabKey는 ../types에서 import됨
@@ -226,6 +229,14 @@ export default function DemoHome() {
   const [detailSymbol, setDetailSymbol] = useState<string>("");
   const [detailTab, setDetailTab] = useState<"info" | "filings" | "chart">("info");
   const [detailLogoError, setDetailLogoError] = useState(false);
+
+  // 종목 추천 데이터 (백엔드 API)
+  const {
+    summary: recommendationSummary,
+    priceGuidance,
+    rating: investmentRating,
+    isLoading: isLoadingRecommendation,
+  } = useStockRecommendation(detailSymbol || null);
 
   // 최근 본 종목
   const { recentStocks } = useRecentStocks(detailSymbol);
@@ -2212,39 +2223,57 @@ export default function DemoHome() {
                 {/* 3줄 요약 & 가격 가이드 */}
                 {stockInfo && (
                   <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* 3줄 요약 */}
-                    <ThreePointSummary
-                      reason={
-                        stockInfo.ROE && stockInfo.PER
-                          ? `ROE ${stockInfo.ROE.toFixed(1)}%, PER ${stockInfo.PER.toFixed(1)} - ${
-                              stockInfo.ROE > 15 ? '우수한' : stockInfo.ROE > 10 ? '양호한' : '적정한'
-                            } 수익성 보유`
-                          : `AI 평가 ${stockInfo.aiScore}점 - ${
-                              stockInfo.aiScore >= 80 ? '매우 우수한' : stockInfo.aiScore >= 60 ? '우수한' : '양호한'
-                            } 종목`
-                      }
-                      opportunity={
-                        stockInfo.RevYoY
-                          ? `${stockDetail.Sector} 섹터, 매출 YoY ${stockInfo.RevYoY > 0 ? '+' : ''}${stockInfo.RevYoY.toFixed(1)}% 성장`
-                          : `${stockDetail.Sector} 섹터의 성장 잠재력`
-                      }
-                      caution={
-                        stockInfo.PEG && stockInfo.PEG > 2
-                          ? `PEG ${stockInfo.PEG.toFixed(2)} - 밸류에이션 부담 주의`
-                          : stockInfo.volatility && stockInfo.volatility > 0.5
-                          ? `변동성 ${(stockInfo.volatility * 100).toFixed(1)}% - 리스크 관리 필요`
-                          : '전반적인 시장 변동성에 유의'
-                      }
-                    />
-
-                    {/* 가격 가이드 */}
-                    {stockDetail.Price && (
-                      <PriceGuideBand
-                        currentPrice={stockDetail.Price}
-                        currency={stockInfo.market === 'US' ? '$' : '₩'}
-                        buyPrice={stockDetail.Price * 0.92}
-                        targetPrice={stockDetail.Price * 1.25}
+                    {/* 3줄 요약 - 백엔드 데이터가 있으면 Enhanced 버전 사용 */}
+                    {recommendationSummary && !isLoadingRecommendation ? (
+                      <EnhancedThreePointSummary
+                        reason={recommendationSummary.summary.reason}
+                        opportunity={recommendationSummary.summary.opportunity}
+                        caution={recommendationSummary.summary.caution}
                       />
+                    ) : (
+                      <ThreePointSummary
+                        reason={
+                          stockInfo.ROE && stockInfo.PER
+                            ? `ROE ${stockInfo.ROE.toFixed(1)}%, PER ${stockInfo.PER.toFixed(1)} - ${
+                                stockInfo.ROE > 15 ? '우수한' : stockInfo.ROE > 10 ? '양호한' : '적정한'
+                              } 수익성 보유`
+                            : `AI 평가 ${stockInfo.aiScore}점 - ${
+                                stockInfo.aiScore >= 80 ? '매우 우수한' : stockInfo.aiScore >= 60 ? '우수한' : '양호한'
+                              } 종목`
+                        }
+                        opportunity={
+                          stockInfo.RevYoY
+                            ? `${stockDetail.Sector} 섹터, 매출 YoY ${stockInfo.RevYoY > 0 ? '+' : ''}${stockInfo.RevYoY.toFixed(1)}% 성장`
+                            : `${stockDetail.Sector} 섹터의 성장 잠재력`
+                        }
+                        caution={
+                          stockInfo.PEG && stockInfo.PEG > 2
+                            ? `PEG ${stockInfo.PEG.toFixed(2)} - 밸류에이션 부담 주의`
+                            : stockInfo.volatility && stockInfo.volatility > 0.5
+                            ? `변동성 ${(stockInfo.volatility * 100).toFixed(1)}% - 리스크 관리 필요`
+                            : '전반적인 시장 변동성에 유의'
+                        }
+                      />
+                    )}
+
+                    {/* 가격 가이드 - 백엔드 데이터가 있으면 Enhanced 버전 사용 */}
+                    {stockDetail.Price && (
+                      priceGuidance && !isLoadingRecommendation ? (
+                        <EnhancedPriceGuideBand
+                          currentPrice={priceGuidance.currentPrice}
+                          targetPrice={priceGuidance.guidance.targetPrice}
+                          buyRange={priceGuidance.guidance.buyRange}
+                          sellRange={priceGuidance.guidance.sellRange}
+                          currency={stockInfo.market === 'US' ? '$' : '₩'}
+                        />
+                      ) : (
+                        <PriceGuideBand
+                          currentPrice={stockDetail.Price}
+                          currency={stockInfo.market === 'US' ? '$' : '₩'}
+                          buyPrice={stockDetail.Price * 0.92}
+                          targetPrice={stockDetail.Price * 1.25}
+                        />
+                      )
                     )}
                   </div>
                 )}
