@@ -1,0 +1,461 @@
+{
+  "AAPL": {
+    "symbol": "AAPL",
+    "lastUpdated": "2025-12-01T10:00:00Z",
+    "summary": {
+      "reason": {
+        "strengths": [
+          {
+            "category": "profitability",
+            "metric": "ROE",
+            "value": 147.2,
+            "industryAverage": 32.5,
+            "percentile": 95,
+            "description": "업계 평균 대비 4배 이상 높은 자기자본이익률로 뛰어난 수익성 입증"
+          },
+          {
+            "category": "growth",
+            "metric": "Revenue Growth",
+            "value": 8.3,
+            "industryAverage": 5.2,
+            "percentile": 78,
+            "description": "서비스 부문의 지속적인 성장으로 안정적인 매출 증대"
+          },
+          {
+            "category": "valuation",
+            "metric": "P/E Ratio",
+            "value": 28.5,
+            "industryAverage": 32.1,
+            "percentile": 65,
+            "description": "업계 평균 대비 저평가되어 있으며, 프리미엄 브랜드 가치 고려 시 매력적"
+          }
+        ],
+        "peerComparison": {
+          "sector": "Technology",
+          "industryGroup": "Consumer Electronics",
+          "rank": 2,
+          "totalPeers": 15,
+          "betterThan": 86.7,
+          "keyMetrics": {
+            "per": { "value": 28.5, "industryMedian": 32.1 },
+            "roe": { "value": 147.2, "industryMedian": 32.5 },
+            "revenueGrowth": { "value": 8.3, "industryMedian": 5.2 }
+          }
+        },
+        "aiAnalysis": {
+          "score": 87,
+          "confidence": 0.92,
+          "mainFactors": [
+            { "factor": "강력한 브랜드 가치와 생태계", "weight": 0.35 },
+            { "factor": "서비스 부문 고성장", "weight": 0.28 },
+            { "factor": "뛰어난 현금창출 능력", "weight": 0.22 },
+            { "factor": "혁신적인 제품 로드맵", "weight": 0.15 }
+          ]
+        },
+        "investmentThesis": "애플은 프리미엄 브랜드 가치와 강력한 생태계를 바탕으로 안정적인 현금 흐름을 창출하고 있습니다. 특히 서비스 부문의 지속적인 성장은 하드웨어 의존도를 낮추고 더 높은 마진을 제공하고 있습니다.",
+        "businessStrengths": [
+          "세계 최고 수준의 브랜드 가치",
+          "충성도 높은 고객층과 강력한 생태계",
+          "지속적인 혁신과 R&D 투자",
+          "탁월한 공급망 관리"
+        ]
+      },
+      "opportunity": {
+        "sectorTrend": {
+          "sector": "Consumer Electronics",
+          "outlook": "positive",
+          "growthForecast": 6.8,
+          "description": "AI 통합 및 웨어러블 기기 시장의 확대로 지속적인 성장 전망"
+        },
+        "catalysts": [
+          {
+            "type": "product",
+            "title": "Vision Pro 2세대 출시 예정",
+            "description": "개선된 성능과 낮아진 가격으로 AR/VR 시장 본격 진입",
+            "date": "2026-Q2",
+            "expectedImpact": "high",
+            "source": "Bloomberg"
+          },
+          {
+            "type": "earnings",
+            "title": "서비스 부문 매출 가이던스 상향",
+            "description": "Apple TV+, Apple Music 구독자 급증으로 서비스 매출 20% 성장 전망",
+            "date": "2026-Q1",
+            "expectedImpact": "medium"
+          }
+        ],
+        "analystConsensus": {
+          "rating": "Buy",
+          "numberOfAnalysts": 42,
+          "distribution": {
+            "strongBuy": 15,
+            "buy": 20,
+            "hold": 6,
+            "sell": 1,
+            "strongSell": 0
+          },
+          "recentUpgrades": 5,
+          "recentDowngrades": 1
+        },
+        "upcomingEvents": [
+          {
+            "type": "earnings",
+            "title": "Q4 2025 실적 발표",
+            "date": "2026-01-30",
+            "description": "아이폰 16 시리즈 판매 실적 및 서비스 부문 성장률 주목"
+          },
+          {
+            "type": "product_launch",
+            "title": "WWDC 2026",
+            "date": "2026-06-10",
+            "description": "AI 기능 강화 iOS 20 및 신제품 발표 예정"
+          }
+        ]
+      },
+      "caution": {
+        "risks": [
+          {
+            "category": "market",
+            "severity": "medium",
+            "title": "중국 시장 의존도",
+            "description": "중국 매출 비중이 높아 지정학적 리스크와 규제 리스크에 노출",
+            "metric": "중국 매출 비중",
+            "value": 19,
+            "threshold": 15
+          },
+          {
+            "category": "regulatory",
+            "severity": "medium",
+            "title": "EU 규제 강화",
+            "description": "디지털시장법(DMA)으로 인한 앱스토어 수수료 모델 변화 가능성"
+          }
+        ],
+        "weaknesses": [
+          {
+            "area": "growth",
+            "title": "아이폰 판매 성장 둔화",
+            "current": 2.8,
+            "previous": 5.5,
+            "change": -2.7,
+            "description": "주력 제품인 아이폰의 YoY 성장률이 감소 추세"
+          }
+        ],
+        "marketRisks": [
+          {
+            "type": "volatility",
+            "title": "높은 밸류에이션 배수",
+            "metric": "P/E Ratio",
+            "value": 28.5,
+            "description": "시장 조정 시 밸류에이션 부담으로 단기 변동성 확대 가능"
+          }
+        ]
+      }
+    }
+  },
+  "MSFT": {
+    "symbol": "MSFT",
+    "lastUpdated": "2025-12-01T10:00:00Z",
+    "summary": {
+      "reason": {
+        "strengths": [
+          {
+            "category": "growth",
+            "metric": "Cloud Revenue Growth",
+            "value": 28.5,
+            "industryAverage": 18.2,
+            "percentile": 92,
+            "description": "Azure의 폭발적 성장으로 클라우드 부문 매출 급증"
+          },
+          {
+            "category": "profitability",
+            "metric": "Operating Margin",
+            "value": 42.3,
+            "industryAverage": 28.5,
+            "percentile": 89,
+            "description": "소프트웨어 중심 비즈니스 모델로 업계 최고 수준의 영업이익률"
+          },
+          {
+            "category": "technical",
+            "metric": "RSI",
+            "value": 62,
+            "industryAverage": 50,
+            "percentile": 72,
+            "description": "강한 상승 모멘텀 유지하며 과매수 구간 진입 전"
+          }
+        ],
+        "peerComparison": {
+          "sector": "Technology",
+          "industryGroup": "Software & Cloud Services",
+          "rank": 1,
+          "totalPeers": 20,
+          "betterThan": 95.0,
+          "keyMetrics": {
+            "per": { "value": 32.8, "industryMedian": 35.2 },
+            "roe": { "value": 48.5, "industryMedian": 28.3 },
+            "revenueGrowth": { "value": 15.8, "industryMedian": 12.5 }
+          }
+        },
+        "aiAnalysis": {
+          "score": 92,
+          "confidence": 0.95,
+          "mainFactors": [
+            { "factor": "AI 혁신 선도 기업", "weight": 0.38 },
+            { "factor": "클라우드 시장 점유율 확대", "weight": 0.32 },
+            { "factor": "다각화된 비즈니스 포트폴리오", "weight": 0.18 },
+            { "factor": "강력한 기업용 고객 기반", "weight": 0.12 }
+          ]
+        },
+        "investmentThesis": "마이크로소프트는 AI 시대의 최대 수혜 기업으로, OpenAI 파트너십과 Azure AI 서비스를 통해 엔터프라이즈 AI 시장을 선도하고 있습니다. 클라우드, 오피스, 게이밍 등 다각화된 포트폴리오는 안정적인 성장을 보장합니다.",
+        "businessStrengths": [
+          "OpenAI 파트너십을 통한 AI 기술 선점",
+          "Azure 클라우드의 지속적인 성장",
+          "Office 365 구독 모델의 안정적인 현금흐름",
+          "게이밍(Xbox) 및 링크드인 등 다각화된 수익원"
+        ]
+      },
+      "opportunity": {
+        "sectorTrend": {
+          "sector": "Cloud Computing & AI",
+          "outlook": "positive",
+          "growthForecast": 22.5,
+          "description": "AI 인프라 수요 급증과 디지털 전환 가속화로 클라우드 시장 고성장 지속"
+        },
+        "catalysts": [
+          {
+            "type": "product",
+            "title": "Copilot 전 제품군 확대",
+            "description": "Windows, Office, GitHub, Azure 전반에 AI Copilot 통합으로 새로운 수익 모델 창출",
+            "date": "2026-Q1",
+            "expectedImpact": "high",
+            "source": "Microsoft Ignite"
+          },
+          {
+            "type": "partnership",
+            "title": "OpenAI GPT-5 독점 라이선스",
+            "description": "차세대 AI 모델 GPT-5의 기업용 독점 제공권 확보",
+            "date": "2026-Q2",
+            "expectedImpact": "high"
+          }
+        ],
+        "analystConsensus": {
+          "rating": "Strong Buy",
+          "numberOfAnalysts": 48,
+          "distribution": {
+            "strongBuy": 28,
+            "buy": 17,
+            "hold": 3,
+            "sell": 0,
+            "strongSell": 0
+          },
+          "recentUpgrades": 8,
+          "recentDowngrades": 0
+        },
+        "upcomingEvents": [
+          {
+            "type": "earnings",
+            "title": "Q4 FY2025 실적 발표",
+            "date": "2026-01-25",
+            "description": "Azure 성장률 및 AI 관련 매출 기여도 주목"
+          },
+          {
+            "type": "investor_day",
+            "title": "AI Strategy Deep Dive",
+            "date": "2026-03-15",
+            "description": "AI 비즈니스 로드맵 및 수익화 전략 발표"
+          }
+        ]
+      },
+      "caution": {
+        "risks": [
+          {
+            "category": "valuation",
+            "severity": "medium",
+            "title": "높은 밸류에이션",
+            "description": "P/E 32배로 업계 평균 대비 프리미엄이 높아 실적 미달 시 조정 위험",
+            "metric": "P/E Ratio",
+            "value": 32.8,
+            "threshold": 30
+          },
+          {
+            "category": "market",
+            "severity": "low",
+            "title": "클라우드 시장 경쟁 심화",
+            "description": "AWS, Google Cloud와의 치열한 경쟁으로 마진 압박 가능성"
+          }
+        ],
+        "weaknesses": [
+          {
+            "area": "efficiency",
+            "title": "R&D 비용 증가",
+            "current": 18.5,
+            "previous": 15.2,
+            "change": 3.3,
+            "description": "AI 투자 확대로 R&D 비용이 매출 대비 급증"
+          }
+        ],
+        "marketRisks": [
+          {
+            "type": "correlation",
+            "title": "기술주 전반 조정 시 동반 하락",
+            "metric": "Beta",
+            "value": 1.15,
+            "description": "나스닥 지수와 높은 상관관계로 시장 조정 시 영향 클 수 있음"
+          }
+        ]
+      }
+    }
+  },
+  "GOOGL": {
+    "symbol": "GOOGL",
+    "lastUpdated": "2025-12-01T10:00:00Z",
+    "summary": {
+      "reason": {
+        "strengths": [
+          {
+            "category": "profitability",
+            "metric": "Net Margin",
+            "value": 26.8,
+            "industryAverage": 18.5,
+            "percentile": 88,
+            "description": "광고 비즈니스의 높은 마진과 클라우드 수익성 개선"
+          },
+          {
+            "category": "valuation",
+            "metric": "P/E Ratio",
+            "value": 22.3,
+            "industryAverage": 28.5,
+            "percentile": 42,
+            "description": "동종 빅테크 대비 저평가, 실적 대비 매력적인 밸류에이션"
+          },
+          {
+            "category": "growth",
+            "metric": "EPS Growth",
+            "value": 18.5,
+            "industryAverage": 12.3,
+            "percentile": 82,
+            "description": "AI 광고 최적화 및 클라우드 성장으로 견조한 이익 증가"
+          }
+        ],
+        "peerComparison": {
+          "sector": "Technology",
+          "industryGroup": "Internet Services & Infrastructure",
+          "rank": 1,
+          "totalPeers": 12,
+          "betterThan": 91.7,
+          "keyMetrics": {
+            "per": { "value": 22.3, "industryMedian": 28.5 },
+            "roe": { "value": 28.7, "industryMedian": 21.5 },
+            "revenueGrowth": { "value": 11.2, "industryMedian": 9.8 }
+          }
+        },
+        "aiAnalysis": {
+          "score": 85,
+          "confidence": 0.88,
+          "mainFactors": [
+            { "factor": "검색 시장 지배력", "weight": 0.32 },
+            { "factor": "AI 기술력 (Gemini)", "weight": 0.28 },
+            { "factor": "YouTube 수익화 개선", "weight": 0.22 },
+            { "factor": "클라우드 시장 성장", "weight": 0.18 }
+          ]
+        },
+        "investmentThesis": "구글은 검색 광고 시장의 압도적 1위로서 AI 통합을 통해 더욱 높은 광고 효율을 제공하고 있습니다. Gemini AI와 클라우드 부문의 성장, YouTube의 수익성 개선이 주가 상승을 견인할 전망입니다.",
+        "businessStrengths": [
+          "검색 엔진 시장 90% 이상 점유율",
+          "Gemini AI의 강력한 기술력",
+          "YouTube의 독보적 영상 플랫폼",
+          "안드로이드 생태계"
+        ]
+      },
+      "opportunity": {
+        "sectorTrend": {
+          "sector": "Digital Advertising",
+          "outlook": "positive",
+          "growthForecast": 9.5,
+          "description": "AI 기반 타겟 광고 고도화로 디지털 광고 시장 지속 성장"
+        },
+        "catalysts": [
+          {
+            "type": "product",
+            "title": "Gemini 2.0 출시",
+            "description": "차세대 AI 모델로 검색 및 클라우드 서비스 혁신",
+            "date": "2026-Q1",
+            "expectedImpact": "high",
+            "source": "Google I/O"
+          },
+          {
+            "type": "market",
+            "title": "YouTube Shorts 수익화 본격화",
+            "description": "숏폼 콘텐츠 광고 수익 급증 전망",
+            "date": "2026-Q2",
+            "expectedImpact": "medium"
+          }
+        ],
+        "analystConsensus": {
+          "rating": "Buy",
+          "numberOfAnalysts": 45,
+          "distribution": {
+            "strongBuy": 18,
+            "buy": 22,
+            "hold": 5,
+            "sell": 0,
+            "strongSell": 0
+          },
+          "recentUpgrades": 6,
+          "recentDowngrades": 1
+        },
+        "upcomingEvents": [
+          {
+            "type": "earnings",
+            "title": "Q4 2025 실적 발표",
+            "date": "2026-02-04",
+            "description": "광고 매출 회복 및 클라우드 흑자 전환 여부 주목"
+          },
+          {
+            "type": "product_launch",
+            "title": "Google I/O 2026",
+            "date": "2026-05-14",
+            "description": "AI 신기능 및 안드로이드 업데이트 발표"
+          }
+        ]
+      },
+      "caution": {
+        "risks": [
+          {
+            "category": "regulatory",
+            "severity": "high",
+            "title": "반독점 소송 리스크",
+            "description": "미국 법무부의 검색 독점 소송으로 비즈니스 모델 변화 가능성",
+            "metric": "검색 시장 점유율",
+            "value": 91,
+            "threshold": 70
+          },
+          {
+            "category": "market",
+            "severity": "medium",
+            "title": "광고 시장 경기 민감도",
+            "description": "경기 침체 시 광고 예산 감소로 매출 타격 우려"
+          }
+        ],
+        "weaknesses": [
+          {
+            "area": "efficiency",
+            "title": "클라우드 부문 낮은 마진",
+            "current": 5.2,
+            "previous": 3.8,
+            "change": 1.4,
+            "description": "Google Cloud의 영업이익률이 경쟁사 대비 낮은 수준"
+          }
+        ],
+        "marketRisks": [
+          {
+            "type": "volatility",
+            "title": "AI 경쟁 심화로 변동성 확대",
+            "metric": "Historical Volatility",
+            "value": 28.5,
+            "description": "OpenAI, Microsoft 등과의 AI 경쟁으로 단기 변동성 높음"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,214 @@
+{
+  "AAPL": {
+    "symbol": "AAPL",
+    "lastUpdated": "2025-12-01T16:00:00Z",
+    "rating": {
+      "overall": {
+        "rating": "Buy",
+        "score": 78,
+        "lastUpdated": "2025-12-01"
+      },
+      "breakdown": {
+        "fundamental": {
+          "rating": "Strong Buy",
+          "score": 88
+        },
+        "technical": {
+          "rating": "Buy",
+          "score": 72
+        },
+        "valuation": {
+          "rating": "Hold",
+          "score": 65
+        },
+        "momentum": {
+          "rating": "Buy",
+          "score": 75
+        }
+      },
+      "signals": [
+        {
+          "type": "fundamental",
+          "signal": "서비스 부문 고성장",
+          "description": "App Store, Apple Music, iCloud 등 서비스 매출이 전년 대비 18% 증가하며 고마진 사업 확대",
+          "date": "2025-11-28",
+          "strength": "strong"
+        },
+        {
+          "type": "technical",
+          "signal": "골든 크로스 형성",
+          "description": "50일 이동평균선이 200일 이동평균선을 상향 돌파하며 강세 전환 신호",
+          "date": "2025-11-25",
+          "strength": "strong"
+        },
+        {
+          "type": "fundamental",
+          "signal": "자사주 매입 확대",
+          "description": "분기당 250억 달러 규모의 자사주 매입 프로그램으로 주당 가치 상승",
+          "date": "2025-11-20",
+          "strength": "moderate"
+        },
+        {
+          "type": "sentiment",
+          "signal": "기관 투자자 보유 비중 증가",
+          "description": "주요 헤지펀드 및 연기금의 애플 보유 비중이 전분기 대비 3.2% 증가",
+          "date": "2025-11-15",
+          "strength": "moderate"
+        },
+        {
+          "type": "technical",
+          "signal": "거래량 급증",
+          "description": "최근 2주간 평균 거래량 대비 35% 증가하며 매수세 유입",
+          "date": "2025-11-30",
+          "strength": "moderate"
+        }
+      ]
+    }
+  },
+  "MSFT": {
+    "symbol": "MSFT",
+    "lastUpdated": "2025-12-01T16:00:00Z",
+    "rating": {
+      "overall": {
+        "rating": "Strong Buy",
+        "score": 92,
+        "lastUpdated": "2025-12-01"
+      },
+      "breakdown": {
+        "fundamental": {
+          "rating": "Strong Buy",
+          "score": 95
+        },
+        "technical": {
+          "rating": "Strong Buy",
+          "score": 88
+        },
+        "valuation": {
+          "rating": "Buy",
+          "score": 82
+        },
+        "momentum": {
+          "rating": "Strong Buy",
+          "score": 90
+        }
+      },
+      "signals": [
+        {
+          "type": "fundamental",
+          "signal": "Azure 클라우드 폭발적 성장",
+          "description": "Azure 매출이 전년 대비 28% 급증하며 AWS 시장 점유율 추격 가속화",
+          "date": "2025-11-29",
+          "strength": "strong"
+        },
+        {
+          "type": "fundamental",
+          "signal": "AI Copilot 매출 기여 본격화",
+          "description": "Office 365, GitHub, Windows에 통합된 Copilot의 월간 활성 사용자 5천만 돌파",
+          "date": "2025-11-27",
+          "strength": "strong"
+        },
+        {
+          "type": "technical",
+          "signal": "신고점 갱신",
+          "description": "역대 최고가 경신하며 강력한 상승 추세 지속",
+          "date": "2025-11-28",
+          "strength": "strong"
+        },
+        {
+          "type": "sentiment",
+          "signal": "애널리스트 목표가 상향",
+          "description": "최근 1개월간 8개 투자은행이 목표가를 평균 12% 상향 조정",
+          "date": "2025-11-26",
+          "strength": "strong"
+        },
+        {
+          "type": "fundamental",
+          "signal": "영업 현금흐름 사상 최대",
+          "description": "분기 영업현금흐름 280억 달러 기록하며 재무 건전성 입증",
+          "date": "2025-11-22",
+          "strength": "strong"
+        },
+        {
+          "type": "technical",
+          "signal": "RSI 과열 구간 진입",
+          "description": "RSI 지수 72로 단기 과매수 신호, 조정 가능성 주의",
+          "date": "2025-12-01",
+          "strength": "weak"
+        }
+      ]
+    }
+  },
+  "GOOGL": {
+    "symbol": "GOOGL",
+    "lastUpdated": "2025-12-01T16:00:00Z",
+    "rating": {
+      "overall": {
+        "rating": "Buy",
+        "score": 75,
+        "lastUpdated": "2025-12-01"
+      },
+      "breakdown": {
+        "fundamental": {
+          "rating": "Buy",
+          "score": 80
+        },
+        "technical": {
+          "rating": "Hold",
+          "score": 62
+        },
+        "valuation": {
+          "rating": "Strong Buy",
+          "score": 90
+        },
+        "momentum": {
+          "rating": "Hold",
+          "score": 68
+        }
+      },
+      "signals": [
+        {
+          "type": "fundamental",
+          "signal": "YouTube Shorts 수익화 개선",
+          "description": "숏폼 광고 매출이 전분기 대비 45% 급증하며 틱톡 경쟁에서 우위 확보",
+          "date": "2025-11-28",
+          "strength": "strong"
+        },
+        {
+          "type": "fundamental",
+          "signal": "Google Cloud 흑자 전환",
+          "description": "클라우드 부문이 분기 첫 흑자를 기록하며 수익성 개선 시작",
+          "date": "2025-11-25",
+          "strength": "strong"
+        },
+        {
+          "type": "sentiment",
+          "signal": "반독점 소송 우호적 전망",
+          "description": "법률 전문가들이 구글에 유리한 판결 가능성 60%로 평가",
+          "date": "2025-11-20",
+          "strength": "moderate"
+        },
+        {
+          "type": "fundamental",
+          "signal": "검색 광고 단가 상승",
+          "description": "AI 광고 타겟팅 개선으로 광고 클릭당 단가(CPC) 8% 증가",
+          "date": "2025-11-18",
+          "strength": "moderate"
+        },
+        {
+          "type": "technical",
+          "signal": "지지선 테스트 중",
+          "description": "주가가 140달러 핵심 지지선을 테스트하며 횡보, 반등 여부 주목",
+          "date": "2025-11-30",
+          "strength": "moderate"
+        },
+        {
+          "type": "sentiment",
+          "signal": "내부자 매수 증가",
+          "description": "임원진의 자사주 매수가 전분기 대비 2배 증가하며 긍정적 신호",
+          "date": "2025-11-15",
+          "strength": "moderate"
+        }
+      ]
+    }
+  }
+}
