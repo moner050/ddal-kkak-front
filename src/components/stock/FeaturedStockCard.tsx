@@ -28,7 +28,7 @@ export default function FeaturedStockCard({ stock, onClick }: FeaturedStockCardP
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 sm:gap-3 mb-2">
             {stock.logoUrl && (
-              <img src={stock.logoUrl} alt={stock.name} className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg flex-shrink-0" />
+              <img src={stock.logoUrl} alt={stock.name} className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg flex-shrink-0 object-contain bg-white p-0.5 sm:p-1" />
             )}
             <div className="min-w-0">
               <div className="text-xs sm:text-sm text-gray-600">{stock.symbol}</div>

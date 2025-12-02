@@ -16,7 +16,13 @@ import {
   type FrontendFeaturedStock,
   type FrontendFiling,
 } from '../utils/apiMappers';
-import type { InvestmentProfile } from './types';
+import type {
+  InvestmentProfile,
+  RecommendationSummary,
+  PriceGuidance,
+  InvestmentRating,
+  RecommendationFull,
+} from './types';
 
 // ============================================
 // 저평가 우량주 서비스
@@ -539,6 +545,72 @@ export const favoriteService = {
 };
 
 // ============================================
+// Stock Recommendation Service (Enhanced)
+// ============================================
+
+export const recommendationService = {
+  /**
+   * 종목 추천 요약 조회 (3줄 요약)
+   */
+  getSummary: async (symbol: string): Promise<RecommendationSummary | null> => {
+    try {
+      const response = await client.get<RecommendationSummary>(
+        `/stocks/${symbol}/recommendation-summary`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to get recommendation summary for ${symbol}:`, error);
+      return null;
+    }
+  },
+
+  /**
+   * 가격 가이드 조회
+   */
+  getPriceGuidance: async (symbol: string): Promise<PriceGuidance | null> => {
+    try {
+      const response = await client.get<PriceGuidance>(
+        `/stocks/${symbol}/price-guidance`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to get price guidance for ${symbol}:`, error);
+      return null;
+    }
+  },
+
+  /**
+   * 투자 등급 조회
+   */
+  getInvestmentRating: async (symbol: string): Promise<InvestmentRating | null> => {
+    try {
+      const response = await client.get<InvestmentRating>(
+        `/stocks/${symbol}/investment-rating`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to get investment rating for ${symbol}:`, error);
+      return null;
+    }
+  },
+
+  /**
+   * 전체 추천 정보 조회
+   */
+  getFull: async (symbol: string): Promise<RecommendationFull | null> => {
+    try {
+      const response = await client.get<RecommendationFull>(
+        `/stocks/${symbol}/recommendation-full`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to get full recommendation for ${symbol}:`, error);
+      return null;
+    }
+  },
+};
+
+// ============================================
 // 통합 export
 // ============================================
 
@@ -547,6 +619,7 @@ export const apiServices = {
   featured: featuredService,
   filing: filingService,
   favorite: favoriteService,
+  recommendation: recommendationService,
 };
 
 export default apiServices;

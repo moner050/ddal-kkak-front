@@ -578,4 +578,336 @@ export interface ApiEndpoints {
 
   // Exchange Rate
   getExchangeRate: (symbol: string) => Promise<ExchangeRate>;
+
+  // Stock Recommendation (Enhanced)
+  getRecommendationSummary: (symbol: string) => Promise<RecommendationSummary>;
+  getPriceGuidance: (symbol: string) => Promise<PriceGuidance>;
+  getInvestmentRating: (symbol: string) => Promise<InvestmentRating>;
+  getRecommendationFull: (symbol: string) => Promise<RecommendationFull>;
+}
+
+// ============================================
+// Stock Recommendation DTOs (Enhanced)
+// ============================================
+
+// 3줄 요약 - 추천 사유
+export interface StrengthDto {
+  category: 'profitability' | 'growth' | 'valuation' | 'technical';
+  metric: string;
+  value: number;
+  industryAverage: number;
+  percentile: number;
+  description: string;
+}
+
+export interface PeerComparisonDto {
+  sector: string;
+  industryGroup: string;
+  rank: number;
+  totalPeers: number;
+  betterThan: number;
+  keyMetrics: {
+    per?: { value: number; industryMedian: number };
+    roe?: { value: number; industryMedian: number };
+    revenueGrowth?: { value: number; industryMedian: number };
+  };
+}
+
+export interface AiAnalysisDto {
+  score: number;
+  confidence: number;
+  mainFactors: Array<{
+    factor: string;
+    weight: number;
+  }>;
+}
+
+export interface ReasonDto {
+  strengths: StrengthDto[];
+  peerComparison: PeerComparisonDto;
+  aiAnalysis: AiAnalysisDto;
+  investmentThesis: string;
+  businessStrengths?: string[];
+}
+
+// 3줄 요약 - 예상 호재
+export interface SectorTrendDto {
+  sector: string;
+  outlook: 'positive' | 'neutral' | 'negative';
+  growthForecast: number;
+  description: string;
+}
+
+export interface CatalystDto {
+  type: 'earnings' | 'product' | 'partnership' | 'market' | 'regulatory';
+  title: string;
+  description: string;
+  date: string;
+  expectedImpact: 'high' | 'medium' | 'low';
+  source?: string;
+}
+
+export interface AnalystConsensusDto {
+  rating: 'Strong Buy' | 'Buy' | 'Hold' | 'Sell' | 'Strong Sell';
+  numberOfAnalysts: number;
+  distribution: {
+    strongBuy: number;
+    buy: number;
+    hold: number;
+    sell: number;
+    strongSell: number;
+  };
+  recentUpgrades: number;
+  recentDowngrades: number;
+}
+
+export interface UpcomingEventDto {
+  type: 'earnings' | 'product_launch' | 'investor_day';
+  title: string;
+  date: string;
+  description: string;
+}
+
+export interface OpportunityDto {
+  sectorTrend: SectorTrendDto;
+  catalysts: CatalystDto[];
+  analystConsensus: AnalystConsensusDto;
+  upcomingEvents: UpcomingEventDto[];
+}
+
+// 3줄 요약 - 주의점
+export interface RiskDto {
+  category: 'valuation' | 'technical' | 'fundamental' | 'market' | 'regulatory';
+  severity: 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  metric?: string;
+  value?: number;
+  threshold?: number;
+}
+
+export interface WeaknessDto {
+  area: 'profitability' | 'growth' | 'efficiency' | 'leverage';
+  title: string;
+  current: number;
+  previous: number;
+  change: number;
+  description: string;
+}
+
+export interface MarketRiskDto {
+  type: 'volatility' | 'correlation' | 'liquidity';
+  title: string;
+  metric: string;
+  value: number;
+  description: string;
+}
+
+export interface CautionDto {
+  risks: RiskDto[];
+  weaknesses: WeaknessDto[];
+  marketRisks: MarketRiskDto[];
+}
+
+// 3줄 요약 전체
+export interface RecommendationSummary {
+  symbol: string;
+  lastUpdated: string;
+  summary: {
+    reason: ReasonDto;
+    opportunity: OpportunityDto;
+    caution: CautionDto;
+  };
+}
+
+// 가격 가이드 - 목표주가
+export interface AnalystTargetPriceDto {
+  mean: number;
+  median: number;
+  high: number;
+  low: number;
+  numberOfEstimates: number;
+  lastUpdated: string;
+}
+
+export interface AiEstimateDto {
+  value: number;
+  confidence: number;
+  method: string;
+  horizon: string;
+  upside: number;
+}
+
+export interface DcfValuationDto {
+  fairValue: number;
+  assumptions: {
+    wacc: number;
+    terminalGrowth: number;
+    revenueGrowth: number[];
+  };
+}
+
+export interface PerBandDto {
+  fairValue: number;
+  targetPER: number;
+  estimatedEPS: number;
+  historicalPERRange: {
+    min: number;
+    median: number;
+    max: number;
+  };
+}
+
+export interface PbrBandDto {
+  fairValue: number;
+  targetPBR: number;
+  bps: number;
+}
+
+export interface ValuationBasedDto {
+  dcf: DcfValuationDto;
+  perBand: PerBandDto;
+  pbrBand: PbrBandDto;
+}
+
+export interface TargetPriceDto {
+  analystConsensus: AnalystTargetPriceDto;
+  aiEstimate: AiEstimateDto;
+  valuationBased: ValuationBasedDto;
+}
+
+// 가격 가이드 - 매수 적정가
+export interface TechnicalSupportDto {
+  strong: number;
+  moderate: number;
+  weak: number;
+  method: string;
+}
+
+export interface ValuationBuyPointDto {
+  conservative: number;
+  moderate: number;
+  aggressive: number;
+  method: string;
+}
+
+export interface DcaStrategyDto {
+  priceLevel: number;
+  allocation: string;
+  rationale: string;
+}
+
+export interface RecommendedBuyDto {
+  idealBuyPrice: number;
+  maxBuyPrice: number;
+  reasoning: string;
+}
+
+export interface BuyRangeDto {
+  technicalSupport: TechnicalSupportDto;
+  valuationBuyPoint: ValuationBuyPointDto;
+  dcaStrategy: DcaStrategyDto[];
+  recommended: RecommendedBuyDto;
+}
+
+// 가격 가이드 - 매도 적정가
+export interface TechnicalResistanceDto {
+  weak: number;
+  moderate: number;
+  strong: number;
+  method: string;
+}
+
+export interface TakeProfitLevelDto {
+  level: number;
+  price: number;
+  profitPercent: number;
+  allocation: string;
+  rationale: string;
+}
+
+export interface StopLossDto {
+  price: number;
+  lossPercent: number;
+  rationale: string;
+  type: 'trailing' | 'fixed';
+}
+
+export interface SellRangeDto {
+  technicalResistance: TechnicalResistanceDto;
+  takeProfitLevels: TakeProfitLevelDto[];
+  stopLoss: StopLossDto;
+}
+
+// 가격 가이드 - 투자 시나리오
+export interface ScenarioDto {
+  targetPrice: number;
+  upside?: number;
+  downside?: number;
+  probability: number;
+  triggers: string[];
+  timeline: string;
+}
+
+export interface ScenariosDto {
+  bullCase: ScenarioDto;
+  baseCase: ScenarioDto;
+  bearCase: ScenarioDto;
+}
+
+// 가격 가이드 전체
+export interface PriceGuidance {
+  symbol: string;
+  currentPrice: number;
+  lastUpdated: string;
+  guidance: {
+    targetPrice: TargetPriceDto;
+    buyRange: BuyRangeDto;
+    sellRange: SellRangeDto;
+    scenarios: ScenariosDto;
+  };
+}
+
+// 투자 등급
+export interface RatingDto {
+  rating: 'Strong Buy' | 'Buy' | 'Hold' | 'Reduce' | 'Sell';
+  score: number;
+}
+
+export interface OverallRatingDto extends RatingDto {
+  lastUpdated: string;
+}
+
+export interface RatingBreakdownDto {
+  fundamental: RatingDto;
+  technical: RatingDto;
+  valuation: RatingDto;
+  momentum: RatingDto;
+}
+
+export interface SignalDto {
+  type: 'technical' | 'fundamental' | 'sentiment';
+  signal: string;
+  description: string;
+  date: string;
+  strength: 'strong' | 'moderate' | 'weak';
+}
+
+export interface InvestmentRating {
+  symbol: string;
+  lastUpdated: string;
+  rating: {
+    overall: OverallRatingDto;
+    breakdown: RatingBreakdownDto;
+    signals: SignalDto[];
+  };
+}
+
+// 전체 추천 정보
+export interface RecommendationFull {
+  symbol: string;
+  lastUpdated: string;
+  summary: RecommendationSummary['summary'];
+  priceGuidance: PriceGuidance['guidance'];
+  investmentRating: InvestmentRating['rating'];
 }

@@ -92,7 +92,7 @@ export default function FilingAnalysisCard({
                 <img
                   src={filing.logoUrl}
                   alt={filing.company}
-                  className="h-4 w-4 sm:h-5 sm:w-5 rounded object-contain flex-shrink-0"
+                  className="h-4 w-4 sm:h-5 sm:w-5 rounded object-contain flex-shrink-0 bg-white p-0.5"
                   onError={() => setLogoError(true)}
                 />
               ) : (

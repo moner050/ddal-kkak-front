@@ -147,7 +147,7 @@ export default function BeginnerStockCard({
             <img
               src={stock.logoUrl}
               alt={stock.name}
-              className="h-12 w-12 rounded-xl flex-shrink-0"
+              className="h-12 w-12 rounded-xl flex-shrink-0 object-contain bg-white p-1"
               onError={onLogoError}
             />
           ) : (
