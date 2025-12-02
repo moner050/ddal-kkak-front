@@ -1,0 +1,482 @@
+{
+  "AAPL": {
+    "symbol": "AAPL",
+    "currentPrice": 185.50,
+    "lastUpdated": "2025-12-01T16:00:00Z",
+    "guidance": {
+      "targetPrice": {
+        "analystConsensus": {
+          "mean": 208.50,
+          "median": 210.00,
+          "high": 250.00,
+          "low": 165.00,
+          "numberOfEstimates": 42,
+          "lastUpdated": "2025-12-01"
+        },
+        "aiEstimate": {
+          "value": 215.30,
+          "confidence": 0.85,
+          "method": "Ensemble ML Model (DCF + Multiples + Technical)",
+          "horizon": "12개월",
+          "upside": 16.1
+        },
+        "valuationBased": {
+          "dcf": {
+            "fairValue": 218.75,
+            "assumptions": {
+              "wacc": 8.5,
+              "terminalGrowth": 3.0,
+              "revenueGrowth": [8.5, 7.8, 7.2, 6.5, 5.8]
+            }
+          },
+          "perBand": {
+            "fairValue": 205.80,
+            "targetPER": 29.0,
+            "estimatedEPS": 7.10,
+            "historicalPERRange": {
+              "min": 22.0,
+              "median": 28.5,
+              "max": 35.0
+            }
+          },
+          "pbrBand": {
+            "fairValue": 212.40,
+            "targetPBR": 45.0,
+            "bps": 4.72
+          }
+        }
+      },
+      "buyRange": {
+        "technicalSupport": {
+          "strong": 172.50,
+          "moderate": 178.20,
+          "weak": 183.80,
+          "method": "Fibonacci Retracement + Moving Averages"
+        },
+        "valuationBuyPoint": {
+          "conservative": 168.00,
+          "moderate": 175.50,
+          "aggressive": 182.00,
+          "method": "DCF + PER Band Analysis"
+        },
+        "dcaStrategy": [
+          {
+            "priceLevel": 175.00,
+            "allocation": "30%",
+            "rationale": "Strong support 근처, 저점 매수 기회"
+          },
+          {
+            "priceLevel": 180.00,
+            "allocation": "40%",
+            "rationale": "밸류에이션 적정 구간, 분할 매수 핵심 구간"
+          },
+          {
+            "priceLevel": 185.00,
+            "allocation": "30%",
+            "rationale": "현재가 근처, 추가 상승 시 잔여 매수"
+          }
+        ],
+        "recommended": {
+          "idealBuyPrice": 178.50,
+          "maxBuyPrice": 186.00,
+          "reasoning": "기술적 지지선과 밸류에이션 적정 구간이 겹치는 178~186달러 구간에서 분할 매수 권장. 특히 180달러 이하 진입 시 수익률 극대화 가능."
+        }
+      },
+      "sellRange": {
+        "technicalResistance": {
+          "weak": 192.50,
+          "moderate": 205.00,
+          "strong": 220.00,
+          "method": "Fibonacci Extension + Historical Resistance"
+        },
+        "takeProfitLevels": [
+          {
+            "level": 1,
+            "price": 200.00,
+            "profitPercent": 7.8,
+            "allocation": "25%",
+            "rationale": "심리적 저항선, 단기 수익 실현"
+          },
+          {
+            "level": 2,
+            "price": 215.00,
+            "profitPercent": 15.9,
+            "allocation": "50%",
+            "rationale": "목표가 도달, 주요 차익 실현 구간"
+          },
+          {
+            "level": 3,
+            "price": 230.00,
+            "profitPercent": 24.0,
+            "allocation": "25%",
+            "rationale": "강한 저항선 돌파 시 추가 상승 여력"
+          }
+        ],
+        "stopLoss": {
+          "price": 168.00,
+          "lossPercent": -9.4,
+          "rationale": "주요 지지선 하향 돌파 시 추가 하락 우려로 손절",
+          "type": "trailing"
+        }
+      },
+      "scenarios": {
+        "bullCase": {
+          "targetPrice": 245.00,
+          "upside": 32.1,
+          "probability": 25,
+          "triggers": [
+            "Vision Pro 대성공으로 신규 성장 동력 확보",
+            "서비스 부문 매출 YoY 30% 이상 성장",
+            "중국 시장 회복 및 규제 완화",
+            "AI 칩셋 혁신으로 아이폰 슈퍼사이클 재현"
+          ],
+          "timeline": "18-24개월"
+        },
+        "baseCase": {
+          "targetPrice": 210.00,
+          "upside": 13.2,
+          "probability": 50,
+          "triggers": [
+            "서비스 부문 꾸준한 15-20% 성장",
+            "아이폰 판매 안정적 유지",
+            "웨어러블 시장 점유율 확대",
+            "자사주 매입 및 배당 증가"
+          ],
+          "timeline": "12개월"
+        },
+        "bearCase": {
+          "targetPrice": 155.00,
+          "downside": -16.4,
+          "probability": 25,
+          "triggers": [
+            "중국 시장 급격한 악화 및 규제 강화",
+            "아이폰 판매 급감 (경기 침체)",
+            "경쟁사 프리미엄 폰 점유율 확대",
+            "EU/미국 반독점 규제 강화로 앱스토어 수익 감소"
+          ],
+          "timeline": "6-12개월"
+        }
+      }
+    }
+  },
+  "MSFT": {
+    "symbol": "MSFT",
+    "currentPrice": 378.25,
+    "lastUpdated": "2025-12-01T16:00:00Z",
+    "guidance": {
+      "targetPrice": {
+        "analystConsensus": {
+          "mean": 445.00,
+          "median": 448.00,
+          "high": 525.00,
+          "low": 380.00,
+          "numberOfEstimates": 48,
+          "lastUpdated": "2025-12-01"
+        },
+        "aiEstimate": {
+          "value": 455.80,
+          "confidence": 0.91,
+          "method": "AI-Weighted DCF + Cloud Growth Model",
+          "horizon": "12개월",
+          "upside": 20.5
+        },
+        "valuationBased": {
+          "dcf": {
+            "fairValue": 468.50,
+            "assumptions": {
+              "wacc": 7.8,
+              "terminalGrowth": 3.5,
+              "revenueGrowth": [16.5, 15.2, 14.0, 12.5, 11.0]
+            }
+          },
+          "perBand": {
+            "fairValue": 442.30,
+            "targetPER": 35.0,
+            "estimatedEPS": 12.64,
+            "historicalPERRange": {
+              "min": 25.0,
+              "median": 32.5,
+              "max": 40.0
+            }
+          },
+          "pbrBand": {
+            "fairValue": 438.75,
+            "targetPBR": 12.5,
+            "bps": 35.10
+          }
+        }
+      },
+      "buyRange": {
+        "technicalSupport": {
+          "strong": 355.00,
+          "moderate": 365.00,
+          "weak": 372.50,
+          "method": "20/50/200 MA + Volume Profile"
+        },
+        "valuationBuyPoint": {
+          "conservative": 350.00,
+          "moderate": 365.00,
+          "aggressive": 375.00,
+          "method": "Forward P/E 기반 밸류에이션"
+        },
+        "dcaStrategy": [
+          {
+            "priceLevel": 360.00,
+            "allocation": "40%",
+            "rationale": "Strong support + 밸류에이션 매력 구간"
+          },
+          {
+            "priceLevel": 370.00,
+            "allocation": "35%",
+            "rationale": "핵심 매수 구간, 적정 밸류 진입점"
+          },
+          {
+            "priceLevel": 380.00,
+            "allocation": "25%",
+            "rationale": "현재가 근처 추가 매수"
+          }
+        ],
+        "recommended": {
+          "idealBuyPrice": 365.00,
+          "maxBuyPrice": 380.00,
+          "reasoning": "AI 성장 모멘텀 지속 전망으로 365-380달러 구간 적극 매수 권장. Azure 클라우드 성장률 유지 시 목표가 달성 확률 높음."
+        }
+      },
+      "sellRange": {
+        "technicalResistance": {
+          "weak": 395.00,
+          "moderate": 420.00,
+          "strong": 455.00,
+          "method": "All-Time High + Fibonacci Extension"
+        },
+        "takeProfitLevels": [
+          {
+            "level": 1,
+            "price": 420.00,
+            "profitPercent": 11.0,
+            "allocation": "20%",
+            "rationale": "중간 저항선, 부분 차익 실현"
+          },
+          {
+            "level": 2,
+            "price": 450.00,
+            "profitPercent": 19.0,
+            "allocation": "50%",
+            "rationale": "목표가 도달, 주요 익절 구간"
+          },
+          {
+            "level": 3,
+            "price": 480.00,
+            "profitPercent": 26.9,
+            "allocation": "30%",
+            "rationale": "신고점 돌파 시 추가 상승 여력"
+          }
+        ],
+        "stopLoss": {
+          "price": 340.00,
+          "lossPercent": -10.1,
+          "rationale": "주요 지지선 붕괴 시 손절, 200일 이평선 하향 돌파",
+          "type": "trailing"
+        }
+      },
+      "scenarios": {
+        "bullCase": {
+          "targetPrice": 520.00,
+          "upside": 37.5,
+          "probability": 30,
+          "triggers": [
+            "Azure AI 서비스 폭발적 성장 (YoY 50%+)",
+            "Copilot 전 제품 통합으로 신규 수익 모델 성공",
+            "OpenAI GPT-5 독점 라이선스 효과",
+            "게이밍 부문 Activision 시너지 극대화"
+          ],
+          "timeline": "12-18개월"
+        },
+        "baseCase": {
+          "targetPrice": 445.00,
+          "upside": 17.7,
+          "probability": 55,
+          "triggers": [
+            "Azure 25% 이상 안정적 성장",
+            "AI 제품군 점진적 수익 기여",
+            "Office 365 구독자 지속 증가",
+            "클라우드 마진 개선"
+          ],
+          "timeline": "12개월"
+        },
+        "bearCase": {
+          "targetPrice": 320.00,
+          "downside": -15.4,
+          "probability": 15,
+          "triggers": [
+            "AI 투자 대비 수익화 실패",
+            "경기 침체로 기업 IT 지출 감소",
+            "AWS/Google Cloud 경쟁 심화",
+            "규제 당국의 OpenAI 파트너십 제재"
+          ],
+          "timeline": "6-12개월"
+        }
+      }
+    }
+  },
+  "GOOGL": {
+    "symbol": "GOOGL",
+    "currentPrice": 142.80,
+    "lastUpdated": "2025-12-01T16:00:00Z",
+    "guidance": {
+      "targetPrice": {
+        "analystConsensus": {
+          "mean": 168.50,
+          "median": 170.00,
+          "high": 195.00,
+          "low": 140.00,
+          "numberOfEstimates": 45,
+          "lastUpdated": "2025-12-01"
+        },
+        "aiEstimate": {
+          "value": 172.40,
+          "confidence": 0.83,
+          "method": "Multi-Factor Valuation Model",
+          "horizon": "12개월",
+          "upside": 20.7
+        },
+        "valuationBased": {
+          "dcf": {
+            "fairValue": 175.20,
+            "assumptions": {
+              "wacc": 8.2,
+              "terminalGrowth": 3.2,
+              "revenueGrowth": [11.5, 10.8, 10.2, 9.5, 8.8]
+            }
+          },
+          "perBand": {
+            "fairValue": 168.30,
+            "targetPER": 24.5,
+            "estimatedEPS": 6.87,
+            "historicalPERRange": {
+              "min": 18.0,
+              "median": 23.5,
+              "max": 32.0
+            }
+          },
+          "pbrBand": {
+            "fairValue": 170.50,
+            "targetPBR": 5.8,
+            "bps": 29.40
+          }
+        }
+      },
+      "buyRange": {
+        "technicalSupport": {
+          "strong": 132.00,
+          "moderate": 137.50,
+          "weak": 141.00,
+          "method": "EMA Ribbon + Support/Resistance"
+        },
+        "valuationBuyPoint": {
+          "conservative": 130.00,
+          "moderate": 138.00,
+          "aggressive": 144.00,
+          "method": "P/E 밴드 + 동종업계 Comp"
+        },
+        "dcaStrategy": [
+          {
+            "priceLevel": 135.00,
+            "allocation": "35%",
+            "rationale": "강력한 지지 구간, 밸류 매수 기회"
+          },
+          {
+            "priceLevel": 140.00,
+            "allocation": "40%",
+            "rationale": "현재가 근처, 핵심 매수 구간"
+          },
+          {
+            "priceLevel": 145.00,
+            "allocation": "25%",
+            "rationale": "추세 확인 후 추가 매수"
+          }
+        ],
+        "recommended": {
+          "idealBuyPrice": 138.00,
+          "maxBuyPrice": 146.00,
+          "reasoning": "밸류에이션 매력도가 높은 138-146달러 구간 매수 권장. 반독점 리스크 완화 시 급등 가능성."
+        }
+      },
+      "sellRange": {
+        "technicalResistance": {
+          "weak": 152.00,
+          "moderate": 165.00,
+          "strong": 180.00,
+          "method": "Historical High + Trendline"
+        },
+        "takeProfitLevels": [
+          {
+            "level": 1,
+            "price": 160.00,
+            "profitPercent": 12.0,
+            "allocation": "30%",
+            "rationale": "첫 저항선 돌파, 부분 익절"
+          },
+          {
+            "level": 2,
+            "price": 175.00,
+            "profitPercent": 22.5,
+            "allocation": "50%",
+            "rationale": "목표가 달성, 주요 차익 실현"
+          },
+          {
+            "level": 3,
+            "price": 190.00,
+            "profitPercent": 33.1,
+            "allocation": "20%",
+            "rationale": "신고점 갱신 시 추가 상승 기대"
+          }
+        ],
+        "stopLoss": {
+          "price": 128.00,
+          "lossPercent": -10.4,
+          "rationale": "핵심 지지선 하향 이탈 시 손절, 추가 하락 방어",
+          "type": "fixed"
+        }
+      },
+      "scenarios": {
+        "bullCase": {
+          "targetPrice": 210.00,
+          "upside": 47.1,
+          "probability": 20,
+          "triggers": [
+            "반독점 소송 승소 또는 합의",
+            "Gemini AI 검색 통합 성공으로 광고 단가 상승",
+            "YouTube Shorts 수익화 급증",
+            "Google Cloud 시장 점유율 확대 및 흑자 폭 증가"
+          ],
+          "timeline": "18-24개월"
+        },
+        "baseCase": {
+          "targetPrice": 170.00,
+          "upside": 19.0,
+          "probability": 60,
+          "triggers": [
+            "광고 시장 회복 및 안정적 성장",
+            "클라우드 부문 지속 성장",
+            "AI 제품 점진적 수익 기여",
+            "자사주 매입 지속"
+          ],
+          "timeline": "12개월"
+        },
+        "bearCase": {
+          "targetPrice": 115.00,
+          "downside": -19.5,
+          "probability": 20,
+          "triggers": [
+            "반독점 소송 패소로 사업 분할",
+            "경기 침체로 광고 지출 급감",
+            "AI 검색 경쟁 패배 (ChatGPT 검색 등)",
+            "YouTube 규제 강화"
+          ],
+          "timeline": "6-12개월"
+        }
+      }
+    }
+  }
+}

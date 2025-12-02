@@ -24,6 +24,21 @@ import type {
   RecommendationFull,
 } from './types';
 
+// Mock 데이터 로더
+const loadMockData = async <T>(path: string, fallback: T): Promise<T> => {
+  try {
+    const response = await fetch(path);
+    if (!response.ok) {
+      console.warn(`Mock data not found at ${path}, using fallback`);
+      return fallback;
+    }
+    return await response.json();
+  } catch (error) {
+    console.warn(`Failed to load mock data from ${path}:`, error);
+    return fallback;
+  }
+};
+
 // ============================================
 // 저평가 우량주 서비스
 // ============================================
@@ -545,19 +560,21 @@ export const favoriteService = {
 };
 
 // ============================================
-// Stock Recommendation Service (Enhanced)
+// Stock Recommendation Service (Mock Data)
 // ============================================
 
 export const recommendationService = {
   /**
-   * 종목 추천 요약 조회 (3줄 요약)
+   * 종목 추천 요약 조회 (3줄 요약) - Mock 데이터 사용
    */
   getSummary: async (symbol: string): Promise<RecommendationSummary | null> => {
     try {
-      const response = await client.get<RecommendationSummary>(
-        `/stocks/${symbol}/recommendation-summary`
+      // Mock 데이터에서 로드
+      const mockData = await loadMockData<Record<string, RecommendationSummary>>(
+        '/data/recommendations/summary.json',
+        {}
       );
-      return response.data;
+      return mockData[symbol] || null;
     } catch (error) {
       console.error(`Failed to get recommendation summary for ${symbol}:`, error);
       return null;
@@ -565,14 +582,16 @@ export const recommendationService = {
   },
 
   /**
-   * 가격 가이드 조회
+   * 가격 가이드 조회 - Mock 데이터 사용
    */
   getPriceGuidance: async (symbol: string): Promise<PriceGuidance | null> => {
     try {
-      const response = await client.get<PriceGuidance>(
-        `/stocks/${symbol}/price-guidance`
+      // Mock 데이터에서 로드
+      const mockData = await loadMockData<Record<string, PriceGuidance>>(
+        '/data/recommendations/price-guidance.json',
+        {}
       );
-      return response.data;
+      return mockData[symbol] || null;
     } catch (error) {
       console.error(`Failed to get price guidance for ${symbol}:`, error);
       return null;
@@ -580,14 +599,16 @@ export const recommendationService = {
   },
 
   /**
-   * 투자 등급 조회
+   * 투자 등급 조회 - Mock 데이터 사용
    */
   getInvestmentRating: async (symbol: string): Promise<InvestmentRating | null> => {
     try {
-      const response = await client.get<InvestmentRating>(
-        `/stocks/${symbol}/investment-rating`
+      // Mock 데이터에서 로드
+      const mockData = await loadMockData<Record<string, InvestmentRating>>(
+        '/data/recommendations/investment-rating.json',
+        {}
       );
-      return response.data;
+      return mockData[symbol] || null;
     } catch (error) {
       console.error(`Failed to get investment rating for ${symbol}:`, error);
       return null;
@@ -595,14 +616,16 @@ export const recommendationService = {
   },
 
   /**
-   * 전체 추천 정보 조회
+   * 전체 추천 정보 조회 - Mock 데이터 사용
    */
   getFull: async (symbol: string): Promise<RecommendationFull | null> => {
     try {
-      const response = await client.get<RecommendationFull>(
-        `/stocks/${symbol}/recommendation-full`
+      // Mock 데이터에서 로드
+      const mockData = await loadMockData<Record<string, RecommendationFull>>(
+        '/data/recommendations/full.json',
+        {}
       );
-      return response.data;
+      return mockData[symbol] || null;
     } catch (error) {
       console.error(`Failed to get full recommendation for ${symbol}:`, error);
       return null;
