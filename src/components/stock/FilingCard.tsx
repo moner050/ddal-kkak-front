@@ -37,7 +37,7 @@ export default function FilingCard({
           <img
             src={item.logoUrl}
             alt="logo"
-            className="h-7 w-7 sm:h-8 sm:w-8 rounded object-contain flex-shrink-0"
+            className="h-7 w-7 sm:h-8 sm:w-8 rounded object-contain flex-shrink-0 bg-white p-0.5"
             onError={() => setLogoError(true)}
           />
         ) : (

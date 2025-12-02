@@ -1243,7 +1243,7 @@ export default function DemoHome() {
                                     <img
                                       src={stock.logoUrl}
                                       alt={stock.name}
-                                      className="h-10 w-10 rounded-lg"
+                                      className="h-10 w-10 rounded-lg object-contain bg-white p-1"
                                       onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
                                     />
                                   ) : (
@@ -1779,7 +1779,7 @@ export default function DemoHome() {
                                         <img
                                           src={stock.logoUrl}
                                           alt={stock.name}
-                                          className="h-10 w-10 rounded-lg"
+                                          className="h-10 w-10 rounded-lg object-contain bg-white p-1"
                                           onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
                                         />
                                       ) : (
@@ -1918,7 +1918,7 @@ export default function DemoHome() {
                                   <img
                                     src={stock.logoUrl}
                                     alt={stock.name}
-                                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200"
+                                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200 object-contain p-1"
                                   />
                                 )}
                                 <div className="flex-1 min-w-0">
@@ -1971,7 +1971,7 @@ export default function DemoHome() {
                                     <img
                                       src={stock.logoUrl}
                                       alt={stock.name}
-                                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200"
+                                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200 object-contain p-1"
                                     />
                                   )}
                                   <div className="flex-1 min-w-0">
@@ -2020,7 +2020,7 @@ export default function DemoHome() {
                                   <img
                                     src={stock.logoUrl}
                                     alt={stock.name}
-                                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200"
+                                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200 object-contain p-1"
                                   />
                                 )}
                                 <div className="flex-1 min-w-0">
@@ -2171,7 +2171,7 @@ export default function DemoHome() {
                         <img
                           src={stockInfo.logoUrl}
                           alt={String(stockDetail.Name)}
-                          className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-xl sm:rounded-2xl bg-white p-1.5 sm:p-2 shadow-lg flex-shrink-0"
+                          className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-xl sm:rounded-2xl bg-white p-1.5 sm:p-2 shadow-lg flex-shrink-0 object-contain"
                           onError={() => setDetailLogoError(true)}
                         />
                       ) : (
