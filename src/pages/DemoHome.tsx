@@ -827,14 +827,21 @@ export default function DemoHome() {
                         return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy;
                       });
 
-                      // Apply sorting
-                      if (undervaluedSortBy) {
+                      // Apply multi-level sorting
+                      if (undervaluedSorts.length > 0) {
                         filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
-                          const aVal = a[undervaluedSortBy];
-                          const bVal = b[undervaluedSortBy];
-                          if (aVal === undefined || bVal === undefined) return 0;
-                          const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-                          return undervaluedSortDirection === "asc" ? comparison : -comparison;
+                          for (const sort of undervaluedSorts) {
+                            const aVal = a[sort.key];
+                            const bVal = b[sort.key];
+                            if (aVal === undefined && bVal === undefined) continue;
+                            if (aVal === undefined) return 1;
+                            if (bVal === undefined) return -1;
+                            if (aVal !== bVal) {
+                              const comparison = aVal > bVal ? 1 : -1;
+                              return sort.direction === "asc" ? comparison : -comparison;
+                            }
+                          }
+                          return 0;
                         });
                       }
 
@@ -1077,8 +1084,7 @@ export default function DemoHome() {
                           <TooltipHeader
                             label="산업군"
                             sortKey="industry"
-                            currentSortKey={undervaluedSortBy}
-                            sortDirection={undervaluedSortDirection}
+                            sorts={undervaluedSorts}
                             onSort={handleUndervaluedSort}
                           />
                         </th>
@@ -1087,18 +1093,25 @@ export default function DemoHome() {
                             label="종합 점수"
                             tooltip="종합 투자 매력도 (0-100점)"
                             sortKey="aiScore"
-                            currentSortKey={undervaluedSortBy}
-                            sortDirection={undervaluedSortDirection}
+                            sorts={undervaluedSorts}
                             onSort={handleUndervaluedSort}
                           />
                         </th>
                         <th className="px-4 py-3 text-center text-xs">
                           <TooltipHeader
-                            label="ROE"
-                            tooltip="자기자본이익률 - 높을수록 우수"
-                            sortKey="ROE"
-                            currentSortKey={undervaluedSortBy}
-                            sortDirection={undervaluedSortDirection}
+                            label="현재가"
+                            tooltip="현재 주가"
+                            sortKey="price"
+                            sorts={undervaluedSorts}
+                            onSort={handleUndervaluedSort}
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs">
+                          <TooltipHeader
+                            label="Discount"
+                            tooltip="할인율 - 높을수록 저평가"
+                            sortKey="discount"
+                            sorts={undervaluedSorts}
                             onSort={handleUndervaluedSort}
                           />
                         </th>
@@ -1107,48 +1120,16 @@ export default function DemoHome() {
                             label="PER"
                             tooltip="주가수익비율 - 낮을수록 저평가"
                             sortKey="PER"
-                            currentSortKey={undervaluedSortBy}
-                            sortDirection={undervaluedSortDirection}
+                            sorts={undervaluedSorts}
                             onSort={handleUndervaluedSort}
                           />
                         </th>
                         <th className="px-4 py-3 text-center text-xs">
                           <TooltipHeader
-                            label="PEG"
-                            tooltip="PEG 비율 (PER/성장률) - 1 이하 매력적"
-                            sortKey="PEG"
-                            currentSortKey={undervaluedSortBy}
-                            sortDirection={undervaluedSortDirection}
-                            onSort={handleUndervaluedSort}
-                          />
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs">
-                          <TooltipHeader
-                            label="PBR"
-                            tooltip="주가순자산비율 - 낮을수록 저평가"
-                            sortKey="PBR"
-                            currentSortKey={undervaluedSortBy}
-                            sortDirection={undervaluedSortDirection}
-                            onSort={handleUndervaluedSort}
-                          />
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs">
-                          <TooltipHeader
-                            label="PSR"
-                            tooltip="주가매출비율 - 낮을수록 저평가"
-                            sortKey="PSR"
-                            currentSortKey={undervaluedSortBy}
-                            sortDirection={undervaluedSortDirection}
-                            onSort={handleUndervaluedSort}
-                          />
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs">
-                          <TooltipHeader
-                            label="RevYoY"
-                            tooltip="매출 YoY 성장률"
-                            sortKey="RevYoY"
-                            currentSortKey={undervaluedSortBy}
-                            sortDirection={undervaluedSortDirection}
+                            label="ROE"
+                            tooltip="자기자본이익률 - 높을수록 우수"
+                            sortKey="ROE"
+                            sorts={undervaluedSorts}
                             onSort={handleUndervaluedSort}
                           />
                         </th>
@@ -1157,28 +1138,7 @@ export default function DemoHome() {
                             label="EPS 3Y"
                             tooltip="3년 EPS 성장률"
                             sortKey="EPS_Growth_3Y"
-                            currentSortKey={undervaluedSortBy}
-                            sortDirection={undervaluedSortDirection}
-                            onSort={handleUndervaluedSort}
-                          />
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs">
-                          <TooltipHeader
-                            label="영업이익률"
-                            tooltip="영업이익률 - 높을수록 우수"
-                            sortKey="OpMarginTTM"
-                            currentSortKey={undervaluedSortBy}
-                            sortDirection={undervaluedSortDirection}
-                            onSort={handleUndervaluedSort}
-                          />
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs">
-                          <TooltipHeader
-                            label="FCF"
-                            tooltip="FCF 수익률 (현금 창출 능력)"
-                            sortKey="FCF_Yield"
-                            currentSortKey={undervaluedSortBy}
-                            sortDirection={undervaluedSortDirection}
+                            sorts={undervaluedSorts}
                             onSort={handleUndervaluedSort}
                           />
                         </th>
@@ -1201,14 +1161,27 @@ export default function DemoHome() {
                           return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy;
                         });
 
-                        // Apply sorting
-                        if (undervaluedSortBy) {
+                        // Apply multi-level sorting
+                        if (undervaluedSorts.length > 0) {
                           filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
-                            const aVal = a[undervaluedSortBy];
-                            const bVal = b[undervaluedSortBy];
-                            if (aVal === undefined || bVal === undefined) return 0;
-                            const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-                            return undervaluedSortDirection === "asc" ? comparison : -comparison;
+                            // 각 정렬 조건을 순서대로 적용
+                            for (const sort of undervaluedSorts) {
+                              const aVal = a[sort.key];
+                              const bVal = b[sort.key];
+
+                              // undefined 처리
+                              if (aVal === undefined && bVal === undefined) continue;
+                              if (aVal === undefined) return 1;
+                              if (bVal === undefined) return -1;
+
+                              // 값 비교
+                              if (aVal !== bVal) {
+                                const comparison = aVal > bVal ? 1 : -1;
+                                return sort.direction === "asc" ? comparison : -comparison;
+                              }
+                              // 값이 같으면 다음 정렬 조건으로
+                            }
+                            return 0;
                           });
                         }
 
@@ -1221,7 +1194,7 @@ export default function DemoHome() {
                         if (filteredStocks.length === 0) {
                           return (
                             <tr>
-                              <td colSpan={12} className="px-4 py-16 text-center">
+                              <td colSpan={8} className="px-4 py-16 text-center">
                                 <div className="text-6xl mb-4">🔍</div>
                                 <p className="text-gray-600 font-medium mb-2">선택한 투자전략에 맞는 종목이 없습니다</p>
                                 <p className="text-sm text-gray-500">다른 투자전략을 선택하거나 필터를 조정해보세요</p>
@@ -1281,31 +1254,23 @@ export default function DemoHome() {
                               </div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <span className="text-xs font-medium text-gray-900">
+                                {stock.price ? `$${stock.price.toFixed(2)}` : '-'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <span className={classNames("text-xs font-medium", stock.discount && stock.discount > 0 ? "text-green-600" : "text-gray-500")}>
+                                {stock.discount ? `${stock.discount.toFixed(1)}%` : '-'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <span className={classNames("text-xs font-medium", getMetricColor("PER", stock.PER))}>{stock.PER?.toFixed(2)}</span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
                               <span className={classNames("text-xs font-medium", getMetricColor("ROE", stock.ROE))}>{stock.ROE?.toFixed(1)}%</span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("PER", stock.PER))}>{stock.PER?.toFixed(2)}%</span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("PEG", stock.PEG))}>{stock.PEG?.toFixed(2)}%</span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("PBR", stock.PBR))}>{stock.PBR?.toFixed(2)}%</span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("PSR", stock.PSR))}>{stock.PSR?.toFixed(2)}%</span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("RevYoY", stock.RevYoY))}>{stock.RevYoY?.toFixed(1)}%</span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-center">
                               <span className={classNames("text-xs font-medium", getMetricColor("EPS_Growth_3Y", stock.EPS_Growth_3Y))}>{stock.EPS_Growth_3Y?.toFixed(1)}%</span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("OpMarginTTM", stock.OpMarginTTM))}>{stock.OpMarginTTM?.toFixed(1)}%</span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <span className={classNames("text-xs font-medium", getMetricColor("FCF_Yield", stock.FCF_Yield))}>{stock.FCF_Yield?.toFixed(1)}%</span>
                             </td>
                           </tr>
                         ));
