@@ -9,6 +9,11 @@
 
 import { useState } from 'react';
 
+export type SortConfig = {
+  key: string;
+  direction: 'asc' | 'desc';
+};
+
 export interface UseFiltersAndSortReturn {
   // 주식추천 페이지 필터
   undervaluedSearchQuery: string;
@@ -25,10 +30,8 @@ export interface UseFiltersAndSortReturn {
   setUndervaluedPage: (page: number) => void;
   undervaluedCategoryPages: Record<string, number>;
   setUndervaluedCategoryPages: (pages: Record<string, number>) => void;
-  undervaluedSortBy: string | null;
-  setUndervaluedSortBy: (sortBy: string | null) => void;
-  undervaluedSortDirection: "asc" | "desc";
-  setUndervaluedSortDirection: (direction: "asc" | "desc") => void;
+  undervaluedSorts: SortConfig[];
+  setUndervaluedSorts: (sorts: SortConfig[]) => void;
 
   // 공시 분석 페이지 필터
   filingsSearchQuery: string;
@@ -78,8 +81,7 @@ export function useFiltersAndSort(): UseFiltersAndSortReturn {
   const [undervaluedIndustry, setUndervaluedIndustry] = useState("전체");
   const [undervaluedPage, setUndervaluedPage] = useState(1);
   const [undervaluedCategoryPages, setUndervaluedCategoryPages] = useState<Record<string, number>>({}); // 섹터별 페이지 상태 저장
-  const [undervaluedSortBy, setUndervaluedSortBy] = useState<string | null>("aiScore"); // 기본적으로 종합 점수 높은 순으로 정렬
-  const [undervaluedSortDirection, setUndervaluedSortDirection] = useState<"asc" | "desc">("desc");
+  const [undervaluedSorts, setUndervaluedSorts] = useState<SortConfig[]>([{ key: 'aiScore', direction: 'desc' }]); // 기본적으로 종합 점수 높은 순으로 정렬
 
   // 공시 분석 페이지 필터
   const [filingsSearchQuery, setFilingsSearchQuery] = useState("");
@@ -97,14 +99,28 @@ export function useFiltersAndSort(): UseFiltersAndSortReturn {
   const [watchlistCategory, setWatchlistCategory] = useState("전체");
   const [watchlistIndustry, setWatchlistIndustry] = useState("전체");
 
-  // 정렬 핸들러
+  // 정렬 핸들러 (다중 정렬 지원: 클릭 시 desc → asc → 해제 순환)
   const handleUndervaluedSort = (key: string) => {
-    if (undervaluedSortBy === key) {
-      setUndervaluedSortDirection(undervaluedSortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setUndervaluedSortBy(key);
-      setUndervaluedSortDirection("desc");
-    }
+    setUndervaluedSorts(prevSorts => {
+      const existingIndex = prevSorts.findIndex(sort => sort.key === key);
+
+      if (existingIndex !== -1) {
+        // 이미 정렬 중인 키
+        const currentSort = prevSorts[existingIndex];
+        if (currentSort.direction === 'desc') {
+          // desc → asc
+          const newSorts = [...prevSorts];
+          newSorts[existingIndex] = { key, direction: 'asc' };
+          return newSorts;
+        } else {
+          // asc → 제거 (정렬 해제)
+          return prevSorts.filter((_, index) => index !== existingIndex);
+        }
+      } else {
+        // 새로운 정렬 추가 (desc로 시작)
+        return [...prevSorts, { key, direction: 'desc' }];
+      }
+    });
     setUndervaluedPage(1); // Reset to first page on sort
   };
 
@@ -149,10 +165,8 @@ export function useFiltersAndSort(): UseFiltersAndSortReturn {
     setUndervaluedPage,
     undervaluedCategoryPages,
     setUndervaluedCategoryPages,
-    undervaluedSortBy,
-    setUndervaluedSortBy,
-    undervaluedSortDirection,
-    setUndervaluedSortDirection,
+    undervaluedSorts,
+    setUndervaluedSorts,
 
     // 공시 분석 페이지 필터
     filingsSearchQuery,

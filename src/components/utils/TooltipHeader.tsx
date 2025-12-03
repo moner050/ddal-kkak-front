@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { classNames } from '../../utils/format';
+import type { SortConfig } from '../../hooks/useFiltersAndSort';
 
 interface TooltipHeaderProps {
   label: string;
   tooltip?: string;
   sortKey?: string;
-  currentSortKey: string | null;
-  sortDirection: "asc" | "desc";
+  sorts: SortConfig[];
   onSort?: (key: string) => void;
 }
 
@@ -14,12 +14,16 @@ export default function TooltipHeader({
   label,
   tooltip,
   sortKey,
-  currentSortKey,
-  sortDirection,
+  sorts,
   onSort
 }: TooltipHeaderProps) {
   const [showTooltip, setShowTooltip] = useState(false);
-  const isSorted = currentSortKey === sortKey;
+
+  // 현재 정렬 상태 확인
+  const sortIndex = sorts.findIndex(s => s.key === sortKey);
+  const isSorted = sortIndex !== -1;
+  const sortDirection = isSorted ? sorts[sortIndex].direction : 'desc';
+  const sortOrder = isSorted ? sortIndex + 1 : null;
 
   return (
     <div className="flex items-center justify-center gap-1 relative group">
@@ -33,7 +37,10 @@ export default function TooltipHeader({
       >
         {label}
         {isSorted && (
-          <span className="ml-1">{sortDirection === "asc" ? "↑" : "↓"}</span>
+          <span className="ml-1">
+            {sorts.length > 1 && <sup className="text-[10px] font-bold">{sortOrder}</sup>}
+            {sortDirection === "asc" ? "↑" : "↓"}
+          </span>
         )}
       </button>
       {tooltip && (
