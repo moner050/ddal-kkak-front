@@ -234,25 +234,52 @@ export const stockService = {
   },
 
   /**
+   * 날짜 범위의 종목 히스토리 조회 (시작일~종료일)
+   * 새로운 범위 조회 API를 사용하여 성능 최적화 (1번의 API 호출)
+   * @param ticker 종목 심볼
+   * @param startDate 시작 날짜 (YYYY-MM-DD)
+   * @param endDate 종료 날짜 (YYYY-MM-DD)
+   */
+  getStockHistoryByDateRange: async (
+    ticker: string,
+    startDate: string,
+    endDate: string
+  ): Promise<FrontendUndervaluedStock[]> => {
+    try {
+      const response = await undervaluedStocksApi.getHistoryRange(ticker, startDate, endDate);
+      return toFrontendUndervaluedStocks(response.data);
+    } catch (error) {
+      console.error(`Failed to fetch stock history range for ${ticker} (${startDate} ~ ${endDate}):`, error);
+      return [];
+    }
+  },
+
+  /**
    * 날짜 범위의 종목 히스토리 조회
    * @param ticker 종목 심볼
    * @param dates 조회할 날짜 배열 (YYYY-MM-DD 형식)
+   * @deprecated 성능을 위해 getStockHistoryByDateRange 사용 권장
    */
   getStockHistoryRange: async (
     ticker: string,
     dates: string[]
   ): Promise<FrontendUndervaluedStock[]> => {
     try {
-      const historyPromises = dates.map((date) =>
-        undervaluedStocksApi.getHistory(ticker, date).catch((err) => {
-          console.warn(`Failed to fetch history for ${ticker} on ${date}:`, err);
-          return null;
-        })
-      );
+      // 날짜가 2개 이상이면 범위 API 사용 (성능 최적화)
+      if (dates.length >= 2) {
+        const sortedDates = [...dates].sort();
+        const startDate = sortedDates[0];
+        const endDate = sortedDates[sortedDates.length - 1];
+        return await stockService.getStockHistoryByDateRange(ticker, startDate, endDate);
+      }
 
-      const results = await Promise.all(historyPromises);
-      const validResults = results.filter((r) => r !== null);
-      return toFrontendUndervaluedStocks(validResults);
+      // 날짜가 1개면 단일 조회
+      if (dates.length === 1) {
+        const stock = await undervaluedStocksApi.getHistory(ticker, dates[0]);
+        return stock ? toFrontendUndervaluedStocks([stock]) : [];
+      }
+
+      return [];
     } catch (error) {
       console.error(`Failed to fetch stock history range for ${ticker}:`, error);
       return [];
