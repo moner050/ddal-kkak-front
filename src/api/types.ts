@@ -276,6 +276,14 @@ export interface UndervaluedStock {
   dataDate: string;
 }
 
+export interface StockHistoryRangeResponse {
+  ticker: string;
+  startDate: string;
+  endDate: string;
+  count: number;
+  data: UndervaluedStock[];
+}
+
 export interface LatestDateResponse {
   latestDate: string;
 }

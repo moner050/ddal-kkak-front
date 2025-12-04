@@ -28,6 +28,7 @@ import {
   UndervaluedStock,
   FeaturedStock,
   LatestDateResponse,
+  StockHistoryRangeResponse,
   ProfileCountResponse,
   StockStats,
   HealthResponse,
@@ -342,6 +343,16 @@ export const undervaluedStocksApi = {
     const response = await apiClient.get<UndervaluedStock>(`/api/undervalued-stocks/${ticker}/history`, {
       params: { date },
     });
+    return response.data;
+  },
+
+  getHistoryRange: async (ticker: string, startDate: string, endDate: string): Promise<StockHistoryRangeResponse> => {
+    const response = await apiClient.get<StockHistoryRangeResponse>(
+      `/api/undervalued-stocks/${ticker}/history/range`,
+      {
+        params: { startDate, endDate },
+      }
+    );
     return response.data;
   },
 

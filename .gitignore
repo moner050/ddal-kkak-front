@@ -436,3 +436,15 @@ yarn-error.*
 public/data/
 
 app-example
+
+# PM2 Runtime Files
+.pm2/
+pids/
+*.pid
+
+# Server Logs (keep directory, ignore files)
+logs/*.log
+logs/*.gz
+logs/access.log.*
+logs/error.log.*
+logs/pm2-*.log
