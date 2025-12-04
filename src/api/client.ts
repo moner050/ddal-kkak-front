@@ -46,7 +46,7 @@ import {
 // Configuration
 // ============================================
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:9876';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://finance-mhb-api.kro.kr';
 const AUTH_TOKEN_KEY = 'authToken';
 
 // 개발 모드에서 API URL 확인

@@ -132,7 +132,7 @@ tar -xzf ddal-kkak-front.tar.gz
 cat > .env << EOF
 NODE_ENV=production
 PORT=3000
-EXPO_PUBLIC_API_URL=http://localhost:9876
+EXPO_PUBLIC_API_URL=http://finance-mhb-api.kro.kr
 EOF
 
 # ecosystem.config.js에서 환경 변수 수정

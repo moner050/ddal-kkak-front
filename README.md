@@ -239,7 +239,7 @@ npm install
 프로젝트 실행 전 백엔드 API에서 데이터를 fetch하여 static JSON 파일 생성:
 
 ```bash
-# 백엔드 서버가 http://localhost:9876에서 실행 중이어야 함
+# 백엔드 서버가 http://finance-mhb-api.kro.kr에서 실행 중이어야 함
 npm run fetch-data
 
 # 또는 다른 API URL 사용
