@@ -10,7 +10,7 @@ const path = require('path');
 const axios = require('axios');
 
 // API Base URL (환경변수 또는 기본값)
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:9876';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://finance-mhb-api.kro.kr';
 const DATA_DIR = path.join(__dirname, '../public/data');
 
 // Axios 인스턴스 생성 (10분 timeout)

@@ -154,7 +154,7 @@ app.get('/health', (req, res) => {
 // 필요시 주석 해제
 // const { createProxyMiddleware } = require('http-proxy-middleware');
 // app.use('/api', createProxyMiddleware({
-//   target: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:9876',
+//   target: process.env.EXPO_PUBLIC_API_URL || 'http://finance-mhb-api.kro.kr',
 //   changeOrigin: true,
 // }));
 
