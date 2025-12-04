@@ -1,0 +1,184 @@
+# Ddal-Kkak Front - Nginx 설정 예시
+#
+# 이 파일을 다음 위치에 복사하세요:
+#   CentOS/RHEL: /etc/nginx/conf.d/ddal-kkak-front.conf
+#   Ubuntu/Debian: /etc/nginx/sites-available/ddal-kkak-front
+#
+# Ubuntu/Debian의 경우 심볼릭 링크 생성:
+#   sudo ln -s /etc/nginx/sites-available/ddal-kkak-front /etc/nginx/sites-enabled/
+#
+# 적용 후:
+#   sudo nginx -t
+#   sudo systemctl restart nginx
+
+# Upstream 정의 (로드 밸런싱 및 Fail-over)
+upstream ddal_kkak_backend {
+    # PM2 클러스터 모드로 여러 인스턴스를 실행하는 경우
+    # 각 인스턴스를 여기에 추가할 수 있습니다
+    server 127.0.0.1:3000 fail_timeout=10s max_fails=3;
+    # server 127.0.0.1:3001 fail_timeout=10s max_fails=3;  # 추가 인스턴스
+
+    # Keep-alive 연결 유지
+    keepalive 64;
+}
+
+# HTTP 서버 (포트 80)
+server {
+    listen 80;
+    listen [::]:80;
+
+    # 도메인명 설정 (실제 도메인으로 변경하세요)
+    server_name finance-mhb-front.kro.kr www.finance-mhb-front.kro.kr;
+
+    # 접근 로그 및 에러 로그
+    access_log /var/log/nginx/ddal-kkak-access.log combined;
+    error_log /var/log/nginx/ddal-kkak-error.log warn;
+
+    # 클라이언트 업로드 크기 제한
+    client_max_body_size 10M;
+
+    # Gzip 압축 설정
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1000;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/xml text/javascript
+               application/json application/javascript application/xml+rss
+               application/rss+xml font/truetype font/opentype
+               application/vnd.ms-fontobject image/svg+xml;
+    gzip_disable "msie6";
+
+    # 루트 경로 및 모든 요청 프록시
+    location / {
+        # PM2 앱으로 프록시
+        proxy_pass http://ddal_kkak_backend;
+
+        # HTTP 버전
+        proxy_http_version 1.1;
+
+        # 타임아웃 설정 (초 단위)
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+
+        # 버퍼링 설정
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
+        proxy_busy_buffers_size 8k;
+
+        # 필수 헤더 설정
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+
+        # 캐시 우회
+        proxy_cache_bypass $http_upgrade;
+
+        # Keep-alive 연결
+        proxy_set_header Connection "";
+    }
+
+    # Health Check 엔드포인트 (모니터링용)
+    location /health {
+        proxy_pass http://ddal_kkak_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        access_log off;  # Health check 로그 비활성화
+    }
+
+    # 정적 파일 캐싱 설정
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        proxy_pass http://ddal_kkak_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        # 장기 캐싱 (1년)
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+
+        # CORS 헤더 (필요한 경우)
+        # add_header Access-Control-Allow-Origin *;
+    }
+
+    # 폰트 파일 캐싱
+    location ~* \.(woff|woff2|ttf|eot|otf)$ {
+        proxy_pass http://ddal_kkak_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+
+        # CORS 헤더 (폰트는 보통 필요)
+        add_header Access-Control-Allow-Origin *;
+    }
+
+    # 보안 헤더
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # robots.txt (선택사항)
+    location = /robots.txt {
+        proxy_pass http://ddal_kkak_backend;
+        access_log off;
+    }
+
+    # favicon.ico (선택사항)
+    location = /favicon.ico {
+        proxy_pass http://ddal_kkak_backend;
+        access_log off;
+    }
+}
+
+# HTTPS 서버 (SSL 인증서가 있는 경우)
+# Let's Encrypt SSL 인증서 발급:
+#   sudo certbot --nginx -d finance-mhb-front.kro.kr
+
+# server {
+#     listen 443 ssl http2;
+#     listen [::]:443 ssl http2;
+#
+#     server_name finance-mhb-front.kro.kr www.finance-mhb-front.kro.kr;
+#
+#     # SSL 인증서 경로 (Let's Encrypt 사용 시 자동 설정됨)
+#     ssl_certificate /etc/letsencrypt/live/finance-mhb-front.kro.kr/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/finance-mhb-front.kro.kr/privkey.pem;
+#
+#     # SSL 설정
+#     ssl_protocols TLSv1.2 TLSv1.3;
+#     ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
+#     ssl_prefer_server_ciphers off;
+#     ssl_session_cache shared:SSL:10m;
+#     ssl_session_timeout 10m;
+#
+#     # HSTS (HTTP Strict Transport Security)
+#     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+#
+#     # 나머지 설정은 HTTP 서버와 동일
+#     # ... (위의 location 블록들을 복사)
+# }
+
+# HTTP to HTTPS 리다이렉트 (SSL 사용 시)
+# server {
+#     listen 80;
+#     listen [::]:80;
+#     server_name finance-mhb-front.kro.kr www.finance-mhb-front.kro.kr;
+#
+#     # Let's Encrypt 인증서 갱신용
+#     location /.well-known/acme-challenge/ {
+#         root /var/www/certbot;
+#     }
+#
+#     # 나머지는 HTTPS로 리다이렉트
+#     location / {
+#         return 301 https://$server_name$request_uri;
+#     }
+# }
