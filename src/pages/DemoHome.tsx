@@ -51,7 +51,7 @@ import type {
   FrontendFeaturedStock,
   FrontendFiling
 } from "../utils/apiMappers";
-import type { EtfSimpleInfo } from "../api/types";
+import type { EtfSimpleInfo, ProfilePerformance } from "../api/types";
 
 // Import chart components
 import FearGreedCard from "../components/charts/FearGreedCard";
@@ -252,6 +252,10 @@ export default function DemoHome() {
   const [stockFilingWithScores, setStockFilingWithScores] = useState<FrontendFiling | null>(null);
   const [stockFilingLoading, setStockFilingLoading] = useState(false);
 
+  // 백테스팅 데이터 (투자 전략별 성과)
+  const [backtestPerformances, setBacktestPerformances] = useState<Record<string, ProfilePerformance>>({});
+  const [backtestLoading, setBacktestLoading] = useState<Record<string, boolean>>({});
+
   // 홈 화면 필터 (hooks에 포함되지 않은 홈 화면 전용 상태)
   const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
   const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
@@ -312,6 +316,36 @@ export default function DemoHome() {
 
     fetchStockFiling();
   }, [detailSymbol]);
+
+  // 백테스팅 데이터 로드 (선택된 투자 전략 변경 시)
+  useEffect(() => {
+    const fetchBacktestPerformances = async () => {
+      // 선택된 전략들에 대해 백테스팅 데이터 로드
+      for (const strategyKey of undervaluedStrategies) {
+        // 이미 로드된 데이터가 있으면 스킵
+        if (backtestPerformances[strategyKey]) {
+          continue;
+        }
+
+        // 로딩 상태 설정
+        setBacktestLoading(prev => ({ ...prev, [strategyKey]: true }));
+
+        try {
+          const performance = await api.backtest.getProfilePerformance(strategyKey as any, 3);
+          setBacktestPerformances(prev => ({ ...prev, [strategyKey]: performance }));
+          console.log(`✅ 백테스팅 데이터 로드 성공: ${strategyKey}`, performance);
+        } catch (error) {
+          console.error(`❌ 백테스팅 데이터 로드 실패: ${strategyKey}`, error);
+        } finally {
+          setBacktestLoading(prev => ({ ...prev, [strategyKey]: false }));
+        }
+      }
+    };
+
+    if (undervaluedStrategies.length > 0) {
+      fetchBacktestPerformances();
+    }
+  }, [undervaluedStrategies]);
 
   // ===== 기타 상태 및 핸들러 =====
 
@@ -999,6 +1033,89 @@ export default function DemoHome() {
                 </div>
               )}
             </div>
+
+            {/* 백테스팅 성과 (선택된 전략에 대해서만 표시) */}
+            {undervaluedStrategies.length > 0 && (
+              <div className="mb-6 rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 p-4 sm:p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900">📊 백테스팅 성과 (최근 3년)</h3>
+                  <div className="text-xs text-gray-500">과거 성과는 미래 수익을 보장하지 않습니다</div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {undervaluedStrategies.map((strategyKey) => {
+                    const strategy = INVESTMENT_STRATEGIES[strategyKey];
+                    const performance = backtestPerformances[strategyKey];
+                    const loading = backtestLoading[strategyKey];
+
+                    return (
+                      <div
+                        key={strategyKey}
+                        className="rounded-xl bg-white p-4 border-2 border-purple-200 shadow-sm"
+                      >
+                        <div className="text-sm font-bold text-purple-900 mb-3">{strategy.name}</div>
+
+                        {loading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                          </div>
+                        ) : performance ? (
+                          <div className="space-y-3">
+                            {/* 평균 수익률 */}
+                            <div className="p-3 rounded-lg bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
+                              <div className="text-xs text-gray-600 mb-1">평균 수익률</div>
+                              <div className={classNames(
+                                "text-2xl font-bold",
+                                performance.averageReturn > 0 ? "text-emerald-600" : "text-red-600"
+                              )}>
+                                {performance.averageReturn > 0 ? "+" : ""}{performance.averageReturn.toFixed(1)}%
+                              </div>
+                            </div>
+
+                            {/* 주요 지표 */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="p-2 rounded-lg bg-gray-50">
+                                <div className="text-[10px] text-gray-500 mb-1">성공률</div>
+                                <div className="text-sm font-bold text-gray-900">
+                                  {(performance.successRate * 100).toFixed(0)}%
+                                </div>
+                              </div>
+                              <div className="p-2 rounded-lg bg-gray-50">
+                                <div className="text-[10px] text-gray-500 mb-1">분석 종목</div>
+                                <div className="text-sm font-bold text-gray-900">
+                                  {performance.stocksAnalyzed}개
+                                </div>
+                              </div>
+                              <div className="p-2 rounded-lg bg-gray-50">
+                                <div className="text-[10px] text-gray-500 mb-1">최대 수익</div>
+                                <div className="text-sm font-bold text-emerald-600">
+                                  +{performance.maxReturn.toFixed(1)}%
+                                </div>
+                              </div>
+                              <div className="p-2 rounded-lg bg-gray-50">
+                                <div className="text-[10px] text-gray-500 mb-1">최대 손실</div>
+                                <div className="text-sm font-bold text-red-600">
+                                  {performance.minReturn.toFixed(1)}%
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 중앙값 */}
+                            <div className="text-xs text-gray-600 text-center pt-2 border-t border-gray-200">
+                              중앙값: <span className="font-semibold">{performance.medianReturn.toFixed(1)}%</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500 text-sm">
+                            데이터를 불러올 수 없습니다
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* 검색 및 필터 */}
             <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 space-y-4">
