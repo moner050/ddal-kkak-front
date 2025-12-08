@@ -39,7 +39,7 @@ const app = express();
 // 로그 디렉토리 생성
 if (!fs.existsSync(LOG_DIR)) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
-  console.log(\`✅ Created log directory: \${LOG_DIR}\`);
+  console.log(`✅ Created log directory: ${LOG_DIR}`);
 }
 
 // Access Log Stream (매일 자동 로테이션)
@@ -112,7 +112,7 @@ app.use((req, res, next) => {
 
 // 빌드된 파일이 있는지 확인
 if (!fs.existsSync(BUILD_DIR)) {
-  console.error(\`❌ Build directory not found: \${BUILD_DIR}\`);
+  console.error(`❌ Build directory not found: ${BUILD_DIR}`);
   console.error('Please run "npm run build:web" first');
   process.exit(1);
 }
@@ -171,9 +171,9 @@ app.get('*', (req, res) => {
 
 // 404 Error Handler
 app.use((req, res) => {
-  const errorMsg = \`404 Not Found: \${req.method} \${req.url}\`;
+  const errorMsg = `404 Not Found: ${req.method} ${req.url}`;
   console.error(errorMsg);
-  errorLogStream.write(\`\${new Date().toISOString()} - \${errorMsg}\n\`);
+  errorLogStream.write(`${new Date().toISOString()} - ${errorMsg}\n`);
 
   res.status(404).json({
     error: 'Not Found',
@@ -184,9 +184,9 @@ app.use((req, res) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-  const errorMsg = \`Server Error: \${err.message}\nStack: \${err.stack}\`;
+  const errorMsg = `Server Error: ${err.message}\nStack: ${err.stack}`;
   console.error(errorMsg);
-  errorLogStream.write(\`\${new Date().toISOString()} - \${errorMsg}\n\`);
+  errorLogStream.write(`${new Date().toISOString()} - ${errorMsg}\n`);
 
   res.status(err.status || 500).json({
     error: 'Internal Server Error',
@@ -203,18 +203,18 @@ const server = app.listen(PORT, () => {
   console.log('='.repeat(60));
   console.log('🚀 Ddal-Kkak Front Server Started');
   console.log('='.repeat(60));
-  console.log(\`📍 Port:        \${PORT}\`);
-  console.log(\`🌍 Environment: \${NODE_ENV}\`);
-  console.log(\`📂 Build Dir:   \${BUILD_DIR}\`);
-  console.log(\`📝 Logs Dir:    \${LOG_DIR}\`);
-  console.log(\`🔗 Local URL:   http://localhost:\${PORT}\`);
+  console.log(`📍 Port:        ${PORT}`);
+  console.log(`🌍 Environment: ${NODE_ENV}`);
+  console.log(`📂 Build Dir:   ${BUILD_DIR}`);
+  console.log(`📝 Logs Dir:    ${LOG_DIR}`);
+  console.log(`🔗 Local URL:   http://localhost:${PORT}`);
   console.log('='.repeat(60));
   console.log('');
   console.log('📊 실시간 로그 확인 방법:');
-  console.log(\`   - Access Log: tail -f \${path.join(LOG_DIR, 'access.log')}\`);
-  console.log(\`   - Error Log:  tail -f \${path.join(LOG_DIR, 'error.log')}\`);
-  console.log(\`   - PM2 Log:    tail -f \${path.join(LOG_DIR, 'pm2-combined.log')}\`);
-  console.log(\`   - PM2 명령어: npm run pm2:logs\`);
+  console.log(`   - Access Log: tail -f ${path.join(LOG_DIR, 'access.log')}`);
+  console.log(`   - Error Log:  tail -f ${path.join(LOG_DIR, 'error.log')}`);
+  console.log(`   - PM2 Log:    tail -f ${path.join(LOG_DIR, 'pm2-combined.log')}`);
+  console.log(`   - PM2 명령어: npm run pm2:logs`);
   console.log('');
 });
 
@@ -229,7 +229,7 @@ const dataFetchJob = cron.schedule('30 8 * * *', async () => {
   const now = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
   console.log('');
   console.log('='.repeat(60));
-  console.log(\`🕐 Scheduled Data Fetch Started (KST: \${now})\`);
+  console.log(`🕐 Scheduled Data Fetch Started (KST: ${now})`);
   console.log('='.repeat(60));
 
   try {
@@ -237,7 +237,7 @@ const dataFetchJob = cron.schedule('30 8 * * *', async () => {
     console.log('✅ Scheduled data fetch completed successfully');
   } catch (error) {
     console.error('❌ Scheduled data fetch failed:', error.message);
-    errorLogStream.write(\`\${new Date().toISOString()} - SCHEDULED_FETCH_ERROR: \${error.message}\n\${error.stack}\n\`);
+    errorLogStream.write(`${new Date().toISOString()} - SCHEDULED_FETCH_ERROR: ${error.message}\n${error.stack}\n`);
   }
 
   console.log('='.repeat(60));
@@ -253,7 +253,7 @@ console.log('');
 
 // Graceful Shutdown
 const gracefulShutdown = (signal) => {
-  console.log(\`\n\${signal} received. Starting graceful shutdown...\`);
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
 
   // Cron job 중지
   if (dataFetchJob) {
@@ -287,14 +287,14 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 // Uncaught Exception 처리
 process.on('uncaughtException', (err) => {
   console.error('💥 Uncaught Exception:', err);
-  errorLogStream.write(\`\${new Date().toISOString()} - UNCAUGHT EXCEPTION: \${err.message}\n\${err.stack}\n\`);
+  errorLogStream.write(`${new Date().toISOString()} - UNCAUGHT EXCEPTION: ${err.message}\n${err.stack}\n`);
   gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
 
 // Unhandled Rejection 처리
 process.on('unhandledRejection', (reason, promise) => {
   console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
-  errorLogStream.write(\`\${new Date().toISOString()} - UNHANDLED REJECTION: \${reason}\n\`);
+  errorLogStream.write(`${new Date().toISOString()} - UNHANDLED REJECTION: ${reason}\n`);
 });
 
 module.exports = app;
