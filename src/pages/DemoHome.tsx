@@ -72,6 +72,7 @@ import BeginnerStockCard from "../components/stock/BeginnerStockCard";
 import StockPriceVisualization from "../components/stock/StockPriceVisualization";
 import FilingScoreTrendChart from "../components/charts/FilingScoreTrendChart";
 import EtfSectorPieChart from "../components/charts/EtfSectorPieChart";
+import StockLogo from "../components/stock/StockLogo";
 import ThreePointSummary from "../components/stock/ThreePointSummary";
 import PriceGuideBand from "../components/stock/PriceGuideBand";
 import EnhancedThreePointSummary from "../components/stock/EnhancedThreePointSummary";
@@ -1515,18 +1516,12 @@ export default function DemoHome() {
                             <td className="px-4 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-3">
                                 <div className="relative">
-                                  {stock.logoUrl && !logoErrors[stock.symbol] ? (
-                                    <img
-                                      src={stock.logoUrl}
-                                      alt={stock.name}
-                                      className="h-10 w-10 rounded-lg object-contain bg-white p-1"
-                                      onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
-                                    />
-                                  ) : (
-                                    <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
-                                      <span className="text-lg text-gray-400">?</span>
-                                    </div>
-                                  )}
+                                  <StockLogo
+                                    src={stock.logoUrl}
+                                    alt={stock.name}
+                                    size="md"
+                                    onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
+                                  />
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -2045,18 +2040,12 @@ export default function DemoHome() {
                                 <td className="px-4 py-4 whitespace-nowrap">
                                   <div className="flex items-center gap-3">
                                     <div className="relative">
-                                      {stock.logoUrl && !logoErrors[stock.symbol] ? (
-                                        <img
-                                          src={stock.logoUrl}
-                                          alt={stock.name}
-                                          className="h-10 w-10 rounded-lg object-contain bg-white p-1"
-                                          onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
-                                        />
-                                      ) : (
-                                        <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
-                                          <span className="text-lg text-gray-400">?</span>
-                                        </div>
-                                      )}
+                                      <StockLogo
+                                        src={stock.logoUrl}
+                                        alt={stock.name}
+                                        size="md"
+                                        onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
+                                      />
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -2184,13 +2173,11 @@ export default function DemoHome() {
                               className="rounded-xl bg-white p-3 sm:p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                             >
                               <div className="flex items-center gap-3">
-                                {stock.logoUrl && (
-                                  <img
-                                    src={stock.logoUrl}
-                                    alt={stock.name}
-                                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200 object-contain p-1"
-                                  />
-                                )}
+                                <StockLogo
+                                  src={stock.logoUrl}
+                                  alt={stock.name}
+                                  size="lg"
+                                />
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-sm sm:text-base text-gray-900 truncate">{stock.name}</div>
                                   <div className="text-xs sm:text-sm text-gray-500">{stock.symbol} · {stock.sector}</div>
@@ -2237,13 +2224,11 @@ export default function DemoHome() {
                                 className="rounded-xl bg-white p-3 sm:p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                               >
                                 <div className="flex items-start gap-3">
-                                  {stock?.logoUrl && (
-                                    <img
-                                      src={stock.logoUrl}
-                                      alt={stock.name}
-                                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200 object-contain p-1"
-                                    />
-                                  )}
+                                  <StockLogo
+                                    src={stock?.logoUrl}
+                                    alt={stock?.name || filing.symbol}
+                                    size="lg"
+                                  />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                       <span className="font-bold text-sm sm:text-base text-gray-900">{filing.symbol}</span>
@@ -2286,13 +2271,11 @@ export default function DemoHome() {
                               className="rounded-xl bg-gray-50 p-3 sm:p-4 border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer"
                             >
                               <div className="flex items-center gap-3">
-                                {stock.logoUrl && (
-                                  <img
-                                    src={stock.logoUrl}
-                                    alt={stock.name}
-                                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200 object-contain p-1"
-                                  />
-                                )}
+                                <StockLogo
+                                  src={stock.logoUrl}
+                                  alt={stock.name}
+                                  size="lg"
+                                />
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-sm sm:text-base text-gray-900 truncate">{stock.name}</div>
                                   <div className="text-xs sm:text-sm text-gray-500">{stock.symbol} · {stock.sector}</div>
@@ -2438,18 +2421,13 @@ export default function DemoHome() {
                 <div className="mb-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-6 md:p-8 text-white shadow-xl">
                   <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
                     <div className="flex items-start gap-3 sm:gap-6 flex-1">
-                      {stockInfo?.logoUrl && !detailLogoError ? (
-                        <img
-                          src={stockInfo.logoUrl}
-                          alt={String(stockDetail.Name)}
-                          className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-xl sm:rounded-2xl bg-white p-1.5 sm:p-2 shadow-lg flex-shrink-0 object-contain"
-                          onError={() => setDetailLogoError(true)}
-                        />
-                      ) : (
-                        <div className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-xl sm:rounded-2xl bg-gray-200 flex items-center justify-center shadow-lg flex-shrink-0">
-                          <span className="text-xl sm:text-2xl md:text-3xl text-gray-400">?</span>
-                        </div>
-                      )}
+                      <StockLogo
+                        src={stockInfo?.logoUrl}
+                        alt={String(stockDetail.Name)}
+                        size="xl"
+                        className="shadow-lg sm:h-16 sm:w-16 md:h-20 md:w-20 sm:rounded-2xl p-1.5 sm:p-2"
+                        onError={() => setDetailLogoError(true)}
+                      />
                       <div className="min-w-0">
                         <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold mb-1 sm:mb-2 truncate">{stockDetail.Name}</h1>
                         <p className="text-sm sm:text-base md:text-xl text-indigo-100 mb-2 sm:mb-3 truncate">
@@ -2982,18 +2960,12 @@ export default function DemoHome() {
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                               {/* 로고 추가 */}
-                              {filing.logoUrl && !logoErrors[filing.symbol] ? (
-                                <img
-                                  src={filing.logoUrl}
-                                  alt={filing.company}
-                                  className="h-8 w-8 rounded-lg flex-shrink-0"
-                                  onError={() => setLogoErrors(prev => ({ ...prev, [filing.symbol]: true }))}
-                                />
-                              ) : (
-                                <div className="h-8 w-8 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-sm text-gray-400">?</span>
-                                </div>
-                              )}
+                              <StockLogo
+                                src={filing.logoUrl}
+                                alt={filing.company}
+                                size="sm"
+                                onError={() => setLogoErrors(prev => ({ ...prev, [filing.symbol]: true }))}
+                              />
                               <span className="inline-flex items-center rounded-lg bg-indigo-100 px-3 py-1.5 text-sm font-semibold text-indigo-700">
                                 {filing.formType}
                               </span>
