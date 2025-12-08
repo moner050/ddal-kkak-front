@@ -45,11 +45,13 @@ import {
 
 // Import API services
 import { stockService, featuredService, filingService } from "../api/services";
+import { api } from "../api/client";
 import type {
   FrontendUndervaluedStock,
   FrontendFeaturedStock,
   FrontendFiling
 } from "../utils/apiMappers";
+import type { EtfSimpleInfo } from "../api/types";
 
 // Import chart components
 import FearGreedCard from "../components/charts/FearGreedCard";
@@ -242,6 +244,14 @@ export default function DemoHome() {
   // 로고 에러 상태
   const [logoErrors, setLogoErrors] = useState<Record<string, boolean>>({});
 
+  // ETF 멤버십 상태 (종목을 포함하는 ETF 목록)
+  const [etfHoldings, setEtfHoldings] = useState<EtfSimpleInfo[]>([]);
+  const [etfHoldingsLoading, setEtfHoldingsLoading] = useState(false);
+
+  // 종목별 SEC 공시 상태 (점수 추이 포함)
+  const [stockFilingWithScores, setStockFilingWithScores] = useState<FrontendFiling | null>(null);
+  const [stockFilingLoading, setStockFilingLoading] = useState(false);
+
   // 홈 화면 필터 (hooks에 포함되지 않은 홈 화면 전용 상태)
   const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
   const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
@@ -251,6 +261,56 @@ export default function DemoHome() {
     if (detailSymbol) {
       setDetailLogoError(false);
     }
+  }, [detailSymbol]);
+
+  // ETF 멤버십 데이터 로드 (detailSymbol 변경 시)
+  useEffect(() => {
+    const fetchEtfHoldings = async () => {
+      if (!detailSymbol) {
+        setEtfHoldings([]);
+        return;
+      }
+
+      setEtfHoldingsLoading(true);
+      try {
+        const response = await api.etf.getHoldingsSimple(detailSymbol);
+        setEtfHoldings(response.etfs || []);
+        console.log(`✅ ETF 멤버십 로드 성공: ${detailSymbol} - ${response.count}개 ETF`);
+      } catch (error) {
+        console.error('❌ ETF 멤버십 로드 실패:', error);
+        setEtfHoldings([]);
+      } finally {
+        setEtfHoldingsLoading(false);
+      }
+    };
+
+    fetchEtfHoldings();
+  }, [detailSymbol]);
+
+  // SEC 공시 점수 추이 데이터 로드 (detailSymbol 변경 시)
+  useEffect(() => {
+    const fetchStockFiling = async () => {
+      if (!detailSymbol) {
+        setStockFilingWithScores(null);
+        return;
+      }
+
+      setStockFilingLoading(true);
+      try {
+        const filing = await filingService.getByTickerWithScores(detailSymbol);
+        setStockFilingWithScores(filing);
+        if (filing && filing.previousScores.length > 0) {
+          console.log(`✅ SEC 공시 점수 추이 로드 성공: ${detailSymbol} - ${filing.previousScores.length}개 이력`);
+        }
+      } catch (error) {
+        console.error('❌ SEC 공시 점수 추이 로드 실패:', error);
+        setStockFilingWithScores(null);
+      } finally {
+        setStockFilingLoading(false);
+      }
+    };
+
+    fetchStockFiling();
   }, [detailSymbol]);
 
   // ===== 기타 상태 및 핸들러 =====
@@ -2014,7 +2074,8 @@ export default function DemoHome() {
 
             // ✅ 종목이 선택된 경우: 상세 정보 표시
             const stockInfo = undervaluedStocks.find(s => s.symbol === detailSymbol);
-            const stockFilings = filings.filter(f => f.symbol === detailSymbol);
+            // SEC 공시 데이터: 백엔드 API로부터 점수 추이 포함된 데이터 우선 사용
+            const stockFilings = stockFilingWithScores ? [stockFilingWithScores] : filings.filter(f => f.symbol === detailSymbol);
 
             // ✅ 종목 정보가 없을 때 안내 메시지 표시
             if (!stockInfo) {
@@ -2499,6 +2560,66 @@ export default function DemoHome() {
                         })}
                       </div>
                     </div>
+
+                    {/* ETF 멤버십 (이 종목을 포함하는 ETF 목록) */}
+                    <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
+                      <h2 className="text-lg font-bold text-gray-900 mb-4">📦 이 종목을 포함하는 ETF</h2>
+                      {etfHoldingsLoading ? (
+                        <div className="text-center py-8">
+                          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                          <p className="mt-2 text-sm text-gray-500">ETF 정보를 불러오는 중...</p>
+                        </div>
+                      ) : etfHoldings.length > 0 ? (
+                        <div className="space-y-3">
+                          <div className="text-sm text-gray-600 mb-3">
+                            총 <span className="font-bold text-indigo-600">{etfHoldings.length}개</span>의 ETF가 이 종목을 보유하고 있습니다
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {etfHoldings.map((etf) => (
+                              <div
+                                key={etf.ticker}
+                                className="p-4 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 hover:shadow-md transition-all"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs text-gray-600 mb-1">{etf.ticker}</div>
+                                    <div className="text-sm font-bold text-gray-900 mb-2 line-clamp-2">
+                                      {etf.name || etf.short_name}
+                                    </div>
+                                    {etf.category && (
+                                      <div className="text-xs text-indigo-600 mb-1">
+                                        {etf.category}
+                                      </div>
+                                    )}
+                                    {etf.weight_in_etf !== undefined && (
+                                      <div className="mt-2 flex items-center gap-2">
+                                        <span className="text-xs text-gray-600">보유 비중:</span>
+                                        <span className="text-sm font-bold text-indigo-700">
+                                          {etf.weight_in_etf.toFixed(2)}%
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {etf.total_assets && (
+                                    <div className="text-right flex-shrink-0">
+                                      <div className="text-xs text-gray-500 mb-1">운용규모</div>
+                                      <div className="text-sm font-semibold text-gray-900">
+                                        ${(etf.total_assets / 1e9).toFixed(1)}B
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="text-4xl mb-2">📦</div>
+                          <p className="text-gray-500 text-sm">이 종목을 포함하는 ETF 정보가 없습니다</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : detailTab === "chart" ? (
                   /* 주가 추이 차트 탭 */
@@ -2540,18 +2661,57 @@ export default function DemoHome() {
                             <AIScoreGauge score={filing.aiScore} sentiment={filing.sentiment} size="md" />
                           </div>
                         </div>
-                        {filing.previousScores && (
+                        {filing.previousScores && filing.previousScores.length > 0 && (
                           <div className="mt-4 pt-4 border-t border-gray-200">
-                            <div className="text-sm text-gray-600 font-semibold mb-3">이전 공시 점수 추이</div>
-                            <div className="flex gap-3">
-                              {filing.previousScores.map((score: number, idx: number) => (
-                                <div key={idx} className="text-center">
-                                  <div className="text-xs text-gray-500 mb-1">-{filing.previousScores.length - idx}회</div>
-                                  <div className="text-sm font-bold text-gray-900 bg-gray-100 px-3 py-2 rounded-lg">
-                                    {score}점
-                                  </div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="text-sm text-gray-600 font-semibold">이전 공시 점수 추이</div>
+                              {filing.previousScores.length > 1 && (
+                                <div className="text-xs text-gray-500">
+                                  ({filing.previousScores.length}개 공시 이력)
                                 </div>
-                              ))}
+                              )}
+                            </div>
+                            <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2">
+                              {filing.previousScores.map((score: number, idx: number) => {
+                                const isLatest = idx === filing.previousScores.length - 1;
+                                const prevScore = idx > 0 ? filing.previousScores[idx - 1] : null;
+                                const scoreDiff = prevScore !== null ? score - prevScore : null;
+                                const scoreColor =
+                                  score >= 80 ? "text-emerald-700 bg-emerald-50 border-emerald-200" :
+                                  score >= 70 ? "text-blue-700 bg-blue-50 border-blue-200" :
+                                  score >= 60 ? "text-gray-700 bg-gray-50 border-gray-200" :
+                                  score >= 50 ? "text-orange-700 bg-orange-50 border-orange-200" :
+                                  "text-red-700 bg-red-50 border-red-200";
+
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={classNames(
+                                      "text-center min-w-[80px] rounded-lg border-2 p-2 sm:p-3 transition-all",
+                                      isLatest ? "ring-2 ring-indigo-300 shadow-md scale-105" : "",
+                                      scoreColor
+                                    )}
+                                  >
+                                    <div className="text-[10px] sm:text-xs text-gray-600 mb-1 font-medium">
+                                      {isLatest ? "최신" : `-${filing.previousScores.length - idx}회`}
+                                    </div>
+                                    <div className="text-base sm:text-lg font-bold mb-1">
+                                      {score}점
+                                    </div>
+                                    {scoreDiff !== null && (
+                                      <div className={classNames(
+                                        "text-[10px] font-semibold flex items-center justify-center gap-0.5",
+                                        scoreDiff > 0 ? "text-emerald-600" :
+                                        scoreDiff < 0 ? "text-red-600" :
+                                        "text-gray-500"
+                                      )}>
+                                        {scoreDiff > 0 ? "↗" : scoreDiff < 0 ? "↘" : "→"}
+                                        {scoreDiff > 0 ? "+" : ""}{scoreDiff}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}

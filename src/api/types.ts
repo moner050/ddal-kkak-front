@@ -464,6 +464,80 @@ export interface Page<T> {
 }
 
 // ============================================
+// ETF DTOs
+// ============================================
+
+export interface EtfHolding {
+  symbol: string;
+  name: string;
+  weight: number;
+}
+
+export interface EtfInfo {
+  ticker: string;
+  short_name: string;
+  long_name?: string;
+  category?: string;
+  fund_family?: string;
+  price?: number;
+  total_assets?: number;
+  primary_sector?: string;
+  primary_sector_weight?: number;
+  secondary_sector?: string;
+  secondary_sector_weight?: number;
+  tertiary_sector?: string;
+  tertiary_sector_weight?: number;
+  sector_weightings?: Record<string, number>;
+  top_holdings?: EtfHolding[];
+  ytd_return?: number;
+  return_1m?: number;
+  return_3m?: number;
+  return_6m?: number;
+  return_1y?: number;
+  return_3y?: number;
+  return_5y?: number;
+  beta?: number;
+  volatility?: number;
+  sharpe_ratio?: number;
+  dividend_yield?: number;
+  dividend_rate?: number;
+  expense_ratio?: number;
+  data_date?: string;
+}
+
+export interface EtfListResponse {
+  count: number;
+  data: EtfInfo[];
+}
+
+export interface EtfSimpleInfo {
+  ticker: string;
+  name: string;
+  category?: string;
+  primary_sector?: string;
+  total_assets?: number;
+  weight_in_etf: number;
+}
+
+export interface EtfHoldingsResponse {
+  symbol: string;
+  count: number;
+  etfs: EtfSimpleInfo[];
+}
+
+export interface EtfSectorResponse {
+  sector: string;
+  count: number;
+  data: EtfInfo[];
+}
+
+export interface EtfCategoryResponse {
+  category: string;
+  count: number;
+  data: EtfInfo[];
+}
+
+// ============================================
 // Common Response Types
 // ============================================
 
