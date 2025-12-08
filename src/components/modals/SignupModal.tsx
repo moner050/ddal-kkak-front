@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { authStorage, verificationStorage } from '@/utils/authStorage';
+import { api } from '@/api/client';
 
 interface SignupModalProps {
   open: boolean;
@@ -16,6 +16,7 @@ export default function SignupModal({ open, onClose }: SignupModalProps) {
   const [isVerified, setIsVerified] = useState(false);
   const [timer, setTimer] = useState(0);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -45,65 +46,129 @@ export default function SignupModal({ open, onClose }: SignupModalProps) {
 
   if (!open) return null;
 
-  const handleSendCode = () => {
+  // 1단계: 이메일 인증 코드 발송
+  const handleSendCode = async () => {
     setError('');
+    setLoading(true);
 
-    // 이메일 중복 체크
-    if (authStorage.findUserByEmail(email)) {
-      setError('이미 사용 중인 이메일입니다.');
+    if (!email) {
+      setError('이메일을 입력해주세요.');
+      setLoading(false);
       return;
     }
 
-    // 인증번호 생성
-    verificationStorage.generateCode(email);
-    setIsCodeSent(true);
-    setTimer(300); // 5분
+    try {
+      // 이메일 중복 체크
+      const checkResponse = await api.auth.checkEmail(email);
+      if (checkResponse.exists) {
+        setError('이미 사용 중인 이메일입니다.');
+        setLoading(false);
+        return;
+      }
+
+      // 인증 코드 발송
+      const response = await api.auth.sendVerificationEmail({ email });
+      if (response.success) {
+        setIsCodeSent(true);
+        setTimer(300); // 5분
+        alert('인증 코드가 이메일로 발송되었습니다.');
+        console.log('✅ 인증 코드 발송:', email);
+      } else {
+        setError(response.message || '인증 코드 발송에 실패했습니다.');
+      }
+    } catch (err: any) {
+      console.error('❌ 인증 코드 발송 실패:', err);
+      setError(err.response?.data?.message || '인증 코드 발송에 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerify = () => {
+  // 2단계: 이메일 인증 코드 확인
+  const handleVerify = async () => {
     setError('');
+    setLoading(true);
 
-    // 인증번호 검증
-    const isValid = verificationStorage.verifyCode(email, verificationCode);
-    if (!isValid) {
-      setError('인증번호가 올바르지 않거나 만료되었습니다.');
+    if (!verificationCode) {
+      setError('인증번호를 입력해주세요.');
+      setLoading(false);
       return;
     }
 
-    // 인증 성공
-    verificationStorage.removeCode(email);
-    setIsVerified(true);
-    setTimer(0);
-    if (timerRef.current) clearTimeout(timerRef.current);
+    try {
+      const response = await api.auth.verifyEmail({ email, verificationCode });
+      if (response.success) {
+        setIsVerified(true);
+        setTimer(0);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        alert('이메일 인증이 완료되었습니다!');
+        console.log('✅ 이메일 인증 완료:', email);
+      } else {
+        setError(response.message || '인증번호가 올바르지 않습니다.');
+      }
+    } catch (err: any) {
+      console.error('❌ 인증 실패:', err);
+      setError(err.response?.data?.message || '인증번호가 올바르지 않거나 만료되었습니다.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignup = () => {
+  // 3단계: 회원가입
+  const handleSignup = async () => {
     setError('');
+    setLoading(true);
 
     // 유효성 검사
     if (!id || !password || !email) {
       setError('모든 필드를 입력해주세요.');
+      setLoading(false);
       return;
     }
 
     if (password !== passwordConfirm) {
       setError('비밀번호가 일치하지 않습니다.');
+      setLoading(false);
       return;
     }
 
     if (!isVerified) {
       setError('이메일 인증을 완료해주세요.');
+      setLoading(false);
       return;
     }
 
-    // 회원가입
-    const success = authStorage.saveUser({ id, password, email });
-    if (success) {
-      alert('회원가입 성공! 로그인해주세요.');
-      console.log('회원가입 성공:', { id, email });
-      onClose();
-    } else {
-      setError('이미 사용 중인 아이디입니다.');
+    try {
+      // 아이디 중복 체크
+      const checkResponse = await api.auth.checkUsername(id);
+      if (checkResponse.exists) {
+        setError('이미 사용 중인 아이디입니다.');
+        setLoading(false);
+        return;
+      }
+
+      // 회원가입 API 호출
+      const response = await api.auth.signup({
+        username: id,
+        password,
+        email,
+        verificationCode,
+      });
+
+      if (response.success && response.data) {
+        alert(`회원가입 성공! 환영합니다, ${response.data.username}님!`);
+        console.log('✅ 회원가입 성공:', response.data);
+        onClose();
+        // 페이지 새로고침으로 헤더 업데이트
+        window.location.reload();
+      } else {
+        setError(response.message || '회원가입에 실패했습니다.');
+      }
+    } catch (err: any) {
+      console.error('❌ 회원가입 실패:', err);
+      setError(err.response?.data?.message || '회원가입에 실패했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -188,10 +253,10 @@ export default function SignupModal({ open, onClose }: SignupModalProps) {
                 />
                 <button
                   onClick={handleSendCode}
-                  disabled={!email || isCodeSent}
+                  disabled={!email || isCodeSent || loading}
                   className="px-3 py-2.5 sm:px-4 sm:py-3 bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap"
                 >
-                  인증번호 발송
+                  {loading ? '발송 중...' : '인증번호 발송'}
                 </button>
               </div>
             </div>
@@ -212,20 +277,20 @@ export default function SignupModal({ open, onClose }: SignupModalProps) {
                 />
                 <button
                   onClick={handleVerify}
-                  disabled={!isCodeSent || !verificationCode || isVerified}
+                  disabled={!isCodeSent || !verificationCode || isVerified || loading}
                   className="px-3 py-2.5 sm:px-4 sm:py-3 bg-green-600 text-white text-xs sm:text-sm font-semibold rounded-xl hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap"
                 >
-                  {isVerified ? '인증완료' : '인증'}
+                  {isVerified ? '인증완료' : loading ? '확인 중...' : '인증'}
                 </button>
               </div>
             </div>
 
             <button
               onClick={handleSignup}
-              disabled={!isVerified || !password || password !== passwordConfirm}
+              disabled={!isVerified || !password || password !== passwordConfirm || loading}
               className="w-full bg-indigo-600 text-white font-semibold py-2.5 sm:py-3 text-sm sm:text-base rounded-xl hover:bg-indigo-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              회원가입
+              {loading ? '회원가입 중...' : '회원가입'}
             </button>
           </div>
 

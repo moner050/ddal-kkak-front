@@ -665,7 +665,13 @@ export default function DemoHome() {
                   </div>
                 ) : (
                   featuredStocks.filter(s => s.market === featuredMarket).map((stock) => (
-                    <FeaturedStockCard key={stock.id} stock={stock} onClick={() => openStockDetail(stock.symbol, "info")} />
+                    <FeaturedStockCard
+                      key={stock.id}
+                      stock={stock}
+                      onClick={() => openStockDetail(stock.symbol, "info")}
+                      isFavorite={favorites[stock.symbol]}
+                      onToggleFavorite={() => toggleFavorite(stock.symbol)}
+                    />
                   ))
                 )}
               </div>
