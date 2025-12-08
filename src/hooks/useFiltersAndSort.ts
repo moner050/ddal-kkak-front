@@ -32,6 +32,10 @@ export interface UseFiltersAndSortReturn {
   setUndervaluedCategoryPages: (pages: Record<string, number>) => void;
   undervaluedSorts: SortConfig[];
   setUndervaluedSorts: (sorts: SortConfig[]) => void;
+  undervaluedMinScore: number;
+  setUndervaluedMinScore: (score: number) => void;
+  undervaluedMaxScore: number;
+  setUndervaluedMaxScore: (score: number) => void;
 
   // 공시 분석 페이지 필터
   filingsSearchQuery: string;
@@ -82,6 +86,8 @@ export function useFiltersAndSort(): UseFiltersAndSortReturn {
   const [undervaluedPage, setUndervaluedPage] = useState(1);
   const [undervaluedCategoryPages, setUndervaluedCategoryPages] = useState<Record<string, number>>({}); // 섹터별 페이지 상태 저장
   const [undervaluedSorts, setUndervaluedSorts] = useState<SortConfig[]>([{ key: 'aiScore', direction: 'desc' }]); // 기본적으로 종합 점수 높은 순으로 정렬
+  const [undervaluedMinScore, setUndervaluedMinScore] = useState(0); // 최소 점수 (0-100)
+  const [undervaluedMaxScore, setUndervaluedMaxScore] = useState(100); // 최대 점수 (0-100)
 
   // 공시 분석 페이지 필터
   const [filingsSearchQuery, setFilingsSearchQuery] = useState("");
@@ -167,6 +173,10 @@ export function useFiltersAndSort(): UseFiltersAndSortReturn {
     setUndervaluedCategoryPages,
     undervaluedSorts,
     setUndervaluedSorts,
+    undervaluedMinScore,
+    setUndervaluedMinScore,
+    undervaluedMaxScore,
+    setUndervaluedMaxScore,
 
     // 공시 분석 페이지 필터
     filingsSearchQuery,

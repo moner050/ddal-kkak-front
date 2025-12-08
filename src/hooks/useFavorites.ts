@@ -1,54 +1,81 @@
 /**
  * 즐겨찾기 Custom Hook
  *
- * 즐겨찾기 상태를 관리하고 쿠키에 저장합니다.
+ * 백엔드 API를 사용하여 즐겨찾기 상태를 관리합니다.
  */
 
-import { useState, useRef } from 'react';
-import { setCookie, getCookie } from '../utils/cookies';
+import { useState, useRef, useEffect } from 'react';
+import { api } from '../api/client';
 
 export interface UseFavoritesReturn {
   favorites: Record<string, boolean>;
   toggleFavorite: (symbol: string) => void;
+  loading: boolean;
 }
 
 /**
- * 즐겨찾기 hook
+ * 즐겨찾기 hook (백엔드 API 연동)
  */
-export function useFavorites(): UseFavoritesReturn {
-  const [favorites, setFavorites] = useState<Record<string, boolean>>(() => {
-    // Load favorites from cookie on mount
-    const cookieValue = getCookie('ddal-kkak-favorites');
-    if (cookieValue) {
-      try {
-        return JSON.parse(decodeURIComponent(cookieValue));
-      } catch (e) {
-        return {};
-      }
-    }
-    return {};
-  });
-
+export function useFavorites(userId: string = 'default'): UseFavoritesReturn {
+  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
   const favoriteDebounceRef = useRef<Record<string, boolean>>({});
 
-  const toggleFavorite = (symbol: string) => {
-    // Prevent rapid clicks (1 second debounce)
+  // 컴포넌트 마운트 시 백엔드에서 즐겨찾기 로드
+  useEffect(() => {
+    const loadFavorites = async () => {
+      try {
+        const favoritesMap = await api.favorites.getMap(userId);
+        setFavorites(favoritesMap);
+        console.log('✅ 즐겨찾기 로드 성공:', favoritesMap);
+      } catch (error) {
+        console.error('❌ 즐겨찾기 로드 실패:', error);
+        // 실패 시 빈 객체 사용
+        setFavorites({});
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFavorites();
+  }, [userId]);
+
+  const toggleFavorite = async (symbol: string) => {
+    // Prevent rapid clicks (300ms debounce)
     if (favoriteDebounceRef.current[symbol]) return;
 
     favoriteDebounceRef.current[symbol] = true;
-    const newFavorites = { ...favorites, [symbol]: !favorites[symbol] };
-    setFavorites(newFavorites);
 
-    // Save to cookie
-    setCookie('ddal-kkak-favorites', encodeURIComponent(JSON.stringify(newFavorites)));
+    // 낙관적 업데이트 (Optimistic Update): 즉시 UI 반영
+    const newValue = !favorites[symbol];
+    setFavorites(prev => ({ ...prev, [symbol]: newValue }));
 
-    setTimeout(() => {
-      favoriteDebounceRef.current[symbol] = false;
-    }, 1000);
+    try {
+      // 백엔드 API 호출
+      const response = await api.favorites.toggle(symbol, userId);
+
+      // 서버 응답과 동기화
+      setFavorites(prev => ({
+        ...prev,
+        [symbol]: response.isFavorite
+      }));
+
+      console.log(`✅ 즐겨찾기 토글 성공: ${symbol} = ${response.isFavorite}`);
+    } catch (error) {
+      console.error('❌ 즐겨찾기 토글 실패:', error);
+
+      // 실패 시 롤백
+      setFavorites(prev => ({ ...prev, [symbol]: !newValue }));
+    } finally {
+      setTimeout(() => {
+        favoriteDebounceRef.current[symbol] = false;
+      }, 300);
+    }
   };
 
   return {
     favorites,
     toggleFavorite,
+    loading,
   };
 }

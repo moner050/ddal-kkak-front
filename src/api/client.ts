@@ -40,6 +40,11 @@ import {
   Page,
   InvestmentProfile,
   MessageResponse,
+  EtfInfo,
+  EtfListResponse,
+  EtfHoldingsResponse,
+  EtfSectorResponse,
+  EtfCategoryResponse,
 } from './types';
 
 // ============================================
@@ -552,6 +557,50 @@ export const exchangeRateApi = {
 };
 
 // ============================================
+// ETF API
+// ============================================
+
+export const etfApi = {
+  // 전체 ETF 목록 조회 (AUM 기준 정렬)
+  getAll: async (): Promise<EtfListResponse> => {
+    const response = await apiClient.get<EtfListResponse>('/api/v1/etfs');
+    return response.data;
+  },
+
+  // ETF 상세 조회 (보유 종목 Top 10, 섹터 비중 포함)
+  get: async (ticker: string): Promise<EtfInfo> => {
+    const response = await apiClient.get<EtfInfo>(`/api/v1/etfs/${ticker}`);
+    return response.data;
+  },
+
+  // 섹터별 ETF 조회
+  getBySector: async (sector: string): Promise<EtfSectorResponse> => {
+    const response = await apiClient.get<EtfSectorResponse>(`/api/v1/etfs/sector/${sector}`);
+    return response.data;
+  },
+
+  // 카테고리별 ETF 조회
+  getByCategory: async (category: string): Promise<EtfCategoryResponse> => {
+    const response = await apiClient.get<EtfCategoryResponse>(`/api/v1/etfs/category/${category}`);
+    return response.data;
+  },
+
+  // 종목 → ETF 역방향 조회 (Simple) ⭐⭐⭐ 프론트엔드 추천
+  getHoldingsSimple: async (symbol: string): Promise<EtfHoldingsResponse> => {
+    const response = await apiClient.get<EtfHoldingsResponse>(`/api/v1/etfs/holdings/${symbol}/simple`);
+    return response.data;
+  },
+
+  // 종목 → ETF 역방향 조회 (Full)
+  getHoldings: async (symbol: string): Promise<{ symbol: string; count: number; etfs: EtfInfo[] }> => {
+    const response = await apiClient.get<{ symbol: string; count: number; etfs: EtfInfo[] }>(
+      `/api/v1/etfs/holdings/${symbol}`
+    );
+    return response.data;
+  },
+};
+
+// ============================================
 // Export All APIs
 // ============================================
 
@@ -563,6 +612,7 @@ export const api = {
   undervaluedStocks: undervaluedStocksApi,
   backtest: backtestApi,
   exchangeRate: exchangeRateApi,
+  etf: etfApi,
 };
 
 export default api;

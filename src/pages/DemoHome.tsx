@@ -45,11 +45,13 @@ import {
 
 // Import API services
 import { stockService, featuredService, filingService } from "../api/services";
+import { api } from "../api/client";
 import type {
   FrontendUndervaluedStock,
   FrontendFeaturedStock,
   FrontendFiling
 } from "../utils/apiMappers";
+import type { EtfSimpleInfo, EtfInfo, ProfilePerformance } from "../api/types";
 
 // Import chart components
 import FearGreedCard from "../components/charts/FearGreedCard";
@@ -68,6 +70,9 @@ import FilingAnalysisCard from "../components/stock/FilingAnalysisCard";
 import FilingCard from "../components/stock/FilingCard";
 import BeginnerStockCard from "../components/stock/BeginnerStockCard";
 import StockPriceVisualization from "../components/stock/StockPriceVisualization";
+import FilingScoreTrendChart from "../components/charts/FilingScoreTrendChart";
+import EtfSectorPieChart from "../components/charts/EtfSectorPieChart";
+import StockLogo from "../components/stock/StockLogo";
 import ThreePointSummary from "../components/stock/ThreePointSummary";
 import PriceGuideBand from "../components/stock/PriceGuideBand";
 import EnhancedThreePointSummary from "../components/stock/EnhancedThreePointSummary";
@@ -188,6 +193,10 @@ export default function DemoHome() {
     setUndervaluedCategoryPages,
     undervaluedSorts,
     setUndervaluedSorts,
+    undervaluedMinScore,
+    setUndervaluedMinScore,
+    undervaluedMaxScore,
+    setUndervaluedMaxScore,
     filingsSearchQuery,
     setFilingsSearchQuery,
     filingsPage,
@@ -242,6 +251,18 @@ export default function DemoHome() {
   // 로고 에러 상태
   const [logoErrors, setLogoErrors] = useState<Record<string, boolean>>({});
 
+  // ETF 멤버십 상태 (종목을 포함하는 ETF 목록)
+  const [etfHoldings, setEtfHoldings] = useState<EtfInfo[]>([]);
+  const [etfHoldingsLoading, setEtfHoldingsLoading] = useState(false);
+
+  // 종목별 SEC 공시 상태 (점수 추이 포함)
+  const [stockFilingWithScores, setStockFilingWithScores] = useState<FrontendFiling | null>(null);
+  const [stockFilingLoading, setStockFilingLoading] = useState(false);
+
+  // 백테스팅 데이터 (투자 전략별 성과)
+  const [backtestPerformances, setBacktestPerformances] = useState<Record<string, ProfilePerformance>>({});
+  const [backtestLoading, setBacktestLoading] = useState<Record<string, boolean>>({});
+
   // 홈 화면 필터 (hooks에 포함되지 않은 홈 화면 전용 상태)
   const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
   const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
@@ -252,6 +273,86 @@ export default function DemoHome() {
       setDetailLogoError(false);
     }
   }, [detailSymbol]);
+
+  // ETF 멤버십 데이터 로드 (detailSymbol 변경 시)
+  useEffect(() => {
+    const fetchEtfHoldings = async () => {
+      if (!detailSymbol) {
+        setEtfHoldings([]);
+        return;
+      }
+
+      setEtfHoldingsLoading(true);
+      try {
+        const response = await api.etf.getHoldings(detailSymbol);
+        setEtfHoldings(response.etfs || []);
+        console.log(`✅ ETF 멤버십 로드 성공: ${detailSymbol} - ${response.count}개 ETF`);
+      } catch (error) {
+        console.error('❌ ETF 멤버십 로드 실패:', error);
+        setEtfHoldings([]);
+      } finally {
+        setEtfHoldingsLoading(false);
+      }
+    };
+
+    fetchEtfHoldings();
+  }, [detailSymbol]);
+
+  // SEC 공시 점수 추이 데이터 로드 (detailSymbol 변경 시)
+  useEffect(() => {
+    const fetchStockFiling = async () => {
+      if (!detailSymbol) {
+        setStockFilingWithScores(null);
+        return;
+      }
+
+      setStockFilingLoading(true);
+      try {
+        const filing = await filingService.getByTickerWithScores(detailSymbol);
+        setStockFilingWithScores(filing);
+        if (filing && filing.previousScores.length > 0) {
+          console.log(`✅ SEC 공시 점수 추이 로드 성공: ${detailSymbol} - ${filing.previousScores.length}개 이력`);
+        }
+      } catch (error) {
+        console.error('❌ SEC 공시 점수 추이 로드 실패:', error);
+        setStockFilingWithScores(null);
+      } finally {
+        setStockFilingLoading(false);
+      }
+    };
+
+    fetchStockFiling();
+  }, [detailSymbol]);
+
+  // 백테스팅 데이터 로드 (선택된 투자 전략 변경 시)
+  useEffect(() => {
+    const fetchBacktestPerformances = async () => {
+      // 선택된 전략들에 대해 백테스팅 데이터 로드
+      for (const strategyKey of undervaluedStrategies) {
+        // 이미 로드된 데이터가 있으면 스킵
+        if (backtestPerformances[strategyKey]) {
+          continue;
+        }
+
+        // 로딩 상태 설정
+        setBacktestLoading(prev => ({ ...prev, [strategyKey]: true }));
+
+        try {
+          const performance = await api.backtest.getProfilePerformance(strategyKey as any, 3);
+          setBacktestPerformances(prev => ({ ...prev, [strategyKey]: performance }));
+          console.log(`✅ 백테스팅 데이터 로드 성공: ${strategyKey}`, performance);
+        } catch (error) {
+          console.error(`❌ 백테스팅 데이터 로드 실패: ${strategyKey}`, error);
+        } finally {
+          setBacktestLoading(prev => ({ ...prev, [strategyKey]: false }));
+        }
+      }
+    };
+
+    if (undervaluedStrategies.length > 0) {
+      fetchBacktestPerformances();
+    }
+  }, [undervaluedStrategies]);
 
   // ===== 기타 상태 및 핸들러 =====
 
@@ -665,7 +766,13 @@ export default function DemoHome() {
                   </div>
                 ) : (
                   featuredStocks.filter(s => s.market === featuredMarket).map((stock) => (
-                    <FeaturedStockCard key={stock.id} stock={stock} onClick={() => openStockDetail(stock.symbol, "info")} />
+                    <FeaturedStockCard
+                      key={stock.id}
+                      stock={stock}
+                      onClick={() => openStockDetail(stock.symbol, "info")}
+                      isFavorite={favorites[stock.symbol]}
+                      onToggleFavorite={() => toggleFavorite(stock.symbol)}
+                    />
                   ))
                 )}
               </div>
@@ -934,8 +1041,111 @@ export default function DemoHome() {
               )}
             </div>
 
+            {/* 백테스팅 성과 (선택된 전략에 대해서만 표시) */}
+            {undervaluedStrategies.length > 0 && (
+              <div className="mb-6 rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 p-4 sm:p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900">📊 백테스팅 성과 (최근 3년)</h3>
+                  <div className="text-xs text-gray-500">과거 성과는 미래 수익을 보장하지 않습니다</div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {undervaluedStrategies.map((strategyKey) => {
+                    const strategy = INVESTMENT_STRATEGIES[strategyKey];
+                    const performance = backtestPerformances[strategyKey];
+                    const loading = backtestLoading[strategyKey];
+
+                    return (
+                      <div
+                        key={strategyKey}
+                        className="rounded-xl bg-white p-4 border-2 border-purple-200 shadow-sm"
+                      >
+                        <div className="text-sm font-bold text-purple-900 mb-3">{strategy.name}</div>
+
+                        {loading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                          </div>
+                        ) : performance ? (
+                          <div className="space-y-3">
+                            {/* 평균 수익률 */}
+                            <div className="p-3 rounded-lg bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
+                              <div className="text-xs text-gray-600 mb-1">평균 수익률</div>
+                              <div className={classNames(
+                                "text-2xl font-bold",
+                                performance.averageReturn > 0 ? "text-emerald-600" : "text-red-600"
+                              )}>
+                                {performance.averageReturn > 0 ? "+" : ""}{performance.averageReturn.toFixed(1)}%
+                              </div>
+                            </div>
+
+                            {/* 주요 지표 */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="p-2 rounded-lg bg-gray-50">
+                                <div className="text-[10px] text-gray-500 mb-1">성공률</div>
+                                <div className="text-sm font-bold text-gray-900">
+                                  {(performance.successRate * 100).toFixed(0)}%
+                                </div>
+                              </div>
+                              <div className="p-2 rounded-lg bg-gray-50">
+                                <div className="text-[10px] text-gray-500 mb-1">분석 종목</div>
+                                <div className="text-sm font-bold text-gray-900">
+                                  {performance.stocksAnalyzed}개
+                                </div>
+                              </div>
+                              <div className="p-2 rounded-lg bg-gray-50">
+                                <div className="text-[10px] text-gray-500 mb-1">최대 수익</div>
+                                <div className="text-sm font-bold text-emerald-600">
+                                  +{performance.maxReturn.toFixed(1)}%
+                                </div>
+                              </div>
+                              <div className="p-2 rounded-lg bg-gray-50">
+                                <div className="text-[10px] text-gray-500 mb-1">최대 손실</div>
+                                <div className="text-sm font-bold text-red-600">
+                                  {performance.minReturn.toFixed(1)}%
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 중앙값 */}
+                            <div className="text-xs text-gray-600 text-center pt-2 border-t border-gray-200">
+                              중앙값: <span className="font-semibold">{performance.medianReturn.toFixed(1)}%</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500 text-sm">
+                            데이터를 불러올 수 없습니다
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* 검색 및 필터 */}
             <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 space-y-4">
+              {/* 필터 헤더 및 초기화 버튼 */}
+              <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                <div className="text-sm font-bold text-gray-900">🔍 검색 및 필터</div>
+                <button
+                  onClick={() => {
+                    setUndervaluedSearchQuery("");
+                    setUndervaluedMarket("전체");
+                    setUndervaluedCategory("전체");
+                    setUndervaluedIndustry("전체");
+                    setUndervaluedMinScore(0);
+                    setUndervaluedMaxScore(100);
+                    setUndervaluedPage(1);
+                  }}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold transition-colors flex items-center gap-1"
+                >
+                  <span>🔄</span>
+                  <span>초기화</span>
+                </button>
+              </div>
+
               {/* 검색창 */}
               <input
                 type="text"
@@ -998,6 +1208,102 @@ export default function DemoHome() {
                   </div>
                 </div>
               )}
+
+              {/* 종합 점수 범위 필터 */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[10px] sm:text-xs text-gray-600 font-semibold">종합 점수 범위</div>
+                  <div className="text-xs text-indigo-600 font-semibold">
+                    {undervaluedMinScore} - {undervaluedMaxScore}점
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {/* 최소 점수 슬라이더 */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <label className="text-[10px] text-gray-500 min-w-[60px]">최소 점수</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={undervaluedMinScore}
+                        onChange={(e) => {
+                          const newMin = parseInt(e.target.value);
+                          if (newMin <= undervaluedMaxScore) {
+                            setUndervaluedMinScore(newMin);
+                            setUndervaluedPage(1);
+                          }
+                        }}
+                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                      />
+                      <span className="text-xs font-semibold text-gray-700 min-w-[40px] text-right">
+                        {undervaluedMinScore}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 최대 점수 슬라이더 */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <label className="text-[10px] text-gray-500 min-w-[60px]">최대 점수</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={undervaluedMaxScore}
+                        onChange={(e) => {
+                          const newMax = parseInt(e.target.value);
+                          if (newMax >= undervaluedMinScore) {
+                            setUndervaluedMaxScore(newMax);
+                            setUndervaluedPage(1);
+                          }
+                        }}
+                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                      />
+                      <span className="text-xs font-semibold text-gray-700 min-w-[40px] text-right">
+                        {undervaluedMaxScore}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 빠른 선택 버튼 */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setUndervaluedMinScore(70);
+                        setUndervaluedMaxScore(100);
+                        setUndervaluedPage(1);
+                      }}
+                      className="flex-1 text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-semibold transition-colors"
+                    >
+                      우수 (70+)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setUndervaluedMinScore(50);
+                        setUndervaluedMaxScore(100);
+                        setUndervaluedPage(1);
+                      }}
+                      className="flex-1 text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold transition-colors"
+                    >
+                      양호 (50+)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setUndervaluedMinScore(0);
+                        setUndervaluedMaxScore(100);
+                        setUndervaluedPage(1);
+                      }}
+                      className="flex-1 text-xs px-3 py-1.5 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 font-semibold transition-colors"
+                    >
+                      전체
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* 초보자 모드: 카드 뷰 / 전문가 모드: 테이블 뷰 */}
@@ -1210,18 +1516,12 @@ export default function DemoHome() {
                             <td className="px-4 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-3">
                                 <div className="relative">
-                                  {stock.logoUrl && !logoErrors[stock.symbol] ? (
-                                    <img
-                                      src={stock.logoUrl}
-                                      alt={stock.name}
-                                      className="h-10 w-10 rounded-lg object-contain bg-white p-1"
-                                      onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
-                                    />
-                                  ) : (
-                                    <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
-                                      <span className="text-lg text-gray-400">?</span>
-                                    </div>
-                                  )}
+                                  <StockLogo
+                                    src={stock.logoUrl}
+                                    alt={stock.name}
+                                    size="md"
+                                    onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
+                                  />
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -1293,7 +1593,9 @@ export default function DemoHome() {
                 const matchStrategy =
                   undervaluedStrategies.length === 0 ||
                   undervaluedStrategies.every((strategy) => matchesInvestmentStrategy(stock, strategy));
-                return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy;
+                // 점수 범위 필터링
+                const matchScore = stock.aiScore >= undervaluedMinScore && stock.aiScore <= undervaluedMaxScore;
+                return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy && matchScore;
               });
               const itemsPerPage = isBeginnerMode ? 12 : 30;
               const totalPages = Math.ceil(filteredStocks.length / itemsPerPage);
@@ -1738,18 +2040,12 @@ export default function DemoHome() {
                                 <td className="px-4 py-4 whitespace-nowrap">
                                   <div className="flex items-center gap-3">
                                     <div className="relative">
-                                      {stock.logoUrl && !logoErrors[stock.symbol] ? (
-                                        <img
-                                          src={stock.logoUrl}
-                                          alt={stock.name}
-                                          className="h-10 w-10 rounded-lg object-contain bg-white p-1"
-                                          onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
-                                        />
-                                      ) : (
-                                        <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
-                                          <span className="text-lg text-gray-400">?</span>
-                                        </div>
-                                      )}
+                                      <StockLogo
+                                        src={stock.logoUrl}
+                                        alt={stock.name}
+                                        size="md"
+                                        onError={() => setLogoErrors(prev => ({ ...prev, [stock.symbol]: true }))}
+                                      />
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -1877,13 +2173,11 @@ export default function DemoHome() {
                               className="rounded-xl bg-white p-3 sm:p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                             >
                               <div className="flex items-center gap-3">
-                                {stock.logoUrl && (
-                                  <img
-                                    src={stock.logoUrl}
-                                    alt={stock.name}
-                                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200 object-contain p-1"
-                                  />
-                                )}
+                                <StockLogo
+                                  src={stock.logoUrl}
+                                  alt={stock.name}
+                                  size="lg"
+                                />
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-sm sm:text-base text-gray-900 truncate">{stock.name}</div>
                                   <div className="text-xs sm:text-sm text-gray-500">{stock.symbol} · {stock.sector}</div>
@@ -1930,13 +2224,11 @@ export default function DemoHome() {
                                 className="rounded-xl bg-white p-3 sm:p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                               >
                                 <div className="flex items-start gap-3">
-                                  {stock?.logoUrl && (
-                                    <img
-                                      src={stock.logoUrl}
-                                      alt={stock.name}
-                                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200 object-contain p-1"
-                                    />
-                                  )}
+                                  <StockLogo
+                                    src={stock?.logoUrl}
+                                    alt={stock?.name || filing.symbol}
+                                    size="lg"
+                                  />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                       <span className="font-bold text-sm sm:text-base text-gray-900">{filing.symbol}</span>
@@ -1979,13 +2271,11 @@ export default function DemoHome() {
                               className="rounded-xl bg-gray-50 p-3 sm:p-4 border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer"
                             >
                               <div className="flex items-center gap-3">
-                                {stock.logoUrl && (
-                                  <img
-                                    src={stock.logoUrl}
-                                    alt={stock.name}
-                                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-white border border-gray-200 object-contain p-1"
-                                  />
-                                )}
+                                <StockLogo
+                                  src={stock.logoUrl}
+                                  alt={stock.name}
+                                  size="lg"
+                                />
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-sm sm:text-base text-gray-900 truncate">{stock.name}</div>
                                   <div className="text-xs sm:text-sm text-gray-500">{stock.symbol} · {stock.sector}</div>
@@ -2008,7 +2298,8 @@ export default function DemoHome() {
 
             // ✅ 종목이 선택된 경우: 상세 정보 표시
             const stockInfo = undervaluedStocks.find(s => s.symbol === detailSymbol);
-            const stockFilings = filings.filter(f => f.symbol === detailSymbol);
+            // SEC 공시 데이터: 백엔드 API로부터 점수 추이 포함된 데이터 우선 사용
+            const stockFilings = stockFilingWithScores ? [stockFilingWithScores] : filings.filter(f => f.symbol === detailSymbol);
 
             // ✅ 종목 정보가 없을 때 안내 메시지 표시
             if (!stockInfo) {
@@ -2130,18 +2421,13 @@ export default function DemoHome() {
                 <div className="mb-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-6 md:p-8 text-white shadow-xl">
                   <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
                     <div className="flex items-start gap-3 sm:gap-6 flex-1">
-                      {stockInfo?.logoUrl && !detailLogoError ? (
-                        <img
-                          src={stockInfo.logoUrl}
-                          alt={String(stockDetail.Name)}
-                          className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-xl sm:rounded-2xl bg-white p-1.5 sm:p-2 shadow-lg flex-shrink-0 object-contain"
-                          onError={() => setDetailLogoError(true)}
-                        />
-                      ) : (
-                        <div className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-xl sm:rounded-2xl bg-gray-200 flex items-center justify-center shadow-lg flex-shrink-0">
-                          <span className="text-xl sm:text-2xl md:text-3xl text-gray-400">?</span>
-                        </div>
-                      )}
+                      <StockLogo
+                        src={stockInfo?.logoUrl}
+                        alt={String(stockDetail.Name)}
+                        size="xl"
+                        className="shadow-lg sm:h-16 sm:w-16 md:h-20 md:w-20 sm:rounded-2xl p-1.5 sm:p-2"
+                        onError={() => setDetailLogoError(true)}
+                      />
                       <div className="min-w-0">
                         <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold mb-1 sm:mb-2 truncate">{stockDetail.Name}</h1>
                         <p className="text-sm sm:text-base md:text-xl text-indigo-100 mb-2 sm:mb-3 truncate">
@@ -2359,6 +2645,72 @@ export default function DemoHome() {
                       </div>
                     </div>
 
+                    {/* 수익률 성과 */}
+                    {(stockInfo.introducedAt || stockInfo.perfSinceIntro !== undefined || stockInfo.perf100d !== undefined) && (
+                      <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
+                        <h2 className="text-lg font-bold text-gray-900 mb-4">📈 수익률 성과</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {stockInfo.introducedAt && (
+                            <div className="p-4 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200">
+                              <div className="text-xs text-gray-600 mb-2">스크리닝 시작일</div>
+                              <div className="text-sm font-bold text-gray-900 mb-1">
+                                {new Date(stockInfo.introducedAt).toLocaleDateString('ko-KR', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                ({Math.floor((Date.now() - new Date(stockInfo.introducedAt).getTime()) / (1000 * 60 * 60 * 24))}일 전)
+                              </div>
+                            </div>
+                          )}
+                          {stockInfo.perfSinceIntro !== undefined && (
+                            <div className="p-4 rounded-lg bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
+                              <div className="text-xs text-gray-600 mb-2">스크리닝 이후 수익률</div>
+                              <div className={classNames(
+                                "text-3xl font-bold mb-1",
+                                stockInfo.perfSinceIntro > 0 ? "text-emerald-600" :
+                                stockInfo.perfSinceIntro < 0 ? "text-red-600" :
+                                "text-gray-600"
+                              )}>
+                                {stockInfo.perfSinceIntro > 0 ? "+" : ""}{stockInfo.perfSinceIntro.toFixed(1)}%
+                              </div>
+                              <div className="flex items-center gap-1 text-xs">
+                                <span className={stockInfo.perfSinceIntro > 0 ? "text-emerald-600" : "text-red-600"}>
+                                  {stockInfo.perfSinceIntro > 0 ? "↗" : stockInfo.perfSinceIntro < 0 ? "↘" : "→"}
+                                </span>
+                                <span className="text-gray-600">
+                                  {stockInfo.perfSinceIntro > 0 ? "수익 중" : stockInfo.perfSinceIntro < 0 ? "손실 중" : "변동 없음"}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          {stockInfo.perf100d !== undefined && (
+                            <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200">
+                              <div className="text-xs text-gray-600 mb-2">최근 100일 수익률</div>
+                              <div className={classNames(
+                                "text-3xl font-bold mb-1",
+                                stockInfo.perf100d > 0 ? "text-blue-600" :
+                                stockInfo.perf100d < 0 ? "text-red-600" :
+                                "text-gray-600"
+                              )}>
+                                {stockInfo.perf100d > 0 ? "+" : ""}{stockInfo.perf100d.toFixed(1)}%
+                              </div>
+                              <div className="flex items-center gap-1 text-xs">
+                                <span className={stockInfo.perf100d > 0 ? "text-blue-600" : "text-red-600"}>
+                                  {stockInfo.perf100d > 0 ? "↗" : stockInfo.perf100d < 0 ? "↘" : "→"}
+                                </span>
+                                <span className="text-gray-600">
+                                  {stockInfo.perf100d > 0 ? "상승" : stockInfo.perf100d < 0 ? "하락" : "보합"}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {/* 밸류에이션 */}
                     <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
                       <h2 className="text-lg font-bold text-gray-900 mb-4">💰 밸류에이션</h2>
@@ -2493,6 +2845,103 @@ export default function DemoHome() {
                         })}
                       </div>
                     </div>
+
+                    {/* ETF 멤버십 (이 종목을 포함하는 ETF 목록) */}
+                    <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
+                      <h2 className="text-lg font-bold text-gray-900 mb-4">📦 이 종목을 포함하는 ETF</h2>
+                      {etfHoldingsLoading ? (
+                        <div className="text-center py-8">
+                          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                          <p className="mt-2 text-sm text-gray-500">ETF 정보를 불러오는 중...</p>
+                        </div>
+                      ) : etfHoldings.length > 0 ? (
+                        <div className="space-y-3">
+                          <div className="text-sm text-gray-600 mb-3">
+                            총 <span className="font-bold text-indigo-600">{etfHoldings.length}개</span>의 ETF가 이 종목을 보유하고 있습니다
+                          </div>
+                          <div className="grid grid-cols-1 gap-4">
+                            {etfHoldings.map((etf) => (
+                              <div
+                                key={etf.ticker}
+                                className="p-4 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 hover:shadow-md transition-all"
+                              >
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs text-gray-600 mb-1">{etf.ticker}</div>
+                                    <div className="text-sm font-bold text-gray-900 mb-2 line-clamp-2">
+                                      {etf.long_name || etf.short_name}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 items-center">
+                                      {etf.category && (
+                                        <span className="text-xs text-indigo-600 px-2 py-0.5 bg-indigo-100 rounded">
+                                          {etf.category}
+                                        </span>
+                                      )}
+                                      {etf.primary_sector && (
+                                        <span className="text-xs text-purple-600 px-2 py-0.5 bg-purple-100 rounded">
+                                          {etf.primary_sector}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {etf.total_assets && (
+                                    <div className="text-right flex-shrink-0">
+                                      <div className="text-xs text-gray-500 mb-1">운용규모</div>
+                                      <div className="text-sm font-semibold text-gray-900">
+                                        ${(etf.total_assets / 1e9).toFixed(1)}B
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* ETF 섹터 비중 파이 차트 */}
+                                {etf.sector_weightings && Object.keys(etf.sector_weightings).length > 0 && (
+                                  <div className="mt-4 pt-4 border-t border-indigo-200">
+                                    <div className="text-xs font-semibold text-gray-700 mb-3">섹터 비중</div>
+                                    <EtfSectorPieChart sectorWeightings={etf.sector_weightings} topN={5} />
+                                  </div>
+                                )}
+
+                                {/* ETF 성과 지표 */}
+                                {(etf.ytd_return !== undefined || etf.return_1y !== undefined || etf.expense_ratio !== undefined) && (
+                                  <div className="mt-3 grid grid-cols-3 gap-2">
+                                    {etf.ytd_return !== undefined && (
+                                      <div className="text-center p-2 rounded bg-white/50">
+                                        <div className="text-[10px] text-gray-600 mb-1">YTD</div>
+                                        <div className={`text-xs font-bold ${etf.ytd_return >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                          {etf.ytd_return > 0 ? '+' : ''}{etf.ytd_return.toFixed(1)}%
+                                        </div>
+                                      </div>
+                                    )}
+                                    {etf.return_1y !== undefined && (
+                                      <div className="text-center p-2 rounded bg-white/50">
+                                        <div className="text-[10px] text-gray-600 mb-1">1년</div>
+                                        <div className={`text-xs font-bold ${etf.return_1y >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                          {etf.return_1y > 0 ? '+' : ''}{etf.return_1y.toFixed(1)}%
+                                        </div>
+                                      </div>
+                                    )}
+                                    {etf.expense_ratio !== undefined && (
+                                      <div className="text-center p-2 rounded bg-white/50">
+                                        <div className="text-[10px] text-gray-600 mb-1">운용비용</div>
+                                        <div className="text-xs font-bold text-gray-900">
+                                          {etf.expense_ratio.toFixed(2)}%
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="text-4xl mb-2">📦</div>
+                          <p className="text-gray-500 text-sm">이 종목을 포함하는 ETF 정보가 없습니다</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : detailTab === "chart" ? (
                   /* 주가 추이 차트 탭 */
@@ -2511,18 +2960,12 @@ export default function DemoHome() {
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                               {/* 로고 추가 */}
-                              {filing.logoUrl && !logoErrors[filing.symbol] ? (
-                                <img
-                                  src={filing.logoUrl}
-                                  alt={filing.company}
-                                  className="h-8 w-8 rounded-lg flex-shrink-0"
-                                  onError={() => setLogoErrors(prev => ({ ...prev, [filing.symbol]: true }))}
-                                />
-                              ) : (
-                                <div className="h-8 w-8 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-sm text-gray-400">?</span>
-                                </div>
-                              )}
+                              <StockLogo
+                                src={filing.logoUrl}
+                                alt={filing.company}
+                                size="sm"
+                                onError={() => setLogoErrors(prev => ({ ...prev, [filing.symbol]: true }))}
+                              />
                               <span className="inline-flex items-center rounded-lg bg-indigo-100 px-3 py-1.5 text-sm font-semibold text-indigo-700">
                                 {filing.formType}
                               </span>
@@ -2534,18 +2977,66 @@ export default function DemoHome() {
                             <AIScoreGauge score={filing.aiScore} sentiment={filing.sentiment} size="md" />
                           </div>
                         </div>
-                        {filing.previousScores && (
+                        {filing.previousScores && filing.previousScores.length > 0 && (
                           <div className="mt-4 pt-4 border-t border-gray-200">
-                            <div className="text-sm text-gray-600 font-semibold mb-3">이전 공시 점수 추이</div>
-                            <div className="flex gap-3">
-                              {filing.previousScores.map((score: number, idx: number) => (
-                                <div key={idx} className="text-center">
-                                  <div className="text-xs text-gray-500 mb-1">-{filing.previousScores.length - idx}회</div>
-                                  <div className="text-sm font-bold text-gray-900 bg-gray-100 px-3 py-2 rounded-lg">
-                                    {score}점
-                                  </div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="text-sm text-gray-600 font-semibold">이전 공시 점수 추이</div>
+                              {filing.previousScores.length > 1 && (
+                                <div className="text-xs text-gray-500">
+                                  ({filing.previousScores.length}개 공시 이력)
                                 </div>
-                              ))}
+                              )}
+                            </div>
+
+                            {/* 점수 추이 차트 */}
+                            {filing.previousScores.length >= 2 && (
+                              <div className="mb-4 p-4 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200">
+                                <FilingScoreTrendChart scores={filing.previousScores} />
+                              </div>
+                            )}
+
+                            {/* 점수 박스 표시 */}
+                            <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2">
+                              {filing.previousScores.map((score: number, idx: number) => {
+                                const isLatest = idx === filing.previousScores.length - 1;
+                                const prevScore = idx > 0 ? filing.previousScores[idx - 1] : null;
+                                const scoreDiff = prevScore !== null ? score - prevScore : null;
+                                const scoreColor =
+                                  score >= 80 ? "text-emerald-700 bg-emerald-50 border-emerald-200" :
+                                  score >= 70 ? "text-blue-700 bg-blue-50 border-blue-200" :
+                                  score >= 60 ? "text-gray-700 bg-gray-50 border-gray-200" :
+                                  score >= 50 ? "text-orange-700 bg-orange-50 border-orange-200" :
+                                  "text-red-700 bg-red-50 border-red-200";
+
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={classNames(
+                                      "text-center min-w-[80px] rounded-lg border-2 p-2 sm:p-3 transition-all",
+                                      isLatest ? "ring-2 ring-indigo-300 shadow-md scale-105" : "",
+                                      scoreColor
+                                    )}
+                                  >
+                                    <div className="text-[10px] sm:text-xs text-gray-600 mb-1 font-medium">
+                                      {isLatest ? "최신" : `-${filing.previousScores.length - idx}회`}
+                                    </div>
+                                    <div className="text-base sm:text-lg font-bold mb-1">
+                                      {score}점
+                                    </div>
+                                    {scoreDiff !== null && (
+                                      <div className={classNames(
+                                        "text-[10px] font-semibold flex items-center justify-center gap-0.5",
+                                        scoreDiff > 0 ? "text-emerald-600" :
+                                        scoreDiff < 0 ? "text-red-600" :
+                                        "text-gray-500"
+                                      )}>
+                                        {scoreDiff > 0 ? "↗" : scoreDiff < 0 ? "↘" : "→"}
+                                        {scoreDiff > 0 ? "+" : ""}{scoreDiff}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}

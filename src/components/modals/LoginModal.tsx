@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { authStorage, initDummyData } from '@/utils/authStorage';
+import { api } from '@/api/client';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
 interface LoginModalProps {
@@ -11,32 +11,42 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
 
   if (!open) return null;
 
-  // 더미 데이터 초기화 (개발용)
-  initDummyData();
-
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError('');
+    setLoading(true);
 
     if (!id || !password) {
       setError('아이디와 비밀번호를 입력하세요.');
+      setLoading(false);
       return;
     }
 
-    // 로그인 검증
-    const isValid = authStorage.validateLogin(id, password);
-    if (isValid) {
-      authStorage.login(id); // 로그인 상태 저장
-      console.log('로그인 성공:', id);
-      alert('로그인 성공!');
-      onClose();
-      // 페이지 새로고침으로 헤더 업데이트
-      window.location.reload();
-    } else {
-      setError('아이디 또는 비밀번호가 올바르지 않습니다.');
+    try {
+      // 백엔드 API 호출
+      const response = await api.auth.login({
+        username: id,
+        password: password,
+      });
+
+      if (response.success && response.data) {
+        console.log('✅ 로그인 성공:', response.data.username);
+        alert(`로그인 성공! 환영합니다, ${response.data.username}님!`);
+        onClose();
+        // 페이지 새로고침으로 헤더 업데이트
+        window.location.reload();
+      } else {
+        setError(response.message || '로그인에 실패했습니다.');
+      }
+    } catch (err: any) {
+      console.error('❌ 로그인 실패:', err);
+      setError(err.response?.data?.message || '아이디 또는 비밀번호가 올바르지 않습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,9 +100,10 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
               </div>
               <button
                 onClick={handleLogin}
-                className="w-full bg-indigo-600 text-white font-semibold py-2.5 sm:py-3 text-sm sm:text-base rounded-xl hover:bg-indigo-700 transition-colors"
+                disabled={loading}
+                className="w-full bg-indigo-600 text-white font-semibold py-2.5 sm:py-3 text-sm sm:text-base rounded-xl hover:bg-indigo-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                로그인
+                {loading ? '로그인 중...' : '로그인'}
               </button>
             </div>
 

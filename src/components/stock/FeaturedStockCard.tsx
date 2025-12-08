@@ -16,9 +16,11 @@ interface FeaturedStock {
 interface FeaturedStockCardProps {
   stock: FeaturedStock;
   onClick: () => void;
+  isFavorite?: boolean;           // 즐겨찾기 여부
+  onToggleFavorite?: () => void;  // 즐겨찾기 토글 콜백
 }
 
-export default function FeaturedStockCard({ stock, onClick }: FeaturedStockCardProps) {
+export default function FeaturedStockCard({ stock, onClick, isFavorite, onToggleFavorite }: FeaturedStockCardProps) {
   return (
     <div
       onClick={onClick}
@@ -30,10 +32,25 @@ export default function FeaturedStockCard({ stock, onClick }: FeaturedStockCardP
             {stock.logoUrl && (
               <img src={stock.logoUrl} alt={stock.name} className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg flex-shrink-0 object-contain bg-white p-0.5 sm:p-1" />
             )}
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="text-xs sm:text-sm text-gray-600">{stock.symbol}</div>
               <div className="text-base sm:text-lg font-bold text-gray-900 truncate">{stock.name}</div>
             </div>
+            {/* 즐겨찾기 버튼 */}
+            {onToggleFavorite && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleFavorite();
+                }}
+                className="flex-shrink-0 hover:scale-110 transition-transform"
+                aria-label={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+              >
+                <span className="text-lg sm:text-xl">
+                  {isFavorite ? '⭐' : '☆'}
+                </span>
+              </button>
+            )}
           </div>
           <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-gray-700 line-clamp-2">{stock.reason}</p>
           <div className="mt-2 sm:mt-3 flex items-center gap-2 flex-wrap">
