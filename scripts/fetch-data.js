@@ -312,12 +312,17 @@ async function fetchAllData() {
   }
 }
 
-// 스크립트 실행
-fetchAllData()
-  .then((exitCode) => {
-    process.exit(exitCode);
-  })
-  .catch((error) => {
-    console.error('❌ Unhandled error:', error);
-    process.exit(1);
-  });
+// 모듈로 export
+module.exports = { fetchAllData };
+
+// 스크립트로 직접 실행될 때만 실행
+if (require.main === module) {
+  fetchAllData()
+    .then((exitCode) => {
+      process.exit(exitCode);
+    })
+    .catch((error) => {
+      console.error('❌ Unhandled error:', error);
+      process.exit(1);
+    });
+}
