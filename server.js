@@ -14,6 +14,8 @@ const fs = require('fs');
 const compression = require('compression');
 const morgan = require('morgan');
 const { createStream } = require('rotating-file-stream');
+const cron = require('node-cron');
+const { fetchAllData } = require('./scripts/fetch-data');
 
 // ============================================
 // Configuration
@@ -216,9 +218,48 @@ const server = app.listen(PORT, () => {
   console.log('');
 });
 
+// ============================================
+// Scheduled Tasks (Cron Jobs)
+// ============================================
+
+// 매일 한국시간 오전 8시 30분에 데이터 fetch
+// Cron 표현식: 분 시 일 월 요일
+// 30 8 * * * = 매일 08:30
+const dataFetchJob = cron.schedule('30 8 * * *', async () => {
+  const now = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+  console.log('');
+  console.log('='.repeat(60));
+  console.log(\`🕐 Scheduled Data Fetch Started (KST: \${now})\`);
+  console.log('='.repeat(60));
+
+  try {
+    await fetchAllData();
+    console.log('✅ Scheduled data fetch completed successfully');
+  } catch (error) {
+    console.error('❌ Scheduled data fetch failed:', error.message);
+    errorLogStream.write(\`\${new Date().toISOString()} - SCHEDULED_FETCH_ERROR: \${error.message}\n\${error.stack}\n\`);
+  }
+
+  console.log('='.repeat(60));
+  console.log('');
+}, {
+  scheduled: true,
+  timezone: 'Asia/Seoul'
+});
+
+console.log('⏰ Scheduled task registered:');
+console.log('   - Daily data fetch at 08:30 KST (Korea Standard Time)');
+console.log('');
+
 // Graceful Shutdown
 const gracefulShutdown = (signal) => {
   console.log(\`\n\${signal} received. Starting graceful shutdown...\`);
+
+  // Cron job 중지
+  if (dataFetchJob) {
+    dataFetchJob.stop();
+    console.log('✅ Scheduled tasks stopped');
+  }
 
   server.close(() => {
     console.log('✅ HTTP server closed');
