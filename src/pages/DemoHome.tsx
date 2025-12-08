@@ -2426,6 +2426,72 @@ export default function DemoHome() {
                       </div>
                     </div>
 
+                    {/* 수익률 성과 */}
+                    {(stockInfo.introducedAt || stockInfo.perfSinceIntro !== undefined || stockInfo.perf100d !== undefined) && (
+                      <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
+                        <h2 className="text-lg font-bold text-gray-900 mb-4">📈 수익률 성과</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {stockInfo.introducedAt && (
+                            <div className="p-4 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200">
+                              <div className="text-xs text-gray-600 mb-2">스크리닝 시작일</div>
+                              <div className="text-sm font-bold text-gray-900 mb-1">
+                                {new Date(stockInfo.introducedAt).toLocaleDateString('ko-KR', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                ({Math.floor((Date.now() - new Date(stockInfo.introducedAt).getTime()) / (1000 * 60 * 60 * 24))}일 전)
+                              </div>
+                            </div>
+                          )}
+                          {stockInfo.perfSinceIntro !== undefined && (
+                            <div className="p-4 rounded-lg bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
+                              <div className="text-xs text-gray-600 mb-2">스크리닝 이후 수익률</div>
+                              <div className={classNames(
+                                "text-3xl font-bold mb-1",
+                                stockInfo.perfSinceIntro > 0 ? "text-emerald-600" :
+                                stockInfo.perfSinceIntro < 0 ? "text-red-600" :
+                                "text-gray-600"
+                              )}>
+                                {stockInfo.perfSinceIntro > 0 ? "+" : ""}{stockInfo.perfSinceIntro.toFixed(1)}%
+                              </div>
+                              <div className="flex items-center gap-1 text-xs">
+                                <span className={stockInfo.perfSinceIntro > 0 ? "text-emerald-600" : "text-red-600"}>
+                                  {stockInfo.perfSinceIntro > 0 ? "↗" : stockInfo.perfSinceIntro < 0 ? "↘" : "→"}
+                                </span>
+                                <span className="text-gray-600">
+                                  {stockInfo.perfSinceIntro > 0 ? "수익 중" : stockInfo.perfSinceIntro < 0 ? "손실 중" : "변동 없음"}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          {stockInfo.perf100d !== undefined && (
+                            <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200">
+                              <div className="text-xs text-gray-600 mb-2">최근 100일 수익률</div>
+                              <div className={classNames(
+                                "text-3xl font-bold mb-1",
+                                stockInfo.perf100d > 0 ? "text-blue-600" :
+                                stockInfo.perf100d < 0 ? "text-red-600" :
+                                "text-gray-600"
+                              )}>
+                                {stockInfo.perf100d > 0 ? "+" : ""}{stockInfo.perf100d.toFixed(1)}%
+                              </div>
+                              <div className="flex items-center gap-1 text-xs">
+                                <span className={stockInfo.perf100d > 0 ? "text-blue-600" : "text-red-600"}>
+                                  {stockInfo.perf100d > 0 ? "↗" : stockInfo.perf100d < 0 ? "↘" : "→"}
+                                </span>
+                                <span className="text-gray-600">
+                                  {stockInfo.perf100d > 0 ? "상승" : stockInfo.perf100d < 0 ? "하락" : "보합"}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {/* 밸류에이션 */}
                     <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
                       <h2 className="text-lg font-bold text-gray-900 mb-4">💰 밸류에이션</h2>
