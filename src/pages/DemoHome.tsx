@@ -190,6 +190,10 @@ export default function DemoHome() {
     setUndervaluedCategoryPages,
     undervaluedSorts,
     setUndervaluedSorts,
+    undervaluedMinScore,
+    setUndervaluedMinScore,
+    undervaluedMaxScore,
+    setUndervaluedMaxScore,
     filingsSearchQuery,
     setFilingsSearchQuery,
     filingsPage,
@@ -1119,6 +1123,26 @@ export default function DemoHome() {
 
             {/* 검색 및 필터 */}
             <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 space-y-4">
+              {/* 필터 헤더 및 초기화 버튼 */}
+              <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                <div className="text-sm font-bold text-gray-900">🔍 검색 및 필터</div>
+                <button
+                  onClick={() => {
+                    setUndervaluedSearchQuery("");
+                    setUndervaluedMarket("전체");
+                    setUndervaluedCategory("전체");
+                    setUndervaluedIndustry("전체");
+                    setUndervaluedMinScore(0);
+                    setUndervaluedMaxScore(100);
+                    setUndervaluedPage(1);
+                  }}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold transition-colors flex items-center gap-1"
+                >
+                  <span>🔄</span>
+                  <span>초기화</span>
+                </button>
+              </div>
+
               {/* 검색창 */}
               <input
                 type="text"
@@ -1181,6 +1205,102 @@ export default function DemoHome() {
                   </div>
                 </div>
               )}
+
+              {/* 종합 점수 범위 필터 */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[10px] sm:text-xs text-gray-600 font-semibold">종합 점수 범위</div>
+                  <div className="text-xs text-indigo-600 font-semibold">
+                    {undervaluedMinScore} - {undervaluedMaxScore}점
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {/* 최소 점수 슬라이더 */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <label className="text-[10px] text-gray-500 min-w-[60px]">최소 점수</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={undervaluedMinScore}
+                        onChange={(e) => {
+                          const newMin = parseInt(e.target.value);
+                          if (newMin <= undervaluedMaxScore) {
+                            setUndervaluedMinScore(newMin);
+                            setUndervaluedPage(1);
+                          }
+                        }}
+                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                      />
+                      <span className="text-xs font-semibold text-gray-700 min-w-[40px] text-right">
+                        {undervaluedMinScore}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 최대 점수 슬라이더 */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <label className="text-[10px] text-gray-500 min-w-[60px]">최대 점수</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={undervaluedMaxScore}
+                        onChange={(e) => {
+                          const newMax = parseInt(e.target.value);
+                          if (newMax >= undervaluedMinScore) {
+                            setUndervaluedMaxScore(newMax);
+                            setUndervaluedPage(1);
+                          }
+                        }}
+                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                      />
+                      <span className="text-xs font-semibold text-gray-700 min-w-[40px] text-right">
+                        {undervaluedMaxScore}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 빠른 선택 버튼 */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setUndervaluedMinScore(70);
+                        setUndervaluedMaxScore(100);
+                        setUndervaluedPage(1);
+                      }}
+                      className="flex-1 text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-semibold transition-colors"
+                    >
+                      우수 (70+)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setUndervaluedMinScore(50);
+                        setUndervaluedMaxScore(100);
+                        setUndervaluedPage(1);
+                      }}
+                      className="flex-1 text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold transition-colors"
+                    >
+                      양호 (50+)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setUndervaluedMinScore(0);
+                        setUndervaluedMaxScore(100);
+                        setUndervaluedPage(1);
+                      }}
+                      className="flex-1 text-xs px-3 py-1.5 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 font-semibold transition-colors"
+                    >
+                      전체
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* 초보자 모드: 카드 뷰 / 전문가 모드: 테이블 뷰 */}
@@ -1476,7 +1596,9 @@ export default function DemoHome() {
                 const matchStrategy =
                   undervaluedStrategies.length === 0 ||
                   undervaluedStrategies.every((strategy) => matchesInvestmentStrategy(stock, strategy));
-                return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy;
+                // 점수 범위 필터링
+                const matchScore = stock.aiScore >= undervaluedMinScore && stock.aiScore <= undervaluedMaxScore;
+                return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy && matchScore;
               });
               const itemsPerPage = isBeginnerMode ? 12 : 30;
               const totalPages = Math.ceil(filteredStocks.length / itemsPerPage);
