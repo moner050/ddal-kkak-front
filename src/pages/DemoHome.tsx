@@ -70,6 +70,7 @@ import FilingAnalysisCard from "../components/stock/FilingAnalysisCard";
 import FilingCard from "../components/stock/FilingCard";
 import BeginnerStockCard from "../components/stock/BeginnerStockCard";
 import StockPriceVisualization from "../components/stock/StockPriceVisualization";
+import FilingScoreTrendChart from "../components/charts/FilingScoreTrendChart";
 import ThreePointSummary from "../components/stock/ThreePointSummary";
 import PriceGuideBand from "../components/stock/PriceGuideBand";
 import EnhancedThreePointSummary from "../components/stock/EnhancedThreePointSummary";
@@ -2976,6 +2977,15 @@ export default function DemoHome() {
                                 </div>
                               )}
                             </div>
+
+                            {/* 점수 추이 차트 */}
+                            {filing.previousScores.length >= 2 && (
+                              <div className="mb-4 p-4 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200">
+                                <FilingScoreTrendChart scores={filing.previousScores} />
+                              </div>
+                            )}
+
+                            {/* 점수 박스 표시 */}
                             <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2">
                               {filing.previousScores.map((score: number, idx: number) => {
                                 const isLatest = idx === filing.previousScores.length - 1;
