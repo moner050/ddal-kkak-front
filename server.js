@@ -152,13 +152,20 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Proxy (선택사항) - 백엔드 API로 프록시
-// 필요시 주석 해제
-// const { createProxyMiddleware } = require('http-proxy-middleware');
-// app.use('/api', createProxyMiddleware({
-//   target: process.env.EXPO_PUBLIC_API_URL || 'http://finance-mhb-api.kro.kr',
-//   changeOrigin: true,
-// }));
+// API Proxy - 백엔드 API로 프록시 (Mixed Content 해결)
+const { createProxyMiddleware } = require('http-proxy-middleware');
+app.use('/api', createProxyMiddleware({
+  target: 'http://finance-mhb-api.kro.kr',
+  changeOrigin: true,
+  logLevel: 'debug',
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`[Proxy] ${req.method} ${req.url} -> ${proxyReq.getHeader('host')}${proxyReq.path}`);
+  },
+  onError: (err, req, res) => {
+    console.error('[Proxy Error]', err.message);
+    res.status(500).json({ error: 'Proxy error', message: err.message });
+  },
+}));
 
 // SPA Routing: 모든 요청을 index.html로 리다이렉트
 app.get('*', (req, res) => {
