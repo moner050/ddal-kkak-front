@@ -35,13 +35,13 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        EXPO_PUBLIC_API_URL: 'https://finance-mhb-api.kro.kr', // 백엔드 API URL (서버에 맞게 수정)
+        EXPO_PUBLIC_API_URL: 'http://finance-mhb-api.kro.kr', // 백엔드 API URL (서버에 맞게 수정)
       },
 
       env_development: {
         NODE_ENV: 'development',
         PORT: 3000,
-        EXPO_PUBLIC_API_URL: 'https://finance-mhb-api.kro.kr',
+        EXPO_PUBLIC_API_URL: 'http://finance-mhb-api.kro.kr',
       },
 
       env_staging: {
