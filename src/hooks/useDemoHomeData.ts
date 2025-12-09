@@ -9,13 +9,14 @@
  * - Yearly Sector Performances (연간)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { stockService, featuredService, filingService } from '../api/services';
 import {
   loadSectorPerformances,
   loadYearlySectorPerformances,
   type SectorPerformance,
-  type YearlySectorPerformanceResult
+  type YearlySectorPerformanceResult,
+  type DateRangeType
 } from '../services/sectorPerformance';
 import type {
   FrontendUndervaluedStock,
@@ -43,10 +44,12 @@ export interface UseDemoHomeDataReturn {
   sectorTodayDate: string;
   sectorYesterdayDate: string;
   isLoadingSectorPerformances: boolean;
+  handleSectorPerformanceRangeChange: (rangeType: DateRangeType, startDate?: string, endDate?: string) => Promise<void>;
 
   // Yearly Sector Performances
   yearlySectorPerformances: YearlySectorPerformanceResult;
   isLoadingYearlySectorPerformances: boolean;
+  handleYearlySectorPerformanceRangeChange: (rangeType: DateRangeType, startDate?: string, endDate?: string) => Promise<void>;
 }
 
 /**
@@ -85,6 +88,65 @@ export function useDemoHomeData(): UseDemoHomeDataReturn {
   });
   const [isLoadingYearlySectorPerformances, setIsLoadingYearlySectorPerformances] = useState(false);
 
+  // 섹터 성과 데이터 로드 함수
+  const handleSectorPerformanceRangeChange = useCallback(async (
+    rangeType: DateRangeType,
+    startDate?: string,
+    endDate?: string
+  ) => {
+    try {
+      setIsLoadingSectorPerformances(true);
+      const sectorResult = await loadSectorPerformances(rangeType, startDate, endDate);
+      setSectorPerformances(sectorResult.performances);
+      setSectorTodayDate(sectorResult.todayDate);
+      setSectorYesterdayDate(sectorResult.yesterdayDate);
+      console.log('✅ Sector performances loaded:', sectorResult.performances.length);
+      setIsLoadingSectorPerformances(false);
+    } catch (error) {
+      console.error('❌ Failed to load sector performances:', error);
+      setIsLoadingSectorPerformances(false);
+    }
+  }, []);
+
+  // 연간 섹터 성과 데이터 로드 함수
+  const handleYearlySectorPerformanceRangeChange = useCallback(async (
+    rangeType: DateRangeType,
+    startDate?: string,
+    endDate?: string
+  ) => {
+    try {
+      setIsLoadingYearlySectorPerformances(true);
+
+      // rangeType에 따라 시작 날짜 계산
+      let calculatedStartDate = '2025-01-01';
+      const today = new Date();
+
+      if (rangeType === 'custom' && startDate) {
+        calculatedStartDate = startDate;
+      } else {
+        switch (rangeType) {
+          case '1day':
+            calculatedStartDate = new Date(today.setDate(today.getDate() - 1)).toISOString().split('T')[0];
+            break;
+          case '1week':
+            calculatedStartDate = new Date(today.setDate(today.getDate() - 7)).toISOString().split('T')[0];
+            break;
+          case '1month':
+            calculatedStartDate = new Date(today.setMonth(today.getMonth() - 1)).toISOString().split('T')[0];
+            break;
+        }
+      }
+
+      const yearlyResult = await loadYearlySectorPerformances(calculatedStartDate, endDate);
+      setYearlySectorPerformances(yearlyResult);
+      console.log('✅ Yearly sector performances loaded:', yearlyResult.summaries.length);
+      setIsLoadingYearlySectorPerformances(false);
+    } catch (error) {
+      console.error('❌ Failed to load yearly sector performances:', error);
+      setIsLoadingYearlySectorPerformances(false);
+    }
+  }, []);
+
   // 데이터 로드
   useEffect(() => {
     const loadData = async () => {
@@ -115,21 +177,11 @@ export function useDemoHomeData(): UseDemoHomeDataReturn {
         console.log('📅 Data date:', stocksData.dataDate, '| Last updated:', stocksData.lastUpdated);
         setIsLoadingUndervalued(false);
 
-        // Sector Performances 로드
-        setIsLoadingSectorPerformances(true);
-        const sectorResult = await loadSectorPerformances();
-        setSectorPerformances(sectorResult.performances);
-        setSectorTodayDate(sectorResult.todayDate);
-        setSectorYesterdayDate(sectorResult.yesterdayDate);
-        console.log('✅ Sector performances loaded:', sectorResult.performances.length);
-        setIsLoadingSectorPerformances(false);
+        // Sector Performances 로드 (기본값: 하루 전)
+        await handleSectorPerformanceRangeChange('1day');
 
-        // Yearly Sector Performances 로드 (2025-01-01 ~ 현재)
-        setIsLoadingYearlySectorPerformances(true);
-        const yearlyResult = await loadYearlySectorPerformances('2025-01-01');
-        setYearlySectorPerformances(yearlyResult);
-        console.log('✅ Yearly sector performances loaded:', yearlyResult.summaries.length);
-        setIsLoadingYearlySectorPerformances(false);
+        // Yearly Sector Performances 로드 (기본값: 한달 전)
+        await handleYearlySectorPerformanceRangeChange('1month');
       } catch (error) {
         console.error('❌ Failed to load API data:', error);
         setIsLoadingFeatured(false);
@@ -141,7 +193,7 @@ export function useDemoHomeData(): UseDemoHomeDataReturn {
     };
 
     loadData();
-  }, []);
+  }, [handleSectorPerformanceRangeChange, handleYearlySectorPerformanceRangeChange]);
 
   return {
     featuredStocks,
@@ -156,7 +208,9 @@ export function useDemoHomeData(): UseDemoHomeDataReturn {
     sectorTodayDate,
     sectorYesterdayDate,
     isLoadingSectorPerformances,
+    handleSectorPerformanceRangeChange,
     yearlySectorPerformances,
     isLoadingYearlySectorPerformances,
+    handleYearlySectorPerformanceRangeChange,
   };
 }

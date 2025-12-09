@@ -98,9 +98,21 @@ export interface SectorPerformanceResult {
 }
 
 /**
- * 오늘과 어제 데이터를 로드하여 섹터별 성과 계산
+ * 날짜 범위 타입
  */
-export async function loadSectorPerformances(): Promise<SectorPerformanceResult> {
+export type DateRangeType = '1day' | '1week' | '1month' | 'custom';
+
+/**
+ * 오늘과 어제 데이터를 로드하여 섹터별 성과 계산
+ * @param rangeType 날짜 범위 타입 ('1day' | '1week' | '1month' | 'custom')
+ * @param customStartDate 커스텀 시작 날짜 (rangeType이 'custom'일 때만 사용)
+ * @param customEndDate 커스텀 종료 날짜 (rangeType이 'custom'일 때만 사용)
+ */
+export async function loadSectorPerformances(
+  rangeType: DateRangeType = '1day',
+  customStartDate?: string,
+  customEndDate?: string
+): Promise<SectorPerformanceResult> {
   try {
     // 1. 사용 가능한 날짜 목록 조회
     const availableDates = await stockService.getAvailableDates();
@@ -119,10 +131,44 @@ export async function loadSectorPerformances(): Promise<SectorPerformanceResult>
       (a, b) => new Date(b).getTime() - new Date(a).getTime()
     );
 
-    const todayDate = sortedDates[0];
-    const yesterdayDate = sortedDates[1];
+    let todayDate: string;
+    let yesterdayDate: string;
 
-    console.log(`📊 Loading sector performances: ${todayDate} vs ${yesterdayDate}`);
+    if (rangeType === 'custom' && customStartDate && customEndDate) {
+      // 커스텀 날짜 범위 사용
+      todayDate = customEndDate;
+      yesterdayDate = customStartDate;
+    } else {
+      // 가장 최근 날짜
+      todayDate = sortedDates[0];
+
+      // 날짜 범위에 따라 비교 날짜 선택
+      const todayDateObj = new Date(todayDate);
+      let targetDate: Date;
+
+      switch (rangeType) {
+        case '1day':
+          // 하루 전 (기본값: 두 번째로 최신 날짜)
+          yesterdayDate = sortedDates[1];
+          break;
+        case '1week':
+          // 일주일 전
+          targetDate = new Date(todayDateObj);
+          targetDate.setDate(targetDate.getDate() - 7);
+          yesterdayDate = findClosestDate(sortedDates, targetDate);
+          break;
+        case '1month':
+          // 한 달 전
+          targetDate = new Date(todayDateObj);
+          targetDate.setMonth(targetDate.getMonth() - 1);
+          yesterdayDate = findClosestDate(sortedDates, targetDate);
+          break;
+        default:
+          yesterdayDate = sortedDates[1];
+      }
+    }
+
+    console.log(`📊 Loading sector performances: ${todayDate} vs ${yesterdayDate} (${rangeType})`);
 
     // 2. 오늘과 어제 데이터 로드
     const [todayStocks, yesterdayStocks] = await Promise.all([
@@ -159,6 +205,24 @@ export async function loadSectorPerformances(): Promise<SectorPerformanceResult>
       yesterdayDate: '',
     };
   }
+}
+
+/**
+ * 가장 가까운 날짜 찾기
+ */
+function findClosestDate(dates: string[], targetDate: Date): string {
+  let closestDate = dates[dates.length - 1]; // 기본값: 가장 오래된 날짜
+  let minDiff = Math.abs(new Date(closestDate).getTime() - targetDate.getTime());
+
+  for (const date of dates) {
+    const diff = Math.abs(new Date(date).getTime() - targetDate.getTime());
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestDate = date;
+    }
+  }
+
+  return closestDate;
 }
 
 /**

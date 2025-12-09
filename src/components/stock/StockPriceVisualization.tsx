@@ -45,14 +45,7 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
             const latestDate = sortedDates[0];
 
             setMaxDate(latestDate);
-
-            // 사용 가능한 모든 날짜 사용 (이미 분산 저장되어 있음)
-            if (sortedDates.length > 1) {
-              setDateRange({
-                start: sortedDates[sortedDates.length - 1],
-                end: latestDate
-              });
-            }
+            // DateRangePicker가 자동으로 날짜 범위를 설정하므로 여기서는 설정하지 않음
             return;
           }
         } catch (error) {
@@ -63,17 +56,11 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
         const latestDate = await stockService.getLatestDataDate();
         if (latestDate) {
           setMaxDate(latestDate);
-          const dates = stockService.generateDateRange(latestDate, 3, 7);
-          if (dates.length > 0) {
-            setDateRange({ start: dates[0], end: latestDate });
-          }
+          // DateRangePicker가 자동으로 날짜 범위를 설정하므로 여기서는 설정하지 않음
         }
       } else {
         // initialMaxDate가 제공된 경우
-        const dates = stockService.generateDateRange(initialMaxDate, 3, 7);
-        if (dates.length > 0) {
-          setDateRange({ start: dates[0], end: initialMaxDate });
-        }
+        // DateRangePicker가 자동으로 날짜 범위를 설정하므로 여기서는 설정하지 않음
       }
     };
 
@@ -264,7 +251,7 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
       )}
 
       {/* 차트 섹션 */}
-      {!isLoading && historyData.length > 0 && (
+      {!isLoading && (
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">📈 추세 차트</h3>
@@ -284,14 +271,22 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
               ))}
             </div>
           </div>
-          <TimeSeriesChart
-            data={getChartData()}
-            height={300}
-            unit={chartMetricOptions.find((o) => o.value === selectedChartMetric)?.unit}
-            showGrid={true}
-            showXAxis={true}
-            showYAxis={true}
-          />
+          {historyData.length > 0 ? (
+            <TimeSeriesChart
+              data={getChartData()}
+              height={300}
+              unit={chartMetricOptions.find((o) => o.value === selectedChartMetric)?.unit}
+              showGrid={true}
+              showXAxis={true}
+              showYAxis={true}
+            />
+          ) : (
+            <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="text-4xl mb-3">📭</div>
+              <p className="text-gray-600 font-medium">선택한 기간에 데이터가 없습니다</p>
+              <p className="text-sm text-gray-500 mt-2">다른 기간을 선택해주세요</p>
+            </div>
+          )}
         </div>
       )}
 
