@@ -51,7 +51,9 @@ import {
 // Configuration
 // ============================================
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://finance-mhb-api.kro.kr';
+// 프로덕션에서는 프론트엔드 서버의 프록시 사용 (/api)
+// 개발 환경에서는 직접 백엔드 API 호출
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.origin !== 'http://localhost:19006' ? '' : 'http://finance-mhb-api.kro.kr');
 const AUTH_TOKEN_KEY = 'authToken';
 
 // 개발 모드에서 API URL 확인
