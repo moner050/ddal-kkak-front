@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface DateRangePickerProps {
   onDateRangeChange: (startDate: string, endDate: string) => void;
@@ -22,6 +22,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const [selectedRange, setSelectedRange] = useState<string>(defaultRange);
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [customEndDate, setCustomEndDate] = useState<string>(today);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // 날짜 계산 유틸리티
   const getDateBefore = (date: string, months: number): string => {
@@ -73,6 +74,14 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       onDateRangeChange(customStartDate, customEndDate);
     }
   };
+
+  // 초기 렌더링 시 defaultRange에 맞는 날짜 범위 자동 호출
+  useEffect(() => {
+    if (!isInitialized && defaultRange !== "CUSTOM") {
+      handleRangeSelect(defaultRange);
+      setIsInitialized(true);
+    }
+  }, [isInitialized, defaultRange, today]);
 
   const rangeButtons = [
     { label: "1개월", value: "1M" },
