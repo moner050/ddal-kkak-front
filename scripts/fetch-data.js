@@ -206,7 +206,7 @@ async function fetchAllData() {
         return dates.filter(date => date !== endDate);
       };
 
-      const dates = generateDateRange(latestDate, 1, 1);
+      const dates = generateDateRange(latestDate, 12, 1);
       console.log(`   Generated ${dates.length} dates to fetch (excluding today: ${latestDate})`);
 
       // undervalued-stocks 디렉토리 생성
