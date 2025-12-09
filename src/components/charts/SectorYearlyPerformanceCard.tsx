@@ -11,13 +11,15 @@ import React, { useState } from 'react';
 import type {
   YearlySectorPerformanceResult,
   SectorYearlySummary,
-  MonthlySectorData
+  MonthlySectorData,
+  DateRangeType
 } from '../../services/sectorPerformance';
-import { formatNumber } from '../../utils/format';
+import { formatNumber, classNames } from '../../utils/format';
 
 interface SectorYearlyPerformanceCardProps {
   data: YearlySectorPerformanceResult;
   loading?: boolean;
+  onRangeChange?: (rangeType: DateRangeType, startDate?: string, endDate?: string) => void;
 }
 
 /**
@@ -104,17 +106,18 @@ function SectorLineChart({
   summaries: SectorYearlySummary[];
 }) {
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null);
+  // 기본적으로 상위 5개 섹터만 선택되도록 변경
   const [selectedSectors, setSelectedSectors] = useState<Set<string>>(
-    new Set(summaries.map(s => s.sectorKr))
+    new Set(summaries.slice(0, 5).map(s => s.sectorKr))
   );
 
   if (monthlyData.length === 0 || summaries.length === 0) {
     return <div className="text-center text-gray-500 py-8">데이터가 없습니다</div>;
   }
 
-  const width = 800;
-  const height = 300;
-  const padding = { top: 20, right: 20, bottom: 40, left: 50 };
+  const width = 1000;
+  const height = 400;
+  const padding = { top: 30, right: 30, bottom: 50, left: 60 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
@@ -146,48 +149,96 @@ function SectorLineChart({
     });
   };
 
-  // 라인 경로 생성
+  // 라인 경로 생성 (부드러운 곡선)
   const createLinePath = (sectorKr: string) => {
     const points = monthlyData
       .map((d, i) => {
         const value = d[sectorKr] as number;
         if (typeof value !== 'number') return null;
-        return `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(value)}`;
+        return { x: xScale(i), y: yScale(value), i };
       })
-      .filter(p => p !== null)
-      .join(' ');
-    return points;
+      .filter(p => p !== null) as { x: number; y: number; i: number }[];
+
+    if (points.length === 0) return '';
+
+    let path = `M ${points[0].x} ${points[0].y}`;
+
+    // Catmull-Rom 스플라인을 사용한 부드러운 곡선
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[Math.max(0, i - 1)];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[Math.min(points.length - 1, i + 2)];
+
+      // 제어점 계산
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+      path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+    }
+
+    return path;
+  };
+
+  const toggleAllSectors = () => {
+    if (selectedSectors.size === summaries.length) {
+      // 전체 선택 해제 -> 상위 5개만 선택
+      setSelectedSectors(new Set(summaries.slice(0, 5).map(s => s.sectorKr)));
+    } else {
+      // 전체 선택
+      setSelectedSectors(new Set(summaries.map(s => s.sectorKr)));
+    }
   };
 
   return (
     <div className="space-y-4">
       {/* 범례 */}
-      <div className="flex flex-wrap gap-2">
-        {summaries.map(s => {
-          const isSelected = selectedSectors.has(s.sectorKr);
-          return (
-            <button
-              key={s.sector}
-              onClick={() => toggleSector(s.sectorKr)}
-              className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${
-                isSelected
-                  ? 'opacity-100 ring-2'
-                  : 'opacity-30 hover:opacity-60'
-              }`}
-              style={{
-                backgroundColor: isSelected ? `${s.color}20` : `${s.color}10`,
-                color: s.color,
-                ringColor: s.color,
-              }}
-            >
-              <span
-                className="inline-block w-3 h-3 rounded-full mr-1"
-                style={{ backgroundColor: s.color }}
-              />
-              {s.sectorKr}
-            </button>
-          );
-        })}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-gray-700">
+            섹터 선택 ({selectedSectors.size}/{summaries.length})
+          </p>
+          <button
+            onClick={toggleAllSectors}
+            className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+          >
+            {selectedSectors.size === summaries.length ? '기본 선택' : '전체 선택'}
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {summaries.map(s => {
+            const isSelected = selectedSectors.has(s.sectorKr);
+            return (
+              <button
+                key={s.sector}
+                onClick={() => toggleSector(s.sectorKr)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all border-2 ${
+                  isSelected
+                    ? 'opacity-100 shadow-sm'
+                    : 'opacity-40 hover:opacity-70'
+                }`}
+                style={{
+                  backgroundColor: isSelected ? `${s.color}15` : 'transparent',
+                  borderColor: isSelected ? s.color : '#e5e7eb',
+                  color: isSelected ? s.color : '#6b7280',
+                }}
+              >
+                <span
+                  className="inline-block w-3 h-3 rounded-full mr-1.5"
+                  style={{ backgroundColor: s.color }}
+                />
+                {s.sectorKr}
+                {isSelected && (
+                  <span className="ml-1.5 text-[10px]">
+                    {s.ytdReturn >= 0 ? '+' : ''}{s.ytdReturn.toFixed(1)}%
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* 차트 */}
@@ -259,10 +310,11 @@ function SectorLineChart({
                 d={createLinePath(s.sectorKr)}
                 fill="none"
                 stroke={s.color}
-                strokeWidth={2}
+                strokeWidth={3}
                 strokeLinejoin="round"
                 strokeLinecap="round"
-                className="transition-all"
+                className="transition-all hover:stroke-[4]"
+                style={{ opacity: 0.9 }}
               />
             ))}
 
@@ -302,28 +354,38 @@ function SectorLineChart({
         {/* 툴팁 */}
         {hoveredMonth !== null && (
           <div
-            className="absolute bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg pointer-events-none z-10"
+            className="absolute bg-gray-900 text-white text-xs rounded-lg px-4 py-3 shadow-xl pointer-events-none z-10 max-w-xs"
             style={{
               left: `${((hoveredMonth / (monthlyData.length - 1)) * 100)}%`,
-              top: '10px',
+              top: hoveredMonth < monthlyData.length / 2 ? '10px' : 'auto',
+              bottom: hoveredMonth >= monthlyData.length / 2 ? '60px' : 'auto',
               transform: 'translateX(-50%)',
             }}
           >
-            <div className="font-semibold mb-1">{monthlyData[hoveredMonth].month}</div>
-            <div className="space-y-0.5">
+            <div className="font-bold mb-2 text-sm border-b border-gray-700 pb-1">
+              {monthlyData[hoveredMonth].month}
+            </div>
+            <div className="space-y-1.5">
               {summaries
                 .filter(s => selectedSectors.has(s.sectorKr))
+                .sort((a, b) => {
+                  const aVal = monthlyData[hoveredMonth][a.sectorKr] as number;
+                  const bVal = monthlyData[hoveredMonth][b.sectorKr] as number;
+                  return (bVal || 0) - (aVal || 0);
+                })
                 .map(s => {
                   const value = monthlyData[hoveredMonth][s.sectorKr] as number;
                   if (typeof value !== 'number') return null;
                   return (
-                    <div key={s.sector} className="flex items-center gap-2">
-                      <span
-                        className="inline-block w-2 h-2 rounded-full"
-                        style={{ backgroundColor: s.color }}
-                      />
-                      <span className="text-gray-300">{s.sectorKr}:</span>
-                      <span className="font-semibold">
+                    <div key={s.sector} className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="inline-block w-3 h-3 rounded-full"
+                          style={{ backgroundColor: s.color }}
+                        />
+                        <span className="text-gray-300 text-xs">{s.sectorKr}</span>
+                      </div>
+                      <span className={`font-bold ${value >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {value >= 0 ? '+' : ''}{value.toFixed(2)}%
                       </span>
                     </div>
@@ -342,8 +404,40 @@ function SectorLineChart({
  */
 export default function SectorYearlyPerformanceCard({
   data,
-  loading = false
+  loading = false,
+  onRangeChange
 }: SectorYearlyPerformanceCardProps) {
+  const [selectedRange, setSelectedRange] = useState<DateRangeType>('1month');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+
+  const handleRangeChange = (rangeType: DateRangeType) => {
+    setSelectedRange(rangeType);
+    if (rangeType === 'custom') {
+      setShowDatePicker(true);
+    } else {
+      setShowDatePicker(false);
+      onRangeChange?.(rangeType);
+    }
+  };
+
+  const handleCustomDateApply = () => {
+    if (customStartDate && customEndDate) {
+      onRangeChange?.('custom', customStartDate, customEndDate);
+      setShowDatePicker(false);
+    }
+  };
+
+  const getRangeLabel = () => {
+    switch (selectedRange) {
+      case '1day': return '하루 전 대비 성과';
+      case '1week': return '1주일 전 대비 성과';
+      case '1month': return '1개월 전 대비 성과';
+      case 'custom': return '기간 대비 성과';
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
@@ -374,14 +468,98 @@ export default function SectorYearlyPerformanceCard({
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6">
       {/* 헤더 */}
-      <div>
-        <h3 className="text-lg font-bold text-gray-900">
-          📊 GICS 섹터별 연간 성과 ({startDate.substring(0, 4)}년)
-        </h3>
-        <p className="text-sm text-gray-500 mt-1">
-          기간: {startDate} ~ {endDate}
-        </p>
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">
+            📊 GICS 섹터별 연간 성과 ({startDate.substring(0, 4)}년)
+          </h3>
+          <p className="text-sm text-gray-500 mt-1">
+            기간: {startDate} ~ {endDate}
+          </p>
+        </div>
+
+        <div className="flex flex-col items-start lg:items-end gap-2 w-full lg:w-auto">
+          <p className="text-xs text-gray-500">{getRangeLabel()}</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => handleRangeChange('1day')}
+              className={classNames(
+                'px-3 py-1 text-xs font-medium rounded-md transition-colors',
+                selectedRange === '1day'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              )}
+            >
+              하루 전
+            </button>
+            <button
+              onClick={() => handleRangeChange('1week')}
+              className={classNames(
+                'px-3 py-1 text-xs font-medium rounded-md transition-colors',
+                selectedRange === '1week'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              )}
+            >
+              일주일 전
+            </button>
+            <button
+              onClick={() => handleRangeChange('1month')}
+              className={classNames(
+                'px-3 py-1 text-xs font-medium rounded-md transition-colors',
+                selectedRange === '1month'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              )}
+            >
+              한달 전
+            </button>
+            <button
+              onClick={() => handleRangeChange('custom')}
+              className={classNames(
+                'px-3 py-1 text-xs font-medium rounded-md transition-colors',
+                selectedRange === 'custom'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              )}
+            >
+              기간 선택
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* 기간 선택 모달 */}
+      {showDatePicker && (
+        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex flex-col sm:flex-row gap-3 items-end">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1">시작 날짜</label>
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1">종료 날짜</label>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <button
+              onClick={handleCustomDateApply}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+            >
+              적용
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 주요 통계 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -424,7 +602,7 @@ export default function SectorYearlyPerformanceCard({
       <div>
         <h4 className="text-md font-bold text-gray-800 mb-3">섹터별 월별 누적 수익률 추이</h4>
         <p className="text-xs text-gray-500 mb-3">
-          💡 범례를 클릭하여 특정 섹터를 선택/해제할 수 있습니다
+          💡 섹터를 클릭하여 차트에 표시할 항목을 선택하세요. 기본적으로 상위 5개 섹터가 선택되어 있습니다.
         </p>
         <SectorLineChart monthlyData={monthlyData} summaries={summaries} />
       </div>

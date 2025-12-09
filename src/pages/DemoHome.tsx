@@ -158,8 +158,10 @@ export default function DemoHome() {
     sectorTodayDate,
     sectorYesterdayDate,
     isLoadingSectorPerformances,
+    handleSectorPerformanceRangeChange,
     yearlySectorPerformances,
     isLoadingYearlySectorPerformances,
+    handleYearlySectorPerformanceRangeChange,
   } = useDemoHomeData();
 
   // 탭 관리
@@ -701,6 +703,7 @@ export default function DemoHome() {
                 loading={isLoadingSectorPerformances}
                 todayDate={sectorTodayDate}
                 yesterdayDate={sectorYesterdayDate}
+                onRangeChange={handleSectorPerformanceRangeChange}
               />
             </section>
 
@@ -709,6 +712,7 @@ export default function DemoHome() {
               <SectorYearlyPerformanceCard
                 data={yearlySectorPerformances}
                 loading={isLoadingYearlySectorPerformances}
+                onRangeChange={handleYearlySectorPerformanceRangeChange}
               />
             </section>
 
