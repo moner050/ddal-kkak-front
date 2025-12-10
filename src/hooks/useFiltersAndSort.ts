@@ -18,8 +18,8 @@ export interface UseFiltersAndSortReturn {
   // 주식추천 페이지 필터
   undervaluedSearchQuery: string;
   setUndervaluedSearchQuery: (query: string) => void;
-  undervaluedStrategies: Array<"undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing">;
-  setUndervaluedStrategies: (strategies: Array<"undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing">) => void;
+  undervaluedStrategies: Array<"undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing" | "ai_transformation">;
+  setUndervaluedStrategies: (strategies: Array<"undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing" | "ai_transformation">) => void;
   undervaluedMarket: "전체" | "US" | "KR";
   setUndervaluedMarket: (market: "전체" | "US" | "KR") => void;
   undervaluedCategory: string;
@@ -70,7 +70,7 @@ export interface UseFiltersAndSortReturn {
   handleFilingsSort: (key: string) => void;
 
   // 투자 전략 토글
-  toggleStrategy: (strategy: "undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing") => void;
+  toggleStrategy: (strategy: "undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing" | "ai_transformation") => void;
 }
 
 /**
@@ -79,7 +79,7 @@ export interface UseFiltersAndSortReturn {
 export function useFiltersAndSort(): UseFiltersAndSortReturn {
   // 주식추천 페이지 필터
   const [undervaluedSearchQuery, setUndervaluedSearchQuery] = useState("");
-  const [undervaluedStrategies, setUndervaluedStrategies] = useState<Array<"undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing">>([]); // 빈 배열 = 전체 표시
+  const [undervaluedStrategies, setUndervaluedStrategies] = useState<Array<"undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing" | "ai_transformation">>([]); // 빈 배열 = 전체 표시
   const [undervaluedMarket, setUndervaluedMarket] = useState<"전체" | "US" | "KR">("전체");
   const [undervaluedCategory, setUndervaluedCategory] = useState("전체");
   const [undervaluedIndustry, setUndervaluedIndustry] = useState("전체");
@@ -141,7 +141,7 @@ export function useFiltersAndSort(): UseFiltersAndSortReturn {
   };
 
   // 투자 전략 토글 핸들러
-  const toggleStrategy = (strategy: "undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing") => {
+  const toggleStrategy = (strategy: "undervalued_quality" | "value_basic" | "value_strict" | "growth_quality" | "momentum" | "swing" | "ai_transformation") => {
     setUndervaluedStrategies(prev => {
       if (prev.includes(strategy)) {
         // 이미 선택되어 있으면 제거

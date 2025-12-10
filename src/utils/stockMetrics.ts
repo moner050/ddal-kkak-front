@@ -41,13 +41,16 @@ export function matchesInvestmentStrategy(stock: any, strategy: keyof typeof INV
         (s.marketCap || 0) >= 2 &&  // 20억 달러 이상
         (s.price || 0) >= 10 &&
         (s.dollarVolume || 0) >= 5 &&  // 500만 달러
-        (s.PER || 0) < 25 &&
-        (s.PEG || 0) < 1.5 &&
+        (s.PER || 0) > 0 && (s.PER || 0) < 25 &&  // PER 양수 필수
+        (s.PEG || 0) < 1.0 &&  // 2025-12 강화: 1.5 → 1.0
+        (s.PS || 0) < 50 &&  // 버블 방지: P/S < 50
+        (s.PB || 0) < 10 &&  // 버블 방지: P/B < 10
         (s.RevYoY || 0) > 5 &&
         (s.EPS_Growth_3Y || 0) > 5 &&
         (s.OpMarginTTM || 0) > 12 &&
         (s.ROE || 0) > 15 &&
-        (s.FCF_Yield || 0) > 3
+        (s.FCF_Yield || 0) > 3 &&
+        (s.shortPercent || 0) < 20  // 버블 방지: 공매도 < 20%
       );
 
     case "value_basic":
@@ -66,13 +69,16 @@ export function matchesInvestmentStrategy(stock: any, strategy: keyof typeof INV
         (s.marketCap || 0) >= 2 &&  // 20억 달러 이상
         (s.price || 0) >= 5 &&
         (s.dollarVolume || 0) >= 5 &&  // 500만 달러
-        (s.PER || 0) < 20 &&
-        (s.PEG || 0) < 1.5 &&
+        (s.PER || 0) > 0 && (s.PER || 0) < 20 &&  // PER 양수 필수
+        (s.PEG || 0) < 1.0 &&  // 2025-12 강화: 1.5 → 1.0
+        (s.PS || 0) < 30 &&  // 더 엄격한 기준: P/S < 30
+        (s.PB || 0) < 8 &&  // 더 엄격한 기준: P/B < 8
         (s.RevYoY || 0) > 5 &&
         (s.EPS_Growth_3Y || 0) > 5 &&
         (s.OpMarginTTM || 0) > 10 &&
         (s.ROE || 0) > 12 &&
-        (s.FCF_Yield || 0) > 2
+        (s.FCF_Yield || 0) > 2 &&
+        (s.shortPercent || 0) < 15  // 더 엄격한 기준: 공매도 < 15%
       );
 
     case "growth_quality":
@@ -82,8 +88,10 @@ export function matchesInvestmentStrategy(stock: any, strategy: keyof typeof INV
         (s.EPS_Growth_3Y || 0) > 10 &&
         (s.OpMarginTTM || 0) > 15 &&
         (s.ROE || 0) > 15 &&
-        (s.PER || 0) < 40 &&
-        (s.PEG || 0) < 2.0
+        (s.PER || 0) > 0 && (s.PER || 0) < 50 &&  // 2025-12 변경: 40 → 50 (성장주 특성)
+        (s.PEG || 0) < 2.5 &&  // 2025-12 변경: 2.0 → 2.5 (필수)
+        (s.PS || 0) < 100 &&  // 버블 방지: 극단적 밸류에이션 제외
+        (s.shortPercent || 0) < 25  // 버블 방지: 공매도 < 25%
       );
 
     case "momentum":
@@ -98,13 +106,26 @@ export function matchesInvestmentStrategy(stock: any, strategy: keyof typeof INV
       );
 
     case "swing":
+      // 2025-12 변경: 과매도 반등 전략으로 전환
       return (
         (s.price || 0) >= 5 &&
         (s.dollarVolume || 0) >= 1 &&  // 100만 달러
-        (s.atr || 0) >= 2 && (s.atr || 0) <= 10 &&
-        (s.rsi || 0) >= 30 && (s.rsi || 0) <= 70 &&
-        (s.bbPosition || 0) >= 20 && (s.bbPosition || 0) <= 80 &&
-        (s.ret5d || 0) >= -5 && (s.ret5d || 0) <= 10
+        (s.atr || 0) >= 2 && (s.atr || 0) <= 8 &&  // 적당한 변동성
+        (s.rsi || 0) >= 25 && (s.rsi || 0) <= 45 &&  // 과매도~중립 하단
+        (s.bbPosition || 0) >= 5 && (s.bbPosition || 0) <= 40 &&  // 밴드 하단 근처
+        (s.ret5d || 0) >= -10 && (s.ret5d || 0) <= 0  // 최근 하락 후 바닥
+      );
+
+    case "ai_transformation":
+      return (
+        (s.marketCap || 0) >= 1 &&  // 10억 달러 이상
+        (s.ROE || 0) > 20 &&
+        (s.OpMarginTTM || 0) > 10 &&
+        (s.RevYoY || 0) > 100 &&  // 매출 성장률 100% 이상 (YoY)
+        (s.PER || 0) < 35 &&
+        (s.PS || 0) < 50 &&  // P/S < 50 (버블 방지)
+        (s.shortPercent || 0) < 30 &&  // 공매도 비율 < 30%
+        (s.beta || 0) > 2.0  // Beta > 2.0 (고성장 특성)
       );
 
     default:

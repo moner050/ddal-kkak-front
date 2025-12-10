@@ -22,7 +22,8 @@ export type InvestmentProfile =
   | 'value_strict'
   | 'growth_quality'
   | 'momentum'
-  | 'swing';
+  | 'swing'
+  | 'ai_transformation';
 
 export type GicsSector =
   | 'Information Technology'
