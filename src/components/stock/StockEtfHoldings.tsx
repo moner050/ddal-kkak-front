@@ -18,6 +18,7 @@ const StockEtfHoldings: React.FC<StockEtfHoldingsProps> = ({ ticker, companyName
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [hideComponent, setHideComponent] = useState(false);
 
   useEffect(() => {
     const fetchEtfHoldings = async () => {
@@ -26,9 +27,16 @@ const StockEtfHoldings: React.FC<StockEtfHoldingsProps> = ({ ticker, companyName
       try {
         const response = await etfApi.getHoldingsSimple(ticker);
         setEtfData(response.data);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to fetch ETF holdings:", err);
-        setError("ETF 정보를 불러올 수 없습니다.");
+
+        // 403 에러인 경우 컴포넌트를 숨김
+        if (err?.response?.status === 403) {
+          console.warn("ETF API returned 403 - hiding component");
+          setHideComponent(true);
+        } else {
+          setError("ETF 정보를 불러올 수 없습니다.");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -36,6 +44,11 @@ const StockEtfHoldings: React.FC<StockEtfHoldingsProps> = ({ ticker, companyName
 
     fetchEtfHoldings();
   }, [ticker]);
+
+  // 403 에러로 인해 컴포넌트를 숨기는 경우
+  if (hideComponent) {
+    return null;
+  }
 
   if (isLoading) {
     return (

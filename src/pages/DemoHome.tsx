@@ -96,6 +96,7 @@ import ColorLegend from "../components/common/ColorLegend";
 
 // Import page components
 import NewsSummaryTab from "../components/pages/DemoHome/NewsSummaryTab";
+import EtfListView from "../components/etf/EtfListView";
 
 // Import beginner guide constants
 import { METRIC_BEGINNER_GUIDE, AI_SCORE_INTERPRETATION } from "../constants/beginnerGuide";
@@ -239,6 +240,9 @@ export default function DemoHome() {
   const [detailSymbol, setDetailSymbol] = useState<string>("");
   const [detailTab, setDetailTab] = useState<"info" | "filings" | "chart">("info");
   const [detailLogoError, setDetailLogoError] = useState(false);
+
+  // 종목추천 탭 - 주식/ETF 뷰 모드
+  const [recommendationViewMode, setRecommendationViewMode] = useState<"stocks" | "etfs">("stocks");
 
   // 종목 추천 데이터 (백엔드 API)
   const {
@@ -972,78 +976,122 @@ export default function DemoHome() {
           <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
             <div className="mb-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-2">
-                <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-                  💎 종목추천
-                </h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+                    💎 종목추천
+                  </h1>
+                  {/* 주식/ETF 토글 */}
+                  <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setRecommendationViewMode("stocks")}
+                      className={`px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-md transition-all ${
+                        recommendationViewMode === "stocks"
+                          ? "bg-white text-blue-600 shadow-sm"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      주식
+                    </button>
+                    <button
+                      onClick={() => setRecommendationViewMode("etfs")}
+                      className={`px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-md transition-all ${
+                        recommendationViewMode === "etfs"
+                          ? "bg-white text-blue-600 shadow-sm"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      ETF
+                    </button>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                  {/* 초보자/전문가 모드 토글 */}
-                  <BeginnerModeToggle
-                    isBeginnerMode={isBeginnerMode}
-                    onToggle={handleBeginnerModeToggle}
-                  />
-                  <button
-                    onClick={() => {
-                      let filteredStocks = undervaluedStocks.filter((stock) => {
-                        const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
-                        const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
-                        const matchIndustry = undervaluedIndustry === "전체" || stock.industry === undervaluedIndustry;
-                        const matchQuery =
-                          !undervaluedSearchQuery ||
-                          stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
-                          stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
-                        // 전략 필터링: 빈 배열이면 모든 종목 표시, 선택된 전략이 있으면 모든 전략에 부합해야 함 (AND 조건)
-                        const matchStrategy =
-                          undervaluedStrategies.length === 0 ||
-                          undervaluedStrategies.every((strategy) => matchesInvestmentStrategy(stock, strategy));
-                        return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy;
-                      });
-
-                      // Apply multi-level sorting
-                      if (undervaluedSorts.length > 0) {
-                        filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
-                          for (const sort of undervaluedSorts) {
-                            const aVal = a[sort.key];
-                            const bVal = b[sort.key];
-                            if (aVal === undefined && bVal === undefined) continue;
-                            if (aVal === undefined) return 1;
-                            if (bVal === undefined) return -1;
-                            if (aVal !== bVal) {
-                              const comparison = aVal > bVal ? 1 : -1;
-                              return sort.direction === "asc" ? comparison : -comparison;
-                            }
-                          }
-                          return 0;
+                  {/* 초보자/전문가 모드 토글 (주식 모드일 때만 표시) */}
+                  {recommendationViewMode === "stocks" && (
+                    <BeginnerModeToggle
+                      isBeginnerMode={isBeginnerMode}
+                      onToggle={handleBeginnerModeToggle}
+                    />
+                  )}
+                  {recommendationViewMode === "stocks" && (
+                    <button
+                      onClick={() => {
+                        let filteredStocks = undervaluedStocks.filter((stock) => {
+                          const matchMarket = undervaluedMarket === "전체" || stock.market === undervaluedMarket;
+                          const matchCategory = undervaluedCategory === "전체" || stock.category === undervaluedCategory;
+                          const matchIndustry = undervaluedIndustry === "전체" || stock.industry === undervaluedIndustry;
+                          const matchQuery =
+                            !undervaluedSearchQuery ||
+                            stock.name.toLowerCase().includes(undervaluedSearchQuery.toLowerCase()) ||
+                            stock.symbol.toLowerCase().includes(undervaluedSearchQuery.toLowerCase());
+                          // 전략 필터링: 빈 배열이면 모든 종목 표시, 선택된 전략이 있으면 모든 전략에 부합해야 함 (AND 조건)
+                          const matchStrategy =
+                            undervaluedStrategies.length === 0 ||
+                            undervaluedStrategies.every((strategy) => matchesInvestmentStrategy(stock, strategy));
+                          return matchMarket && matchCategory && matchIndustry && matchQuery && matchStrategy;
                         });
-                      }
 
-                      exportUndervaluedToExcel(filteredStocks, undervaluedStrategies);
-                    }}
-                    className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-md"
-                  >
-                    <span>📥</span>
-                    <span className="hidden sm:inline">엑셀 다운로드</span>
-                    <span className="sm:hidden">다운로드</span>
-                  </button>
+                        // Apply multi-level sorting
+                        if (undervaluedSorts.length > 0) {
+                          filteredStocks = [...filteredStocks].sort((a: any, b: any) => {
+                            for (const sort of undervaluedSorts) {
+                              const aVal = a[sort.key];
+                              const bVal = b[sort.key];
+                              if (aVal === undefined && bVal === undefined) continue;
+                              if (aVal === undefined) return 1;
+                              if (bVal === undefined) return -1;
+                              if (aVal !== bVal) {
+                                const comparison = aVal > bVal ? 1 : -1;
+                                return sort.direction === "asc" ? comparison : -comparison;
+                              }
+                            }
+                            return 0;
+                          });
+                        }
+
+                        exportUndervaluedToExcel(filteredStocks, undervaluedStrategies);
+                      }}
+                      className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-md"
+                    >
+                      <span>📥</span>
+                      <span className="hidden sm:inline">엑셀 다운로드</span>
+                      <span className="sm:hidden">다운로드</span>
+                    </button>
+                  )}
                 </div>
               </div>
-              <p className="text-xs sm:text-sm text-gray-600">
-                {isBeginnerMode
-                  ? "🌱 초보자 모드: 핵심 지표와 쉬운 설명을 제공합니다. 각 지표를 클릭하면 상세 설명을 볼 수 있어요!"
-                  : "📊 전문가 모드: 모든 재무 지표를 한눈에 비교할 수 있습니다."}
-              </p>
-              {/* 데이터 기준 날짜 */}
-              {dataDate && (
-                <p className="text-xs text-gray-500 mt-2">
-                  📅 데이터 기준: {new Date(dataDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+              {recommendationViewMode === "stocks" ? (
+                <>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    {isBeginnerMode
+                      ? "🌱 초보자 모드: 핵심 지표와 쉬운 설명을 제공합니다. 각 지표를 클릭하면 상세 설명을 볼 수 있어요!"
+                      : "📊 전문가 모드: 모든 재무 지표를 한눈에 비교할 수 있습니다."}
+                  </p>
+                  {/* 데이터 기준 날짜 */}
+                  {dataDate && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      📅 데이터 기준: {new Date(dataDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  )}
+                  {/* 색상 범례 */}
+                  <div className="mt-3">
+                    <ColorLegend />
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs sm:text-sm text-gray-600">
+                  🏦 섹터별 ETF를 검색하고 비교할 수 있습니다. ETF 카드를 클릭하면 상세 정보를 확인할 수 있어요!
                 </p>
               )}
-              {/* 색상 범례 */}
-              <div className="mt-3">
-                <ColorLegend />
-              </div>
             </div>
 
-            {/* 투자 전략 선택 (다중 선택 토글) */}
+            {/* ETF 모드: ETF 목록 */}
+            {recommendationViewMode === "etfs" && (
+              <EtfListView />
+            )}
+
+            {/* 주식 모드: 투자 전략 선택 (다중 선택 토글) */}
+            {recommendationViewMode === "stocks" && (
+            <>
             <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 space-y-4">
               <div>
                 <div className="text-xs sm:text-sm text-gray-600 mb-1 font-semibold">📋 투자 전략 선택 (다중 선택 가능)</div>
@@ -1693,6 +1741,8 @@ export default function DemoHome() {
                 />
               );
             })()}
+            </>
+            )}
 
             {/* Footer */}
             <Footer />

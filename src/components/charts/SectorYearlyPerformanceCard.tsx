@@ -126,14 +126,26 @@ function SectorLineChart({
     summaries
       .filter(s => selectedSectors.has(s.sectorKr))
       .map(s => d[s.sectorKr] as number)
-      .filter(v => typeof v === 'number')
+      .filter(v => typeof v === 'number' && !isNaN(v))
   );
+
+  // allReturns가 비어있거나 유효한 데이터가 없는 경우
+  if (allReturns.length === 0) {
+    return <div className="text-center text-gray-500 py-8">유효한 데이터가 없습니다</div>;
+  }
+
   const minReturn = Math.min(0, ...allReturns);
   const maxReturn = Math.max(0, ...allReturns);
-  const yRange = Math.max(Math.abs(minReturn), Math.abs(maxReturn)) * 1.1;
+  const yRange = Math.max(Math.abs(minReturn), Math.abs(maxReturn)) * 1.1 || 1; // 0으로 나누기 방지
 
   // 좌표 변환 함수
-  const xScale = (index: number) => padding.left + (index / (monthlyData.length - 1)) * chartWidth;
+  const xScale = (index: number) => {
+    // monthlyData가 1개만 있는 경우 중앙에 표시
+    if (monthlyData.length === 1) {
+      return padding.left + chartWidth / 2;
+    }
+    return padding.left + (index / (monthlyData.length - 1)) * chartWidth;
+  };
   const yScale = (value: number) => padding.top + chartHeight / 2 - (value / yRange) * (chartHeight / 2);
 
   // 섹터 선택/해제
@@ -154,8 +166,13 @@ function SectorLineChart({
     const points = monthlyData
       .map((d, i) => {
         const value = d[sectorKr] as number;
-        if (typeof value !== 'number') return null;
-        return { x: xScale(i), y: yScale(value), i };
+        // NaN이나 유효하지 않은 값 체크
+        if (typeof value !== 'number' || isNaN(value)) return null;
+        const x = xScale(i);
+        const y = yScale(value);
+        // x, y가 유효한 숫자인지 체크
+        if (isNaN(x) || isNaN(y)) return null;
+        return { x, y, i };
       })
       .filter(p => p !== null) as { x: number; y: number; i: number }[];
 
