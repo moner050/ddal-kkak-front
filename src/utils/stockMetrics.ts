@@ -107,6 +107,18 @@ export function matchesInvestmentStrategy(stock: any, strategy: keyof typeof INV
         (s.ret5d || 0) >= -5 && (s.ret5d || 0) <= 10
       );
 
+    case "ai_transformation":
+      return (
+        (s.marketCap || 0) >= 1 &&  // 10억 달러 이상
+        (s.ROE || 0) > 20 &&
+        (s.OpMarginTTM || 0) > 10 &&
+        (s.RevYoY || 0) > 100 &&  // 매출 성장률 100% 이상 (YoY)
+        (s.PER || 0) < 35 &&
+        (s.PS || 0) < 50 &&  // P/S < 50 (버블 방지)
+        (s.shortPercent || 0) < 30 &&  // 공매도 비율 < 30%
+        (s.beta || 0) > 2.0  // Beta > 2.0 (고성장 특성)
+      );
+
     default:
       return true;
   }

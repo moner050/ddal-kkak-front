@@ -73,6 +73,7 @@ import StockPriceVisualization from "../components/stock/StockPriceVisualization
 import FilingScoreTrendChart from "../components/charts/FilingScoreTrendChart";
 import EtfSectorPieChart from "../components/charts/EtfSectorPieChart";
 import StockLogo from "../components/stock/StockLogo";
+import StockEtfHoldings from "../components/stock/StockEtfHoldings";
 import ThreePointSummary from "../components/stock/ThreePointSummary";
 import PriceGuideBand from "../components/stock/PriceGuideBand";
 import EnhancedThreePointSummary from "../components/stock/EnhancedThreePointSummary";
@@ -253,10 +254,6 @@ export default function DemoHome() {
   // 로고 에러 상태
   const [logoErrors, setLogoErrors] = useState<Record<string, boolean>>({});
 
-  // ETF 멤버십 상태 (종목을 포함하는 ETF 목록)
-  const [etfHoldings, setEtfHoldings] = useState<EtfInfo[]>([]);
-  const [etfHoldingsLoading, setEtfHoldingsLoading] = useState(false);
-
   // 종목별 SEC 공시 상태 (점수 추이 포함)
   const [stockFilingWithScores, setStockFilingWithScores] = useState<FrontendFiling | null>(null);
   const [stockFilingLoading, setStockFilingLoading] = useState(false);
@@ -274,30 +271,6 @@ export default function DemoHome() {
     if (detailSymbol) {
       setDetailLogoError(false);
     }
-  }, [detailSymbol]);
-
-  // ETF 멤버십 데이터 로드 (detailSymbol 변경 시)
-  useEffect(() => {
-    const fetchEtfHoldings = async () => {
-      if (!detailSymbol) {
-        setEtfHoldings([]);
-        return;
-      }
-
-      setEtfHoldingsLoading(true);
-      try {
-        const response = await api.etf.getHoldings(detailSymbol);
-        setEtfHoldings(response.etfs || []);
-        console.log(`✅ ETF 멤버십 로드 성공: ${detailSymbol} - ${response.count}개 ETF`);
-      } catch (error) {
-        console.error('❌ ETF 멤버십 로드 실패:', error);
-        setEtfHoldings([]);
-      } finally {
-        setEtfHoldingsLoading(false);
-      }
-    };
-
-    fetchEtfHoldings();
   }, [detailSymbol]);
 
   // SEC 공시 점수 추이 데이터 로드 (detailSymbol 변경 시)
@@ -2956,102 +2929,11 @@ export default function DemoHome() {
                       </div>
                     </div>
 
-                    {/* ETF 멤버십 (이 종목을 포함하는 ETF 목록) */}
-                    <div className="rounded-xl bg-white p-6 shadow-md border border-gray-200">
-                      <h2 className="text-lg font-bold text-gray-900 mb-4">📦 이 종목을 포함하는 ETF</h2>
-                      {etfHoldingsLoading ? (
-                        <div className="text-center py-8">
-                          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                          <p className="mt-2 text-sm text-gray-500">ETF 정보를 불러오는 중...</p>
-                        </div>
-                      ) : etfHoldings.length > 0 ? (
-                        <div className="space-y-3">
-                          <div className="text-sm text-gray-600 mb-3">
-                            총 <span className="font-bold text-indigo-600">{etfHoldings.length}개</span>의 ETF가 이 종목을 보유하고 있습니다
-                          </div>
-                          <div className="grid grid-cols-1 gap-4">
-                            {etfHoldings.map((etf) => (
-                              <div
-                                key={etf.ticker}
-                                className="p-4 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 hover:shadow-md transition-all"
-                              >
-                                <div className="flex items-start justify-between gap-3 mb-3">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-xs text-gray-600 mb-1">{etf.ticker}</div>
-                                    <div className="text-sm font-bold text-gray-900 mb-2 line-clamp-2">
-                                      {etf.long_name || etf.short_name}
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 items-center">
-                                      {etf.category && (
-                                        <span className="text-xs text-indigo-600 px-2 py-0.5 bg-indigo-100 rounded">
-                                          {etf.category}
-                                        </span>
-                                      )}
-                                      {etf.primary_sector && (
-                                        <span className="text-xs text-purple-600 px-2 py-0.5 bg-purple-100 rounded">
-                                          {etf.primary_sector}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {etf.total_assets && (
-                                    <div className="text-right flex-shrink-0">
-                                      <div className="text-xs text-gray-500 mb-1">운용규모</div>
-                                      <div className="text-sm font-semibold text-gray-900">
-                                        ${(etf.total_assets / 1e9).toFixed(1)}B
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* ETF 섹터 비중 파이 차트 */}
-                                {etf.sector_weightings && Object.keys(etf.sector_weightings).length > 0 && (
-                                  <div className="mt-4 pt-4 border-t border-indigo-200">
-                                    <div className="text-xs font-semibold text-gray-700 mb-3">섹터 비중</div>
-                                    <EtfSectorPieChart sectorWeightings={etf.sector_weightings} topN={5} />
-                                  </div>
-                                )}
-
-                                {/* ETF 성과 지표 */}
-                                {(etf.ytd_return !== undefined || etf.return_1y !== undefined || etf.expense_ratio !== undefined) && (
-                                  <div className="mt-3 grid grid-cols-3 gap-2">
-                                    {etf.ytd_return !== undefined && (
-                                      <div className="text-center p-2 rounded bg-white/50">
-                                        <div className="text-[10px] text-gray-600 mb-1">YTD</div>
-                                        <div className={`text-xs font-bold ${etf.ytd_return >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                          {etf.ytd_return > 0 ? '+' : ''}{etf.ytd_return.toFixed(1)}%
-                                        </div>
-                                      </div>
-                                    )}
-                                    {etf.return_1y !== undefined && (
-                                      <div className="text-center p-2 rounded bg-white/50">
-                                        <div className="text-[10px] text-gray-600 mb-1">1년</div>
-                                        <div className={`text-xs font-bold ${etf.return_1y >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                          {etf.return_1y > 0 ? '+' : ''}{etf.return_1y.toFixed(1)}%
-                                        </div>
-                                      </div>
-                                    )}
-                                    {etf.expense_ratio !== undefined && (
-                                      <div className="text-center p-2 rounded bg-white/50">
-                                        <div className="text-[10px] text-gray-600 mb-1">운용비용</div>
-                                        <div className="text-xs font-bold text-gray-900">
-                                          {etf.expense_ratio.toFixed(2)}%
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <div className="text-4xl mb-2">📦</div>
-                          <p className="text-gray-500 text-sm">이 종목을 포함하는 ETF 정보가 없습니다</p>
-                        </div>
-                      )}
-                    </div>
+                    {/* ETF 멤버십 (이 종목을 포함하는 ETF 목록) - 개선된 컴포넌트 사용 */}
+                    <StockEtfHoldings
+                      ticker={detailSymbol}
+                      companyName={String(stockDetail.Name)}
+                    />
                   </div>
                 ) : detailTab === "chart" ? (
                   /* 주가 추이 차트 탭 */
