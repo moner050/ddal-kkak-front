@@ -82,10 +82,12 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
           const startDate = new Date(dateRange.start);
           const endDate = new Date(dateRange.end);
 
-          const filteredDates = availableDates.filter((date) => {
-            const d = new Date(date);
-            return d >= startDate && d <= endDate;
-          });
+          const filteredDates = availableDates
+            .filter((date) => {
+              const d = new Date(date);
+              return d >= startDate && d <= endDate;
+            })
+            .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
           if (filteredDates.length > 0) {
             // 날짜별 파일에서 해당 종목 히스토리 조회
@@ -174,10 +176,15 @@ const StockPriceVisualization: React.FC<StockPriceVisualizationProps> = ({
   const getTableData = (): StockSnapshot[] => {
     if (!historyData || historyData.length === 0) return [];
 
+    // 날짜순으로 정렬
+    const sortedHistory = [...historyData].sort(
+      (a, b) => new Date(a.dataDate).getTime() - new Date(b.dataDate).getTime()
+    );
+
     // 최대 10개 스냅샷만 표시 (균등 분포)
     const maxSnapshots = 10;
-    const step = Math.max(1, Math.floor(historyData.length / maxSnapshots));
-    const selectedData = historyData.filter((_, idx) => idx % step === 0 || idx === historyData.length - 1);
+    const step = Math.max(1, Math.floor(sortedHistory.length / maxSnapshots));
+    const selectedData = sortedHistory.filter((_, idx) => idx % step === 0 || idx === sortedHistory.length - 1);
 
     return selectedData.map((d) => ({
       date: d.dataDate,
