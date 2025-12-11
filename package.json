@@ -13,6 +13,7 @@
     "copy-public-data": "node scripts/copy-public-data.js",
     "prebuild:web": "npm run fetch-data",
     "build:web": "expo export --platform web",
+    "build:source": "expo export --platform web",
     "postbuild:web": "npm run copy-public-data",
     "dev:local": "cross-env EXPO_PUBLIC_API_URL=http://finance-mhb-api.kro.kr expo start --web",
     "dev:local:android": "cross-env EXPO_PUBLIC_API_URL=http://finance-mhb-api.kro.kr expo run:android",
