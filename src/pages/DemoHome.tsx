@@ -18,7 +18,7 @@ import { getScoreLevel, getCriticalMetrics, matchesInvestmentStrategy, getMetric
 // Import constants
 import { CATEGORIES, SECTOR_INDUSTRIES, SECTOR_THEMES } from "../constants/categories";
 import { INVESTMENT_STRATEGIES } from "../constants/investmentStrategies";
-import { METRIC_DESCRIPTIONS } from "../constants/metricDescriptions";
+import { METRIC_DESCRIPTIONS, CALCULATION_GUIDE_URL } from "../constants/metricDescriptions";
 
 // Import types
 import { TAB_KEYS, TabKey, Sentiment } from "../types";
@@ -1005,7 +1005,7 @@ export default function DemoHome() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                  {/* 초보자/전문가 모드 토글 (주식 모드일 때만 표시) */}
+                  {/* 간편/상세 모드 토글 (주식 모드일 때만 표시) */}
                   {recommendationViewMode === "stocks" && (
                     <BeginnerModeToggle
                       isBeginnerMode={isBeginnerMode}
@@ -1061,11 +1061,20 @@ export default function DemoHome() {
               </div>
               {recommendationViewMode === "stocks" ? (
                 <>
-                  <p className="text-xs sm:text-sm text-gray-600">
-                    {isBeginnerMode
-                      ? "🌱 초보자 모드: 핵심 지표와 쉬운 설명을 제공합니다. 각 지표를 클릭하면 상세 설명을 볼 수 있어요!"
-                      : "📊 전문가 모드: 모든 재무 지표를 한눈에 비교할 수 있습니다."}
-                  </p>
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <p className="text-xs sm:text-sm text-gray-600">
+                      {isBeginnerMode
+                        ? "🌱 간편 모드: 핵심 지표와 쉬운 설명을 제공합니다. 각 지표를 클릭하면 상세 설명을 볼 수 있어요!"
+                        : "📊 상세 모드: 모든 재무 지표를 한눈에 비교할 수 있습니다."}
+                    </p>
+                    <a
+                      href={CALCULATION_GUIDE_URL}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
+                    >
+                      <span>📚</span>
+                      <span>계산 방식 가이드</span>
+                    </a>
+                  </div>
                   {/* 데이터 기준 날짜 */}
                   {dataDate && (
                     <p className="text-xs text-gray-500 mt-2">
@@ -1433,7 +1442,7 @@ export default function DemoHome() {
               </div>
             </div>
 
-            {/* 초보자 모드: 카드 뷰 / 전문가 모드: 테이블 뷰 */}
+            {/* 간편 모드: 카드 뷰 / 상세 모드: 테이블 뷰 */}
             {isLoadingUndervalued ? (
               <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
                 <div className="text-4xl mb-3">⏳</div>
@@ -1446,7 +1455,7 @@ export default function DemoHome() {
                 <p className="text-sm text-gray-500 mt-2">백엔드 서버 연결을 확인해주세요</p>
               </div>
             ) : isBeginnerMode ? (
-              /* 초보자 모드 - 카드 뷰 */
+              /* 간편 모드 - 카드 뷰 */
               <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {(() => {
                   let filteredStocks = undervaluedStocks.filter((stock) => {
@@ -1504,7 +1513,7 @@ export default function DemoHome() {
                 })()}
               </div>
             ) : (
-              /* 전문가 모드 - 테이블 뷰 */
+              /* 상세 모드 - 테이블 뷰 */
               <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
