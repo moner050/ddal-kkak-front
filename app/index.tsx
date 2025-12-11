@@ -1,6 +1,6 @@
 import React from 'react';
-import DemoHome from '../src/pages/DemoHome';
+import MainDashboard from '../src/pages/MainDashboard';
 
 export default function Index() {
-  return <DemoHome />;
+  return <MainDashboard />;
 }
