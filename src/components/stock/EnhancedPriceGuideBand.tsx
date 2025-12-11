@@ -59,7 +59,7 @@ export default function EnhancedPriceGuideBand({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-sm sm:text-base">💰</span>
-          <h3 className="text-xs sm:text-sm font-bold text-gray-900">매수/매도 가이드 (전문가 분석)</h3>
+          <h3 className="text-xs sm:text-sm font-bold text-gray-900">매수/매도 가이드</h3>
         </div>
         <div className={classNames(
           "px-2 py-1 rounded-lg text-[10px] sm:text-xs font-semibold border",

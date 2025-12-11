@@ -12,7 +12,7 @@ export default function BeginnerModeToggle({ isBeginnerMode, onToggle }: Beginne
       <div className="flex items-center gap-1.5">
         <span className="text-sm sm:text-base">{isBeginnerMode ? '🌱' : '📊'}</span>
         <span className="text-xs sm:text-sm font-semibold text-gray-700">
-          {isBeginnerMode ? '초보자' : '전문가'}
+          {isBeginnerMode ? '간편' : '상세'}
         </span>
       </div>
       <button
@@ -23,7 +23,7 @@ export default function BeginnerModeToggle({ isBeginnerMode, onToggle }: Beginne
         )}
         role="switch"
         aria-checked={isBeginnerMode}
-        aria-label="초보자 모드 토글"
+        aria-label="보기 모드 토글"
       >
         <span
           className={classNames(
