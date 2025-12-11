@@ -171,6 +171,32 @@ async function fetchAllData() {
       });
     }
 
+    // 3-1. ETF 전체 목록
+    console.log('\n📊 Fetching ETF data...');
+    try {
+      const etfResponse = await apiClient.get('/api/v1/etfs');
+
+      saveJSON('etfs.json', {
+        lastUpdated: new Date().toISOString(),
+        count: etfResponse.data.count || etfResponse.data.data?.length || 0,
+        data: etfResponse.data.data || etfResponse.data,
+      });
+
+      metadata.sources.etfs = {
+        count: etfResponse.data.count || etfResponse.data.data?.length || 0,
+        updatedAt: new Date().toISOString(),
+      };
+
+      console.log(`   ✓ ${etfResponse.data.count || etfResponse.data.data?.length || 0} ETFs fetched`);
+    } catch (error) {
+      console.error('   ✗ Failed to fetch ETF data:', error.message);
+      saveJSON('etfs.json', {
+        lastUpdated: new Date().toISOString(),
+        count: 0,
+        data: [],
+      });
+    }
+
     // 4. 날짜별 전체 종목 히스토리 데이터 (분산 저장)
     console.log('\n📈 Fetching historical stock data by date...');
     const historicalDates = [];
