@@ -97,15 +97,14 @@ export const INVESTMENT_STRATEGIES = {
     name: "AI 전환 기업 (IREN 타입)",
     description: "AI 인프라로 전환하며 실제 수익을 창출하는 폭발적 성장 기업",
     criteria: [
-      "섹터: Information Technology 또는 Communication Services (AI 인프라 관련)",
       "시가총액: 10억 달러 이상",
       "ROE > 20%",
       "영업이익률 > 10%",
-      "매출 성장률 > 200% (YoY) - 극단적 성장 (2025-12 강화)",
-      "PER: 0 < PER < 40 (양수 필수, 초고성장 허용)",
-      "P/S < 30 (버블 방지 강화)",
+      "매출 성장률 > 100% (YoY)",
+      "PER < 35 (성장 대비 합리적)",
+      "P/S < 50 (버블 방지)",
       "공매도 비율 < 30%",
-      "Beta > 2.5 (초고성장 고위험 특성)"
+      "Beta > 2.0 (고성장 특성)"
     ]
   }
 };

@@ -117,23 +117,15 @@ export function matchesInvestmentStrategy(stock: any, strategy: keyof typeof INV
       );
 
     case "ai_transformation":
-      // AI 인프라 전환 기업: Technology/Communication Services 섹터만
-      const isAISector =
-        s.category === "Information Technology" ||
-        s.category === "정보기술" ||
-        s.category === "Communication Services" ||
-        s.category === "커뮤니케이션 서비스";
-
       return (
-        isAISector &&  // 섹터 제한 추가 (2025-12 강화)
         (s.marketCap || 0) >= 1 &&  // 10억 달러 이상
         (s.ROE || 0) > 20 &&
         (s.OpMarginTTM || 0) > 10 &&
-        (s.RevYoY || 0) > 200 &&  // 매출 성장률 200% 이상 (YoY) - 극단적 성장 (2025-12 강화)
-        (s.PER || 0) > 0 && (s.PER || 0) < 40 &&  // PER 양수 필수, 초고성장 허용
-        (s.PS || 0) < 30 &&  // P/S < 30 (버블 방지 강화)
+        (s.RevYoY || 0) > 100 &&  // 매출 성장률 100% 이상 (YoY)
+        (s.PER || 0) < 35 &&
+        (s.PS || 0) < 50 &&  // P/S < 50 (버블 방지)
         (s.shortPercent || 0) < 30 &&  // 공매도 비율 < 30%
-        (s.beta || 0) > 2.5  // Beta > 2.5 (초고성장 고위험 특성)
+        (s.beta || 0) > 2.0  // Beta > 2.0 (고성장 특성)
       );
 
     default:
