@@ -24,7 +24,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   // 필터링 & 정렬
   const [selectedSector, setSelectedSector] = useState<string>("전체");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"assets" | "ytd" | "1m" | "3m" | "6m" | "1y">("assets");
+  const [sortBy, setSortBy] = useState<"assets" | "ytd" | "1m" | "3m" | "6m" | "1y" | "dividend_high" | "dividend_low">("assets");
 
   // ETF 데이터 로드 (백엔드 API)
   useEffect(() => {
@@ -82,6 +82,10 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
           return (b.return_6m || 0) - (a.return_6m || 0);
         case "1y":
           return (b.return_1y || 0) - (a.return_1y || 0);
+        case "dividend_high":
+          return (b.dividend_yield || 0) - (a.dividend_yield || 0);
+        case "dividend_low":
+          return (a.dividend_yield || 0) - (b.dividend_yield || 0);
         default:
           return 0;
       }
@@ -196,6 +200,8 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
               { value: "3m", label: "3개월" },
               { value: "6m", label: "6개월" },
               { value: "1y", label: "1년" },
+              { value: "dividend_high", label: "배당률 ↑" },
+              { value: "dividend_low", label: "배당률 ↓" },
             ].map((option) => (
               <button
                 key={option.value}
