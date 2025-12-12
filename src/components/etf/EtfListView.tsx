@@ -32,6 +32,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   // 뷰 모드 & 필터링 & 정렬
   const [viewMode, setViewMode] = useState<ViewMode>("beginner");
   const [selectedSector, setSelectedSector] = useState<string>("전체");
+  const [selectedCategory, setSelectedCategory] = useState<string>("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [etfSorts, setEtfSorts] = useState<SortConfig[]>([]);
 
@@ -98,6 +99,28 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     });
   };
 
+  // 퍼센트 수치 정규화 (소수점 형식과 퍼센트 형식 통일)
+  const normalizePercentValue = (value: number | undefined): number => {
+    if (value === undefined || value === null || value === 0) return 0;
+    // 값이 -1과 1 사이면 소수점 형식 (0.7009 = 70.09%)
+    // 그 외에는 퍼센트 형식 (70.09 = 70.09%)
+    if (Math.abs(value) < 1) {
+      return value * 100;
+    }
+    return value;
+  };
+
+  // 고유한 카테고리 목록 추출
+  const uniqueCategories = useMemo(() => {
+    const categories = new Set<string>();
+    etfs.forEach((etf) => {
+      if (etf.category) {
+        categories.add(etf.category);
+      }
+    });
+    return Array.from(categories).sort();
+  }, [etfs]);
+
   // 필터링 & 정렬
   const filteredAndSortedEtfs = useMemo(() => {
     let result = [...etfs];
@@ -108,6 +131,11 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
       if (etfSectorFormat) {
         result = result.filter((etf) => etf.primary_sector === etfSectorFormat);
       }
+    }
+
+    // 카테고리 필터링
+    if (selectedCategory !== "전체") {
+      result = result.filter((etf) => etf.category === selectedCategory);
     }
 
     // 검색 필터링
@@ -149,28 +177,28 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
               bValue = b.total_assets || 0;
               break;
             case "ytd":
-              aValue = a.ytd_return || 0;
-              bValue = b.ytd_return || 0;
+              aValue = normalizePercentValue(a.ytd_return);
+              bValue = normalizePercentValue(b.ytd_return);
               break;
             case "1m":
-              aValue = a.return_1m || 0;
-              bValue = b.return_1m || 0;
+              aValue = normalizePercentValue(a.return_1m);
+              bValue = normalizePercentValue(b.return_1m);
               break;
             case "3m":
-              aValue = a.return_3m || 0;
-              bValue = b.return_3m || 0;
+              aValue = normalizePercentValue(a.return_3m);
+              bValue = normalizePercentValue(b.return_3m);
               break;
             case "6m":
-              aValue = a.return_6m || 0;
-              bValue = b.return_6m || 0;
+              aValue = normalizePercentValue(a.return_6m);
+              bValue = normalizePercentValue(b.return_6m);
               break;
             case "1y":
-              aValue = a.return_1y || 0;
-              bValue = b.return_1y || 0;
+              aValue = normalizePercentValue(a.return_1y);
+              bValue = normalizePercentValue(b.return_1y);
               break;
             case "dividend":
-              aValue = a.dividend_yield || 0;
-              bValue = b.dividend_yield || 0;
+              aValue = normalizePercentValue(a.dividend_yield);
+              bValue = normalizePercentValue(b.dividend_yield);
               break;
             default:
               continue;
@@ -200,7 +228,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     }
 
     return result;
-  }, [etfs, selectedSector, searchQuery, etfSorts]);
+  }, [etfs, selectedSector, selectedCategory, searchQuery, etfSorts]);
 
   // 포맷팅 함수들
   const formatAssets = (assets: number | undefined): string => {
@@ -328,6 +356,38 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                 }`}
               >
                 {toKoreanSector(sector)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 카테고리 선택 */}
+        <div>
+          <label className="text-xs sm:text-sm text-gray-600 mb-2 font-semibold block">
+            📁 카테고리
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedCategory("전체")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                selectedCategory === "전체"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              전체
+            </button>
+            {uniqueCategories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  selectedCategory === category
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {etfCategoryToKorean(category)}
               </button>
             ))}
           </div>
