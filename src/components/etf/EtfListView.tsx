@@ -32,6 +32,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   // 뷰 모드 & 필터링 & 정렬
   const [viewMode, setViewMode] = useState<ViewMode>("beginner");
   const [selectedSector, setSelectedSector] = useState<string>("전체");
+  const [selectedCategory, setSelectedCategory] = useState<string>("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [etfSorts, setEtfSorts] = useState<SortConfig[]>([]);
 
@@ -98,6 +99,17 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     });
   };
 
+  // 고유한 카테고리 목록 추출
+  const uniqueCategories = useMemo(() => {
+    const categories = new Set<string>();
+    etfs.forEach((etf) => {
+      if (etf.category) {
+        categories.add(etf.category);
+      }
+    });
+    return Array.from(categories).sort();
+  }, [etfs]);
+
   // 필터링 & 정렬
   const filteredAndSortedEtfs = useMemo(() => {
     let result = [...etfs];
@@ -108,6 +120,11 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
       if (etfSectorFormat) {
         result = result.filter((etf) => etf.primary_sector === etfSectorFormat);
       }
+    }
+
+    // 카테고리 필터링
+    if (selectedCategory !== "전체") {
+      result = result.filter((etf) => etf.category === selectedCategory);
     }
 
     // 검색 필터링
@@ -200,7 +217,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     }
 
     return result;
-  }, [etfs, selectedSector, searchQuery, etfSorts]);
+  }, [etfs, selectedSector, selectedCategory, searchQuery, etfSorts]);
 
   // 포맷팅 함수들
   const formatAssets = (assets: number | undefined): string => {
@@ -328,6 +345,38 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                 }`}
               >
                 {toKoreanSector(sector)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 카테고리 선택 */}
+        <div>
+          <label className="text-xs sm:text-sm text-gray-600 mb-2 font-semibold block">
+            📁 카테고리
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedCategory("전체")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                selectedCategory === "전체"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              전체
+            </button>
+            {uniqueCategories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  selectedCategory === category
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {etfCategoryToKorean(category)}
               </button>
             ))}
           </div>
