@@ -2,10 +2,12 @@
  * 즐겨찾기 Custom Hook
  *
  * 백엔드 API를 사용하여 즐겨찾기 상태를 관리합니다.
+ * 로그인되지 않은 경우 API를 호출하지 않습니다.
  */
 
 import { useState, useRef, useEffect } from 'react';
 import { api } from '../api/client';
+import { authStorage } from '../utils/authStorage';
 
 export interface UseFavoritesReturn {
   favorites: Record<string, boolean>;
@@ -15,14 +17,29 @@ export interface UseFavoritesReturn {
 
 /**
  * 즐겨찾기 hook (백엔드 API 연동)
+ * 로그인 상태를 확인한 후에만 API 호출
  */
 export function useFavorites(userId: string = 'default'): UseFavoritesReturn {
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const favoriteDebounceRef = useRef<Record<string, boolean>>({});
 
-  // 컴포넌트 마운트 시 백엔드에서 즐겨찾기 로드
+  // 로그인 상태 확인
   useEffect(() => {
+    const currentUser = authStorage.getCurrentUser();
+    const loggedIn = currentUser !== null;
+    setIsLoggedIn(loggedIn);
+
+    if (!loggedIn) {
+      // 로그인되지 않았으면 즐겨찾기 데이터 초기화
+      setFavorites({});
+      setLoading(false);
+      console.log('⏭️ 로그인되지 않음 - 즐겨찾기 API 호출 스킵');
+      return;
+    }
+
+    // 로그인된 상태에서만 백엔드에서 즐겨찾기 로드
     const loadFavorites = async () => {
       try {
         const favoritesMap = await api.favorites.getMap(userId);
@@ -41,6 +58,12 @@ export function useFavorites(userId: string = 'default'): UseFavoritesReturn {
   }, [userId]);
 
   const toggleFavorite = async (symbol: string) => {
+    // 로그인되지 않은 경우 API 호출하지 않음
+    if (!isLoggedIn) {
+      console.log('⏭️ 로그인되지 않음 - 즐겨찾기 토글 API 호출 스킵');
+      return;
+    }
+
     // Prevent rapid clicks (300ms debounce)
     if (favoriteDebounceRef.current[symbol]) return;
 

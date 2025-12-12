@@ -364,72 +364,23 @@ async function fetchAllData() {
       };
     }
 
-    // 5. 백테스팅 성과 데이터
-    console.log('\n📊 Fetching backtest performance data...');
-    const backtestPerformanceMap = {};
-    const investmentProfiles = [
-      'undervalued_quality',
-      'value_basic',
-      'value_strict',
-      'growth_quality',
-      'momentum',
-      'swing',
-      'ai_transformation'
-    ];
+    // 5. 백테스팅 성과 데이터 (현재 비활성화)
+    console.log('\n⏳ Backtest performance data collection is currently disabled');
+    // 빈 backtest-performance.json 생성 (프론트에서 "준비 중" 메시지 표시)
+    saveJSON('backtest-performance.json', {
+      lastUpdated: new Date().toISOString(),
+      count: 0,
+      data: {},
+    });
 
-    try {
-      let successCount = 0;
-      let failureCount = 0;
+    metadata.sources.backtestPerformance = {
+      count: 0,
+      failed: 0,
+      status: 'disabled',
+      updatedAt: new Date().toISOString(),
+    };
 
-      for (let i = 0; i < investmentProfiles.length; i++) {
-        const profile = investmentProfiles[i];
-
-        try {
-          const performanceResponse = await apiClient.get(
-            `/api/v1/stock/backtest/profile-performance/${profile}`,
-            { params: { years: 3 } }
-          );
-
-          backtestPerformanceMap[profile] = performanceResponse.data;
-          successCount++;
-
-          console.log(`   [${i + 1}/${investmentProfiles.length}] Fetched ${profile}`);
-        } catch (err) {
-          console.warn(`   ⚠️  Failed to fetch performance for ${profile}: ${err.message}`);
-          failureCount++;
-        }
-
-        // API 부하 방지를 위한 딜레이 (100ms)
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
-      // 백테스팅 성과 저장
-      saveJSON('backtest-performance.json', {
-        lastUpdated: new Date().toISOString(),
-        count: successCount,
-        data: backtestPerformanceMap,
-      });
-
-      metadata.sources.backtestPerformance = {
-        count: successCount,
-        failed: failureCount,
-        updatedAt: new Date().toISOString(),
-      };
-
-      console.log(`   ✓ ${successCount} backtest performance data fetched, ${failureCount} failed`);
-    } catch (error) {
-      console.error('   ✗ Failed to fetch backtest performance data:', error.message);
-      saveJSON('backtest-performance.json', {
-        lastUpdated: new Date().toISOString(),
-        count: 0,
-        data: {},
-      });
-      metadata.sources.backtestPerformance = {
-        count: 0,
-        failed: investmentProfiles.length,
-        updatedAt: new Date().toISOString(),
-      };
-    }
+    console.log('   ⏳ Backtest performance data collection disabled (待: 백엔드 데이터 수집 완료 대기 중)');
 
     // 6. 메타데이터 저장
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
