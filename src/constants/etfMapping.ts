@@ -107,6 +107,20 @@ export const ETF_CATEGORY_MAPPING: Record<string, string> = {
 };
 
 /**
+ * GICS Sector를 ETF primary_sector 포맷으로 역변환
+ * @param gicsSector GICS 섹터 이름 (예: "Information Technology")
+ * @returns ETF primary_sector 형식 (예: "technology")
+ */
+export function gicsToEtfSector(gicsSector: string): string | undefined {
+  for (const [etfSector, gics] of Object.entries(ETF_SECTOR_TO_GICS)) {
+    if (gics === gicsSector) {
+      return etfSector;
+    }
+  }
+  return undefined;
+}
+
+/**
  * ETF primary_sector를 한글로 변환
  * @param sector ETF의 primary_sector (예: "technology", "financial_services")
  * @returns 한글 섹터 이름 (예: "정보기술", "금융")
