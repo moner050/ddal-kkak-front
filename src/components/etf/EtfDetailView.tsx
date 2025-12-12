@@ -30,8 +30,8 @@ const EtfDetailView: React.FC<EtfDetailViewProps> = ({ ticker, onClose }) => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await etfApi.get(ticker);
-        setEtf(response.data);
+        const data = await etfApi.get(ticker);
+        setEtf(data);
       } catch (err: any) {
         console.error("Failed to fetch ETF details:", err);
         setError("ETF 정보를 불러올 수 없습니다.");

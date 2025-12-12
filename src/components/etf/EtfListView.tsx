@@ -26,19 +26,14 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"assets" | "ytd" | "1m" | "3m" | "6m" | "1y">("assets");
 
-  // ETF 데이터 로드
+  // ETF 데이터 로드 (백엔드 API)
   useEffect(() => {
     const fetchEtfs = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // 빌드 시 생성된 JSON 파일에서 데이터 로드
-        const response = await fetch('/data/etfs.json');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setEtfs(data.data || []);
+        const response = await etfApi.getAll();
+        setEtfs(response.data || []);
       } catch (err: any) {
         console.error("Failed to fetch ETFs:", err);
         setError("ETF 목록을 불러올 수 없습니다.");

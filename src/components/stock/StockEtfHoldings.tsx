@@ -26,8 +26,8 @@ const StockEtfHoldings: React.FC<StockEtfHoldingsProps> = ({ ticker, companyName
       setIsLoading(true);
       setError(null);
       try {
-        const response = await etfApi.getHoldingsSimple(ticker);
-        setEtfData(response.data);
+        const data = await etfApi.getHoldingsSimple(ticker);
+        setEtfData(data);
       } catch (err: any) {
         console.error("Failed to fetch ETF holdings:", err);
 
