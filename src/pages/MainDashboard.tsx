@@ -334,28 +334,51 @@ export default function DemoHome() {
     fetchStockFiling();
   }, [detailSymbol]);
 
-  // 백테스팅 데이터 로드 (선택된 투자 전략 변경 시)
+  // 백테스팅 데이터 로드 (선택된 투자 전략 변경 시, JSON 파일에서 로드)
   useEffect(() => {
     const fetchBacktestPerformances = async () => {
-      // 선택된 전략들에 대해 백테스팅 데이터 로드
-      for (const strategyKey of undervaluedStrategies) {
-        // 이미 로드된 데이터가 있으면 스킵
-        if (backtestPerformances[strategyKey]) {
-          continue;
+      try {
+        // 정적 JSON 파일에서 전체 백테스팅 성과 데이터 로드
+        const response = await fetch("/data/backtest-performance.json");
+        if (!response.ok) {
+          throw new Error(`Failed to load backtest data: ${response.status}`);
+        }
+        const allBacktestData = await response.json();
+        const backtestDataMap = allBacktestData.data || {};
+
+        // 선택된 전략들에 대해 데이터 설정
+        const newPerformances: Record<string, any> = {};
+        const newLoading: Record<string, boolean> = {};
+
+        for (const strategyKey of undervaluedStrategies) {
+          // 이미 로드된 데이터가 있으면 스킵
+          if (backtestPerformances[strategyKey]) {
+            newPerformances[strategyKey] = backtestPerformances[strategyKey];
+            newLoading[strategyKey] = false;
+            continue;
+          }
+
+          // 로딩 상태 설정
+          newLoading[strategyKey] = true;
+
+          try {
+            const performance = backtestDataMap[strategyKey];
+            if (!performance) {
+              throw new Error(`Performance data for ${strategyKey} not found`);
+            }
+            newPerformances[strategyKey] = performance;
+            console.log(`✅ 백테스팅 데이터 로드 성공: ${strategyKey}`, performance);
+          } catch (error) {
+            console.error(`❌ 백테스팅 데이터 로드 실패: ${strategyKey}`, error);
+          } finally {
+            newLoading[strategyKey] = false;
+          }
         }
 
-        // 로딩 상태 설정
-        setBacktestLoading(prev => ({ ...prev, [strategyKey]: true }));
-
-        try {
-          const performance = await api.backtest.getProfilePerformance(strategyKey as any, 3);
-          setBacktestPerformances(prev => ({ ...prev, [strategyKey]: performance }));
-          console.log(`✅ 백테스팅 데이터 로드 성공: ${strategyKey}`, performance);
-        } catch (error) {
-          console.error(`❌ 백테스팅 데이터 로드 실패: ${strategyKey}`, error);
-        } finally {
-          setBacktestLoading(prev => ({ ...prev, [strategyKey]: false }));
-        }
+        setBacktestPerformances(prev => ({ ...prev, ...newPerformances }));
+        setBacktestLoading(newLoading);
+      } catch (error) {
+        console.error('❌ 백테스팅 데이터 파일 로드 실패:', error);
       }
     };
 
