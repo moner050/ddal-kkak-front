@@ -54,16 +54,29 @@ import {
 // 백엔드 API URL 설정
 // 프로덕션(웹): 프록시를 통해 상대경로로 요청 (프론트엔드 서버의 /api 경로)
 // 개발(네이티브): 직접 백엔드 서버에 연결
-const API_BASE_URL =
-  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:19006'
-    ? '' // 프로덕션 웹: 상대경로 사용 (프록시 경로 /api)
-    : (process.env.EXPO_PUBLIC_API_URL || 'http://finance-mhb-api.kro.kr'); // 개발/네이티브: HTTP 직접 연결
-const AUTH_TOKEN_KEY = 'authToken';
 
-// 개발 모드에서 API URL 확인
-if (__DEV__) {
-  console.log('🌐 API Base URL:', API_BASE_URL);
+let API_BASE_URL = '';
+
+// 런타임 환경 확인
+if (typeof window !== 'undefined') {
+  // 웹 환경
+  const isLocalhost = window.location.origin === 'http://localhost:19006';
+  if (!isLocalhost) {
+    // 프로덕션: 상대경로 사용 (프록시 경로)
+    API_BASE_URL = '';
+    console.log('🌐 API Mode: Production (Proxy) - Using relative path: ""');
+  } else {
+    // 개발: 환경변수 또는 기본 HTTP URL
+    API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://finance-mhb-api.kro.kr';
+    console.log('🌐 API Mode: Development (Localhost) - Using:', API_BASE_URL);
+  }
+} else {
+  // Node.js 환경 (빌드 스크립트)
+  API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://finance-mhb-api.kro.kr';
+  console.log('🌐 API Mode: Build Script (Node) - Using:', API_BASE_URL);
 }
+
+const AUTH_TOKEN_KEY = 'authToken';
 
 // ============================================
 // Axios Instance
@@ -77,7 +90,7 @@ const apiClient: AxiosInstance = axios.create({
   timeout: 600000, // 10분 (대용량 데이터 export를 위해)
 });
 
-// Request Interceptor - JWT 토큰 자동 추가
+// Request Interceptor - JWT 토큰 자동 추가 및 로깅
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     try {
@@ -88,6 +101,12 @@ apiClient.interceptors.request.use(
     } catch (error) {
       console.error('Token retrieval error:', error);
     }
+
+    // 요청 로깅 (디버깅용)
+    const fullUrl = config.url;
+    const method = config.method?.toUpperCase() || 'UNKNOWN';
+    console.log(`📤 [${method}] ${fullUrl}`);
+
     return config;
   },
   (error: AxiosError) => {

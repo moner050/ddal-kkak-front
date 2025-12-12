@@ -117,33 +117,6 @@ if (!fs.existsSync(BUILD_DIR)) {
   process.exit(1);
 }
 
-// 정적 파일 서빙 (캐싱 설정)
-// /api 경로는 제외 (프록시에서 처리)
-app.use(
-  (req, res, next) => {
-    // /api로 시작하는 요청은 다음 미들웨어로 (프록시로) 넘김
-    if (req.path.startsWith('/api')) {
-      return next();
-    }
-    // 나머지 요청은 정적 파일 서빙
-    express.static(BUILD_DIR, {
-      maxAge: '1y', // 1년 캐싱 (브라우저 캐시)
-      etag: true,
-      lastModified: true,
-      setHeaders: (res, filePath) => {
-        // HTML 파일은 캐싱하지 않음 (항상 최신 버전)
-        if (filePath.endsWith('.html')) {
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        }
-        // JSON 데이터 파일도 캐싱 제한
-        else if (filePath.endsWith('.json')) {
-          res.setHeader('Cache-Control', 'public, max-age=300'); // 5분 캐싱
-        }
-      },
-    })(req, res, next);
-  }
-);
-
 // ============================================
 // Routes
 // ============================================
@@ -162,6 +135,7 @@ app.get('/health', (req, res) => {
 
 // API Proxy - 백엔드 API로 프록시 (Mixed Content 해결)
 // 브라우저 -(HTTPS)-> 프론트엔드 서버 -(HTTP)-> 백엔드 서버
+// ⚠️ 이것을 정적 파일 미들웨어 BEFORE에 선언해야 함
 const { createProxyMiddleware } = require('http-proxy-middleware');
 app.use('/api', createProxyMiddleware({
   target: 'http://finance-mhb-api.kro.kr',
@@ -191,6 +165,30 @@ app.use('/api', createProxyMiddleware({
     });
   },
 }));
+
+// ============================================
+// Static File Serving
+// ============================================
+
+// 정적 파일 서빙 (캐싱 설정)
+// /api 경로는 위의 프록시 미들웨어에서 이미 처리됨
+app.use(
+  express.static(BUILD_DIR, {
+    maxAge: '1y', // 1년 캐싱 (브라우저 캐시)
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, filePath) => {
+      // HTML 파일은 캐싱하지 않음 (항상 최신 버전)
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+      // JSON 데이터 파일도 캐싱 제한
+      else if (filePath.endsWith('.json')) {
+        res.setHeader('Cache-Control', 'public, max-age=300'); // 5분 캐싱
+      }
+    },
+  })
+);
 
 // SPA Routing: 모든 요청을 index.html로 리다이렉트
 app.get('*', (req, res) => {
