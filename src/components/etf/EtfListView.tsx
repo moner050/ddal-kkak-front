@@ -1,30 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import type { EtfInfo } from "../../api/types";
 import { GICS_SECTORS } from "../../services/sectorPerformance";
 import { toKoreanSector } from "../../constants/sectorMapping";
 import { etfSectorToKorean, etfCategoryToKorean, gicsToEtfSector } from "../../constants/etfMapping";
+import TooltipHeader from "../utils/TooltipHeader";
 
 interface EtfListViewProps {
   onEtfClick?: (etf: EtfInfo) => void;
 }
 
+interface SortConfig {
+  key: string;
+  direction: "asc" | "desc";
+}
+
 type ViewMode = "beginner" | "detail";
-type SortKey =
-  | "assets_high" | "assets_low"
-  | "price_high" | "price_low"
-  | "ytd_high" | "ytd_low"
-  | "1m_high" | "1m_low"
-  | "3m_high" | "3m_low"
-  | "6m_high" | "6m_low"
-  | "1y_high" | "1y_low"
-  | "dividend_high" | "dividend_low";
 
 /**
- * ETF 목록 표시 컴포넌트
+ * ETF 목록 표시 컴포넌트 (주식과 동일한 UI)
  * - 간편/상세 모드 토글
  * - 섹터별 필터링
  * - 검색 기능
- * - 정렬 기능 (자산 규모, 수익률, 배당률)
+ * - 정렬 기능 (헤더 클릭으로 정렬)
  * - 카드 형식(간편) 및 테이블 형식(상세) 표시
  */
 const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
@@ -36,10 +33,10 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   const [viewMode, setViewMode] = useState<ViewMode>("beginner");
   const [selectedSector, setSelectedSector] = useState<string>("전체");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortKey>("assets_high");
+  const [etfSorts, setEtfSorts] = useState<SortConfig[]>([]);
 
   // ETF 데이터 로드 (정적 JSON 파일)
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchEtfs = async () => {
       setIsLoading(true);
       setError(null);
@@ -62,17 +59,43 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     fetchEtfs();
   }, []);
 
+  // 정렬 핸들러
+  const handleEtfSort = (key: string) => {
+    setEtfSorts((prevSorts) => {
+      const existingIndex = prevSorts.findIndex((s) => s.key === key);
+      let newSorts: SortConfig[];
+
+      if (existingIndex === -1) {
+        // 새로운 정렬 추가
+        newSorts = [{ key, direction: "desc" }, ...prevSorts];
+      } else {
+        // 기존 정렬 토글 또는 제거
+        const currentSort = prevSorts[existingIndex];
+        if (currentSort.direction === "desc") {
+          // desc → asc
+          newSorts = [
+            { key, direction: "asc" },
+            ...prevSorts.filter((_, i) => i !== existingIndex),
+          ];
+        } else {
+          // asc → 제거
+          newSorts = prevSorts.filter((_, i) => i !== existingIndex);
+        }
+      }
+
+      return newSorts;
+    });
+  };
+
   // 필터링 & 정렬
-  const filteredAndSortedEtfs = React.useMemo(() => {
+  const filteredAndSortedEtfs = useMemo(() => {
     let result = [...etfs];
 
-    // 섹터 필터링 (GICS 섹터를 ETF primary_sector 포맷으로 변환하여 비교)
+    // 섹터 필터링
     if (selectedSector !== "전체") {
       const etfSectorFormat = gicsToEtfSector(selectedSector);
       if (etfSectorFormat) {
-        result = result.filter(
-          (etf) => etf.primary_sector === etfSectorFormat
-        );
+        result = result.filter((etf) => etf.primary_sector === etfSectorFormat);
       }
     }
 
@@ -88,47 +111,85 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     }
 
     // 정렬
-    result.sort((a, b) => {
-      switch (sortBy) {
-        case "assets_high":
-          return (b.total_assets || 0) - (a.total_assets || 0);
-        case "assets_low":
-          return (a.total_assets || 0) - (b.total_assets || 0);
-        case "price_high":
-          return (b.price || 0) - (a.price || 0);
-        case "price_low":
-          return (a.price || 0) - (b.price || 0);
-        case "ytd_high":
-          return (b.ytd_return || 0) - (a.ytd_return || 0);
-        case "ytd_low":
-          return (a.ytd_return || 0) - (b.ytd_return || 0);
-        case "1m_high":
-          return (b.return_1m || 0) - (a.return_1m || 0);
-        case "1m_low":
-          return (a.return_1m || 0) - (b.return_1m || 0);
-        case "3m_high":
-          return (b.return_3m || 0) - (a.return_3m || 0);
-        case "3m_low":
-          return (a.return_3m || 0) - (b.return_3m || 0);
-        case "6m_high":
-          return (b.return_6m || 0) - (a.return_6m || 0);
-        case "6m_low":
-          return (a.return_6m || 0) - (b.return_6m || 0);
-        case "1y_high":
-          return (b.return_1y || 0) - (a.return_1y || 0);
-        case "1y_low":
-          return (a.return_1y || 0) - (b.return_1y || 0);
-        case "dividend_high":
-          return (b.dividend_yield || 0) - (a.dividend_yield || 0);
-        case "dividend_low":
-          return (a.dividend_yield || 0) - (b.dividend_yield || 0);
-        default:
-          return 0;
-      }
-    });
+    if (etfSorts.length > 0) {
+      result.sort((a, b) => {
+        for (const sort of etfSorts) {
+          let aValue: any, bValue: any;
+
+          switch (sort.key) {
+            case "ticker":
+              aValue = a.ticker;
+              bValue = b.ticker;
+              break;
+            case "sector":
+              aValue = a.primary_sector || "";
+              bValue = b.primary_sector || "";
+              break;
+            case "category":
+              aValue = a.category || "";
+              bValue = b.category || "";
+              break;
+            case "price":
+              aValue = a.price || 0;
+              bValue = b.price || 0;
+              break;
+            case "assets":
+              aValue = a.total_assets || 0;
+              bValue = b.total_assets || 0;
+              break;
+            case "ytd":
+              aValue = a.ytd_return || 0;
+              bValue = b.ytd_return || 0;
+              break;
+            case "1m":
+              aValue = a.return_1m || 0;
+              bValue = b.return_1m || 0;
+              break;
+            case "3m":
+              aValue = a.return_3m || 0;
+              bValue = b.return_3m || 0;
+              break;
+            case "6m":
+              aValue = a.return_6m || 0;
+              bValue = b.return_6m || 0;
+              break;
+            case "1y":
+              aValue = a.return_1y || 0;
+              bValue = b.return_1y || 0;
+              break;
+            case "dividend":
+              aValue = a.dividend_yield || 0;
+              bValue = b.dividend_yield || 0;
+              break;
+            default:
+              continue;
+          }
+
+          // 문자열 비교
+          if (typeof aValue === "string" && typeof bValue === "string") {
+            const comparison = aValue.localeCompare(bValue);
+            if (comparison !== 0) {
+              return sort.direction === "asc" ? comparison : -comparison;
+            }
+          } else {
+            // 숫자 비교
+            const aNum = Number(aValue) || 0;
+            const bNum = Number(bValue) || 0;
+            if (aNum !== bNum) {
+              return sort.direction === "asc" ? aNum - bNum : bNum - aNum;
+            }
+          }
+        }
+
+        return 0;
+      });
+    } else {
+      // 기본 정렬: 자산규모 기준 높은 순
+      result.sort((a, b) => (b.total_assets || 0) - (a.total_assets || 0));
+    }
 
     return result;
-  }, [etfs, selectedSector, searchQuery, sortBy]);
+  }, [etfs, selectedSector, searchQuery, etfSorts]);
 
   // 포맷팅 함수들
   const formatAssets = (assets: number | undefined): string => {
@@ -252,45 +313,6 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
             ))}
           </div>
         </div>
-
-        {/* 정렬 */}
-        <div>
-          <label className="text-xs sm:text-sm text-gray-600 mb-2 font-semibold block">
-            📊 정렬
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { value: "assets_high" as SortKey, label: "자산 규모 ↑" },
-              { value: "assets_low" as SortKey, label: "자산 규모 ↓" },
-              { value: "price_high" as SortKey, label: "현재가 ↑" },
-              { value: "price_low" as SortKey, label: "현재가 ↓" },
-              { value: "ytd_high" as SortKey, label: "YTD 수익률 ↑" },
-              { value: "ytd_low" as SortKey, label: "YTD 수익률 ↓" },
-              { value: "1m_high" as SortKey, label: "1개월 수익률 ↑" },
-              { value: "1m_low" as SortKey, label: "1개월 수익률 ↓" },
-              { value: "3m_high" as SortKey, label: "3개월 수익률 ↑" },
-              { value: "3m_low" as SortKey, label: "3개월 수익률 ↓" },
-              { value: "6m_high" as SortKey, label: "6개월 수익률 ↑" },
-              { value: "6m_low" as SortKey, label: "6개월 수익률 ↓" },
-              { value: "1y_high" as SortKey, label: "1년 수익률 ↑" },
-              { value: "1y_low" as SortKey, label: "1년 수익률 ↓" },
-              { value: "dividend_high" as SortKey, label: "배당률 ↑" },
-              { value: "dividend_low" as SortKey, label: "배당률 ↓" },
-            ].map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setSortBy(option.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  sortBy === option.value
-                    ? "bg-indigo-600 text-white shadow-md"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* 결과 요약 */}
@@ -310,128 +332,107 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
               <p className="text-sm text-gray-500 mt-2">다른 검색어나 필터를 시도해보세요</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {filteredAndSortedEtfs.map((etf) => (
                 <div
                   key={etf.ticker}
                   onClick={() => onEtfClick?.(etf)}
-                  className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg transition-all cursor-pointer"
+                  className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all cursor-pointer"
                 >
-                  {/* 헤더 */}
-                  <div className="mb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-bold text-blue-600 truncate">
-                          {etf.ticker}
-                        </h3>
-                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                          {etf.short_name || etf.long_name}
+                  {/* 헤더 섹션 */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <h3 className="text-2xl font-bold text-blue-600">{etf.ticker}</h3>
+                        <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          {etf.category ? etfCategoryToKorean(etf.category) : "-"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 line-clamp-2">{etf.short_name || etf.long_name}</p>
+                    </div>
+                    {etf.price && (
+                      <div className="text-right ml-4">
+                        <p className="text-2xl font-bold text-gray-900">{formatPrice(etf.price)}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 핵심 정보 행 */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-t border-b border-gray-200">
+                    {/* 섹터 */}
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">섹터</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {etf.primary_sector ? etfSectorToKorean(etf.primary_sector) : "-"}
+                      </p>
+                    </div>
+
+                    {/* 운용 자산 */}
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">운용 자산</p>
+                      <p className="text-sm font-semibold text-gray-900">{formatAssets(etf.total_assets)}</p>
+                    </div>
+
+                    {/* 배당률 */}
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">배당률</p>
+                      <p className={`text-sm font-semibold ${getReturnColor(etf.dividend_yield)}`}>
+                        {formatPercent(etf.dividend_yield)}
+                      </p>
+                    </div>
+
+                    {/* YTD 수익률 */}
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">YTD 수익률</p>
+                      <p className={`text-sm font-semibold ${getReturnColor(etf.ytd_return)}`}>
+                        {formatPercent(etf.ytd_return)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 수익률 상세 정보 */}
+                  <div className="grid grid-cols-5 gap-2 mt-4 pt-4 border-t border-gray-100">
+                    {etf.return_1m !== undefined && (
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-1">1개월</p>
+                        <p className={`text-xs font-bold ${getReturnColor(etf.return_1m)}`}>
+                          {formatPercent(etf.return_1m)}
                         </p>
                       </div>
-                      {etf.price && (
-                        <div className="text-right ml-2">
-                          <p className="text-sm font-bold text-gray-900">
-                            {formatPrice(etf.price)}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 정보 */}
-                  <div className="space-y-2">
-                    {/* 자산 규모 */}
-                    {etf.total_assets && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">운용 자산</span>
-                        <span className="text-sm font-bold text-gray-900">
-                          {formatAssets(etf.total_assets)}
-                        </span>
+                    )}
+                    {etf.return_3m !== undefined && (
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-1">3개월</p>
+                        <p className={`text-xs font-bold ${getReturnColor(etf.return_3m)}`}>
+                          {formatPercent(etf.return_3m)}
+                        </p>
                       </div>
                     )}
-
-                    {/* 주요 섹터 */}
-                    {etf.primary_sector && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">주요 섹터</span>
-                        <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded">
-                          {etfSectorToKorean(etf.primary_sector)}
-                        </span>
+                    {etf.return_6m !== undefined && (
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-1">6개월</p>
+                        <p className={`text-xs font-bold ${getReturnColor(etf.return_6m)}`}>
+                          {formatPercent(etf.return_6m)}
+                        </p>
                       </div>
                     )}
-
-                    {/* 카테고리 */}
-                    {etf.category && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">카테고리</span>
-                        <span className="text-xs text-gray-700 truncate max-w-[60%]" title={etfCategoryToKorean(etf.category)}>
-                          {etfCategoryToKorean(etf.category)}
-                        </span>
+                    {etf.return_1y !== undefined && (
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-1">1년</p>
+                        <p className={`text-xs font-bold ${getReturnColor(etf.return_1y)}`}>
+                          {formatPercent(etf.return_1y)}
+                        </p>
+                      </div>
+                    )}
+                    {etf.return_3y !== undefined && (
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-1">3년</p>
+                        <p className={`text-xs font-bold ${getReturnColor(etf.return_3y)}`}>
+                          {formatPercent(etf.return_3y)}
+                        </p>
                       </div>
                     )}
                   </div>
-
-                  {/* 배당률 */}
-                  {etf.dividend_yield !== undefined && (
-                    <div className="mt-2 pt-2 border-t border-gray-100">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">배당률</span>
-                        <span className={`text-xs font-bold ${getReturnColor(etf.dividend_yield)}`}>
-                          {formatPercent(etf.dividend_yield)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 수익률 */}
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <p className="text-xs text-gray-500 mb-2">수익률</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {etf.ytd_return !== undefined && (
-                        <div className="text-center">
-                          <p className="text-[10px] text-gray-400 mb-1">YTD</p>
-                          <p className={`text-xs font-bold ${getReturnColor(etf.ytd_return)}`}>
-                            {formatPercent(etf.ytd_return)}
-                          </p>
-                        </div>
-                      )}
-                      {etf.return_3m !== undefined && (
-                        <div className="text-center">
-                          <p className="text-[10px] text-gray-400 mb-1">3개월</p>
-                          <p className={`text-xs font-bold ${getReturnColor(etf.return_3m)}`}>
-                            {formatPercent(etf.return_3m)}
-                          </p>
-                        </div>
-                      )}
-                      {etf.return_1y !== undefined && (
-                        <div className="text-center">
-                          <p className="text-[10px] text-gray-400 mb-1">1년</p>
-                          <p className={`text-xs font-bold ${getReturnColor(etf.return_1y)}`}>
-                            {formatPercent(etf.return_1y)}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* TOP 보유 종목 (있는 경우) */}
-                  {etf.top_holdings && etf.top_holdings.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <p className="text-xs text-gray-500 mb-2">주요 보유 종목</p>
-                      <div className="space-y-1">
-                        {etf.top_holdings.slice(0, 3).map((holding, idx) => (
-                          <div key={idx} className="flex items-center justify-between">
-                            <span className="text-xs text-gray-700 truncate flex-1">
-                              {holding.symbol}
-                            </span>
-                            <span className="text-xs text-gray-500 ml-2">
-                              {(holding.weight * 100).toFixed(1)}%
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
@@ -439,7 +440,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
         </>
       )}
 
-      {/* 상세 모드 - 테이블 뷰 */}
+      {/* 상세 모드 - 테이블 뷰 (주식과 동일한 UI) */}
       {viewMode === "detail" && (
         <>
           {filteredAndSortedEtfs.length === 0 ? (
@@ -449,67 +450,143 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
               <p className="text-sm text-gray-500 mt-2">다른 검색어나 필터를 시도해보세요</p>
             </div>
           ) : (
-            <div className="overflow-x-auto border border-gray-200 rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">종목</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">섹터</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">카테고리</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">현재가</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">운용 자산</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">YTD</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">1개월</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">3개월</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">6개월</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">1년</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">배당률</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAndSortedEtfs.map((etf, idx) => (
-                    <tr
-                      key={etf.ticker}
-                      onClick={() => onEtfClick?.(etf)}
-                      className={`border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer ${
-                        idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                      }`}
-                    >
-                      <td className="px-4 py-3 font-semibold text-blue-600">{etf.ticker}</td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {etf.primary_sector ? etfSectorToKorean(etf.primary_sector) : "-"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700 max-w-[150px] truncate">
-                        {etf.category ? etfCategoryToKorean(etf.category) : "-"}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-900">
-                        {formatPrice(etf.price)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-900">
-                        {formatAssets(etf.total_assets)}
-                      </td>
-                      <td className={`px-4 py-3 text-right font-semibold ${getReturnColor(etf.ytd_return)}`}>
-                        {formatPercent(etf.ytd_return)}
-                      </td>
-                      <td className={`px-4 py-3 text-right font-semibold ${getReturnColor(etf.return_1m)}`}>
-                        {formatPercent(etf.return_1m)}
-                      </td>
-                      <td className={`px-4 py-3 text-right font-semibold ${getReturnColor(etf.return_3m)}`}>
-                        {formatPercent(etf.return_3m)}
-                      </td>
-                      <td className={`px-4 py-3 text-right font-semibold ${getReturnColor(etf.return_6m)}`}>
-                        {formatPercent(etf.return_6m)}
-                      </td>
-                      <td className={`px-4 py-3 text-right font-semibold ${getReturnColor(etf.return_1y)}`}>
-                        {formatPercent(etf.return_1y)}
-                      </td>
-                      <td className={`px-4 py-3 text-right font-semibold ${getReturnColor(etf.dividend_yield)}`}>
-                        {formatPercent(etf.dividend_yield)}
-                      </td>
+            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs">
+                        종목
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="섹터"
+                          sortKey="sector"
+                          sorts={etfSorts}
+                          onSort={handleEtfSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="카테고리"
+                          sortKey="category"
+                          sorts={etfSorts}
+                          onSort={handleEtfSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="현재가"
+                          sortKey="price"
+                          sorts={etfSorts}
+                          onSort={handleEtfSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="운용 자산"
+                          tooltip="운용 중인 자산 규모"
+                          sortKey="assets"
+                          sorts={etfSorts}
+                          onSort={handleEtfSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="YTD"
+                          tooltip="연초 대비 수익률"
+                          sortKey="ytd"
+                          sorts={etfSorts}
+                          onSort={handleEtfSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="1개월"
+                          sortKey="1m"
+                          sorts={etfSorts}
+                          onSort={handleEtfSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="3개월"
+                          sortKey="3m"
+                          sorts={etfSorts}
+                          onSort={handleEtfSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="6개월"
+                          sortKey="6m"
+                          sorts={etfSorts}
+                          onSort={handleEtfSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="1년"
+                          sortKey="1y"
+                          sorts={etfSorts}
+                          onSort={handleEtfSort}
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs">
+                        <TooltipHeader
+                          label="배당률"
+                          sortKey="dividend"
+                          sorts={etfSorts}
+                          onSort={handleEtfSort}
+                        />
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredAndSortedEtfs.map((etf) => (
+                      <tr
+                        key={etf.ticker}
+                        onClick={() => onEtfClick?.(etf)}
+                        className="hover:bg-blue-50 transition-colors cursor-pointer"
+                      >
+                        <td className="px-4 py-3 text-sm font-semibold text-blue-600">
+                          {etf.ticker}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-center text-gray-700">
+                          {etf.primary_sector ? etfSectorToKorean(etf.primary_sector) : "-"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-center text-gray-700 max-w-[150px] truncate">
+                          {etf.category ? etfCategoryToKorean(etf.category) : "-"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-center text-gray-900">
+                          {formatPrice(etf.price)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-center text-gray-900">
+                          {formatAssets(etf.total_assets)}
+                        </td>
+                        <td className={`px-4 py-3 text-sm text-center font-semibold ${getReturnColor(etf.ytd_return)}`}>
+                          {formatPercent(etf.ytd_return)}
+                        </td>
+                        <td className={`px-4 py-3 text-sm text-center font-semibold ${getReturnColor(etf.return_1m)}`}>
+                          {formatPercent(etf.return_1m)}
+                        </td>
+                        <td className={`px-4 py-3 text-sm text-center font-semibold ${getReturnColor(etf.return_3m)}`}>
+                          {formatPercent(etf.return_3m)}
+                        </td>
+                        <td className={`px-4 py-3 text-sm text-center font-semibold ${getReturnColor(etf.return_6m)}`}>
+                          {formatPercent(etf.return_6m)}
+                        </td>
+                        <td className={`px-4 py-3 text-sm text-center font-semibold ${getReturnColor(etf.return_1y)}`}>
+                          {formatPercent(etf.return_1y)}
+                        </td>
+                        <td className={`px-4 py-3 text-sm text-center font-semibold ${getReturnColor(etf.dividend_yield)}`}>
+                          {formatPercent(etf.dividend_yield)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </>
