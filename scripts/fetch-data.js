@@ -390,7 +390,11 @@ async function fetchAllData() {
             { params: { years: 3 } }
           );
 
-          backtestPerformanceMap[profile] = performanceResponse.data;
+          // API 응답 구조 확인
+          const performanceData = performanceResponse.data;
+          console.log(`   [DEBUG] ${profile} response:`, JSON.stringify(performanceData).substring(0, 200));
+
+          backtestPerformanceMap[profile] = performanceData;
           successCount++;
 
           console.log(`   [${i + 1}/${investmentProfiles.length}] Fetched ${profile}`);
