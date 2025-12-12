@@ -48,6 +48,17 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
         const data = await response.json();
         setEtfs(data.data || []);
         console.log(`✓ Loaded ${(data.data || []).length} ETFs from static JSON`);
+        // 첫 번째 ETF 데이터 샘플 로깅 (디버깅)
+        if (data.data && data.data.length > 0) {
+          console.log("Sample ETF data (first):", {
+            ticker: data.data[0].ticker,
+            price: data.data[0].price,
+            total_assets: data.data[0].total_assets,
+            dividend_yield: data.data[0].dividend_yield,
+            ytd_return: data.data[0].ytd_return,
+            return_1m: data.data[0].return_1m,
+          });
+        }
       } catch (err: any) {
         console.error("Failed to fetch ETFs from static JSON:", err);
         setError("ETF 목록을 불러올 수 없습니다.");
@@ -206,8 +217,16 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
 
   const formatPercent = (value: number | undefined): string => {
     if (value === undefined || value === null) return "-";
-    const sign = value > 0 ? "+" : "";
-    return `${sign}${value.toFixed(2)}%`;
+
+    // 데이터 값이 -1과 1 사이면 * 100 (소수점 형식: 0.7009 → 70.09)
+    // 그 외에는 그냥 사용 (이미 퍼센트 형식: 70.09 → 70.09)
+    let displayValue = value;
+    if (Math.abs(value) < 1 && value !== 0) {
+      displayValue = value * 100;
+    }
+
+    const sign = displayValue > 0 ? "+" : "";
+    return `${sign}${displayValue.toFixed(2)}%`;
   };
 
   const getReturnColor = (returnValue: number | undefined): string => {
