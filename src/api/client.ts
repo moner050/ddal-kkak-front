@@ -52,8 +52,12 @@ import {
 // ============================================
 
 // 백엔드 API URL 설정
-// 환경 변수가 설정되어 있으면 사용, 없으면 기본 백엔드 서버 URL 사용
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://finance-mhb-api.kro.kr';
+// 프로덕션(웹): 프록시를 통해 상대경로로 요청 (프론트엔드 서버의 /api 경로)
+// 개발(네이티브): 직접 백엔드 서버에 연결
+const API_BASE_URL =
+  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:19006'
+    ? '' // 프로덕션 웹: 상대경로 사용 (프록시 경로 /api)
+    : (process.env.EXPO_PUBLIC_API_URL || 'http://finance-mhb-api.kro.kr'); // 개발/네이티브: HTTP 직접 연결
 const AUTH_TOKEN_KEY = 'authToken';
 
 // 개발 모드에서 API URL 확인
