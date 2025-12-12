@@ -155,7 +155,7 @@ app.get('/health', (req, res) => {
 // API Proxy - 백엔드 API로 프록시 (Mixed Content 해결)
 const { createProxyMiddleware } = require('http-proxy-middleware');
 app.use('/api', createProxyMiddleware({
-  target: 'http://finance-mhb-api.kro.kr',
+  target: 'https://finance-mhb-api.kro.kr',
   changeOrigin: true,
   logLevel: 'debug',
   onProxyReq: (proxyReq, req, res) => {
