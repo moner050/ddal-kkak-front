@@ -344,7 +344,6 @@ export default function DemoHome() {
           throw new Error(`Failed to load backtest data: ${response.status}`);
         }
         const allBacktestData = await response.json();
-        console.log('[DEBUG] All backtest data:', JSON.stringify(allBacktestData).substring(0, 500));
         const backtestDataMap = allBacktestData.data || {};
 
         // 선택된 전략들에 대해 데이터 설정
@@ -364,12 +363,10 @@ export default function DemoHome() {
 
           try {
             const performance = backtestDataMap[strategyKey];
-            console.log(`[DEBUG] ${strategyKey} performance:`, performance);
             if (!performance) {
               throw new Error(`Performance data for ${strategyKey} not found`);
             }
             newPerformances[strategyKey] = performance;
-            console.log(`✅ 백테스팅 데이터 로드 성공: ${strategyKey}`, performance);
           } catch (error) {
             console.error(`❌ 백테스팅 데이터 로드 실패: ${strategyKey}`, error);
           } finally {

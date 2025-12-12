@@ -13,6 +13,14 @@ interface BacktestingPerformanceSectionProps {
  * BacktestingPerformanceSection - 백테스팅 성과 섹션
  * 선택된 투자 전략별 과거 3년간 성과 데이터 표시
  */
+// 백테스팅 데이터가 유효한지 확인
+const isValidPerformance = (performance: any): boolean => {
+  return performance &&
+         typeof performance.averageReturn === 'number' &&
+         typeof performance.successRate === 'number' &&
+         typeof performance.stocksAnalyzed === 'number';
+};
+
 export default function BacktestingPerformanceSection({
   undervaluedStrategies,
   backtestPerformances,
@@ -34,6 +42,7 @@ export default function BacktestingPerformanceSection({
           const strategy = INVESTMENT_STRATEGIES[strategyKey];
           const performance = backtestPerformances[strategyKey];
           const loading = backtestLoading[strategyKey];
+          const hasValidData = isValidPerformance(performance);
 
           return (
             <div
@@ -46,7 +55,7 @@ export default function BacktestingPerformanceSection({
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
                 </div>
-              ) : performance ? (
+              ) : hasValidData ? (
                 <div className="space-y-3">
                   {/* 평균 수익률 */}
                   <div className="p-3 rounded-lg bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
@@ -94,7 +103,9 @@ export default function BacktestingPerformanceSection({
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500 text-sm">
-                  데이터를 불러올 수 없습니다
+                  <div className="text-2xl mb-2">⏳</div>
+                  <div>준비 중입니다</div>
+                  <div className="text-xs text-gray-400 mt-1">백테스팅 데이터 수집 중</div>
                 </div>
               )}
             </div>
