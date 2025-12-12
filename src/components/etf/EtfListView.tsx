@@ -99,6 +99,17 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     });
   };
 
+  // 퍼센트 수치 정규화 (소수점 형식과 퍼센트 형식 통일)
+  const normalizePercentValue = (value: number | undefined): number => {
+    if (value === undefined || value === null || value === 0) return 0;
+    // 값이 -1과 1 사이면 소수점 형식 (0.7009 = 70.09%)
+    // 그 외에는 퍼센트 형식 (70.09 = 70.09%)
+    if (Math.abs(value) < 1) {
+      return value * 100;
+    }
+    return value;
+  };
+
   // 고유한 카테고리 목록 추출
   const uniqueCategories = useMemo(() => {
     const categories = new Set<string>();
@@ -166,28 +177,28 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
               bValue = b.total_assets || 0;
               break;
             case "ytd":
-              aValue = a.ytd_return || 0;
-              bValue = b.ytd_return || 0;
+              aValue = normalizePercentValue(a.ytd_return);
+              bValue = normalizePercentValue(b.ytd_return);
               break;
             case "1m":
-              aValue = a.return_1m || 0;
-              bValue = b.return_1m || 0;
+              aValue = normalizePercentValue(a.return_1m);
+              bValue = normalizePercentValue(b.return_1m);
               break;
             case "3m":
-              aValue = a.return_3m || 0;
-              bValue = b.return_3m || 0;
+              aValue = normalizePercentValue(a.return_3m);
+              bValue = normalizePercentValue(b.return_3m);
               break;
             case "6m":
-              aValue = a.return_6m || 0;
-              bValue = b.return_6m || 0;
+              aValue = normalizePercentValue(a.return_6m);
+              bValue = normalizePercentValue(b.return_6m);
               break;
             case "1y":
-              aValue = a.return_1y || 0;
-              bValue = b.return_1y || 0;
+              aValue = normalizePercentValue(a.return_1y);
+              bValue = normalizePercentValue(b.return_1y);
               break;
             case "dividend":
-              aValue = a.dividend_yield || 0;
-              bValue = b.dividend_yield || 0;
+              aValue = normalizePercentValue(a.dividend_yield);
+              bValue = normalizePercentValue(b.dividend_yield);
               break;
             default:
               continue;
