@@ -149,9 +149,20 @@ app.use('/api', createProxyMiddleware({
     console.log(`   -> Target: ${targetUrl}`);
     console.log(`   -> Host: ${proxyReq.getHeader('host')}`);
     console.log(`   -> Origin: ${proxyReq.getHeader('origin')}`);
+    console.log(`   -> Authorization: ${proxyReq.getHeader('authorization') ? '✓ Present' : '✗ None'}`);
+    console.log(`   -> Content-Type: ${proxyReq.getHeader('content-type') || 'default'}`);
   },
   onProxyRes: (proxyRes, req, res) => {
-    console.log(`[Proxy Response] ${req.method} ${req.url} -> ${proxyRes.statusCode}`);
+    const statusOk = proxyRes.statusCode >= 200 && proxyRes.statusCode < 300;
+    const statusIcon = statusOk ? '✓' : '✗';
+    console.log(`[Proxy Response] ${req.method} ${req.url} -> ${statusIcon} ${proxyRes.statusCode}`);
+
+    // 에러 응답 상세 로깅
+    if (proxyRes.statusCode === 403) {
+      console.error(`\n⚠️  [403 Forbidden] ETF API Request Blocked`);
+      console.error(`   Path: ${req.url}`);
+      console.error(`   Check: Backend CORS configuration & Spring Security filters`);
+    }
   },
   onError: (err, req, res) => {
     console.error(`\n[Proxy Error] ${req.method} ${req.url}`);
