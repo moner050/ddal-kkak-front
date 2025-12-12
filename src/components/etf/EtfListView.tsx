@@ -394,11 +394,86 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
         </div>
       </div>
 
+      {/* 정렬 옵션 (간편모드용) */}
+      {viewMode === "beginner" && (
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <p className="text-sm font-semibold text-gray-700">정렬:</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* 정렬 옵션 버튼들 */}
+              {[
+                { key: "assets", label: "운용 자산" },
+                { key: "ytd", label: "YTD 수익률" },
+                { key: "1m", label: "1개월" },
+                { key: "3m", label: "3개월" },
+                { key: "6m", label: "6개월" },
+                { key: "1y", label: "1년" },
+                { key: "dividend", label: "배당률" },
+              ].map((option) => {
+                const currentSort = etfSorts.find((s) => s.key === option.key);
+                return (
+                  <button
+                    key={option.key}
+                    onClick={() => handleEtfSort(option.key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                      currentSort
+                        ? `${
+                            currentSort.direction === "desc"
+                              ? "bg-blue-600 text-white"
+                              : "bg-blue-100 text-blue-700"
+                          } shadow-sm`
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                    title={
+                      currentSort
+                        ? `${option.label} (${currentSort.direction === "desc" ? "높은순" : "낮은순"})`
+                        : `${option.label}로 정렬`
+                    }
+                  >
+                    {option.label}
+                    {currentSort && (
+                      <span className="ml-1">
+                        {currentSort.direction === "desc" ? "↓" : "↑"}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+              {/* 정렬 초기화 */}
+              {etfSorts.length > 0 && (
+                <button
+                  onClick={() => setEtfSorts([])}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200 transition-all"
+                >
+                  초기화
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 결과 요약 */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600">
           총 <span className="font-bold text-blue-600">{filteredAndSortedEtfs.length}</span>개 ETF
         </p>
+        {etfSorts.length > 0 && viewMode === "beginner" && (
+          <p className="text-xs text-blue-600">
+            {etfSorts.map((s) => {
+              const label = [
+                { key: "assets", label: "운용 자산" },
+                { key: "ytd", label: "YTD" },
+                { key: "1m", label: "1개월" },
+                { key: "3m", label: "3개월" },
+                { key: "6m", label: "6개월" },
+                { key: "1y", label: "1년" },
+                { key: "dividend", label: "배당률" },
+              ].find((l) => l.key === s.key)?.label;
+              return `${label}(${s.direction === "desc" ? "↓" : "↑"})`;
+            }).join(", ")}
+          </p>
+        )}
       </div>
 
       {/* 간편 모드 - 카드 뷰 */}

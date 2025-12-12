@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { etfApi } from "../../api/client";
-import type { EtfHoldingsResponse, EtfSimpleInfo } from "../../api/types";
+import type { EtfHoldingsResponse, EtfSimpleInfo, EtfInfo } from "../../api/types";
 import { etfSectorToKorean, etfCategoryToKorean } from "../../constants/etfMapping";
 
 interface StockEtfHoldingsProps {
@@ -26,8 +26,32 @@ const StockEtfHoldings: React.FC<StockEtfHoldingsProps> = ({ ticker, companyName
       setIsLoading(true);
       setError(null);
       try {
-        const data = await etfApi.getHoldingsSimple(ticker);
-        setEtfData(data);
+        // 1. API에서 해당 종목을 포함하는 ETF 목록 조회
+        // (역방향 조회는 매번 실시간으로 필요함)
+        const holdingsData = await etfApi.getHoldingsSimple(ticker);
+
+        // 2. 각 ETF의 상세 정보를 JSON 파일에서 로드 (캐시된 데이터 사용)
+        const response = await fetch("/data/etfs-detailed.json");
+        if (!response.ok) {
+          throw new Error(`Failed to load ETF details: ${response.status}`);
+        }
+        const detailedData = await response.json();
+        const etfDetailsMap = detailedData.data || {};
+
+        // 3. 조회된 ETF들의 상세 정보를 매칭
+        const enhancedEtfs = holdingsData.etfs.map((simpleInfo: EtfSimpleInfo) => {
+          const detailedInfo = etfDetailsMap[simpleInfo.ticker];
+          return {
+            ...simpleInfo,
+            ...detailedInfo, // 상세 정보로 덮어쓰기
+          };
+        });
+
+        // 4. 상태 업데이트 (상세 정보가 추가된 ETF 목록)
+        setEtfData({
+          ...holdingsData,
+          etfs: enhancedEtfs,
+        });
       } catch (err: any) {
         console.error("Failed to fetch ETF holdings:", err);
 

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { etfApi } from "../../api/client";
 import type { EtfInfo } from "../../api/types";
 import { etfSectorToKorean, etfCategoryToKorean } from "../../constants/etfMapping";
 import EtfSectorPieChart from "../charts/EtfSectorPieChart";
@@ -30,8 +29,19 @@ const EtfDetailView: React.FC<EtfDetailViewProps> = ({ ticker, onClose }) => {
       setIsLoading(true);
       setError(null);
       try {
-        const data = await etfApi.get(ticker);
-        setEtf(data);
+        // 정적 JSON 파일에서 ETF 상세 정보 로드
+        const response = await fetch("/data/etfs-detailed.json");
+        if (!response.ok) {
+          throw new Error(`Failed to load ETF data: ${response.status}`);
+        }
+        const data = await response.json();
+        const etfDetail = data.data[ticker];
+
+        if (!etfDetail) {
+          throw new Error("ETF 정보를 찾을 수 없습니다.");
+        }
+
+        setEtf(etfDetail);
       } catch (err: any) {
         console.error("Failed to fetch ETF details:", err);
         setError("ETF 정보를 불러올 수 없습니다.");
