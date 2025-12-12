@@ -586,24 +586,8 @@ export const exchangeRateApi = {
 // ============================================
 
 export const etfApi = {
-  // 전체 ETF 목록 조회 (AUM 기준 정렬)
-  getAll: async (): Promise<EtfListResponse> => {
-    try {
-      const response = await apiClient.get<EtfListResponse>('/api/v1/etfs/');
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 403) {
-        console.error('🔐 ETF API 403 Forbidden - Possible causes:');
-        console.error('  1. Backend CORS configuration missing');
-        console.error('  2. Spring Security path pattern mismatch');
-        console.error('  3. Backend security filter blocking request');
-        console.error('  Check: Ensure /api/v1/etfs/** is in Spring Security permitAll()');
-      }
-      throw error;
-    }
-  },
-
   // ETF 상세 조회 (보유 종목 Top 10, 섹터 비중 포함)
+  // 참고: 전체 ETF 목록은 빌드 시 생성되는 public/data/etfs.json 사용
   get: async (ticker: string): Promise<EtfInfo> => {
     const response = await apiClient.get<EtfInfo>(`/api/v1/etfs/${ticker}/`);
     return response.data;

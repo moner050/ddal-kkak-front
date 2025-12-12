@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { etfApi } from "../../api/client";
 import type { EtfInfo } from "../../api/types";
 import { GICS_SECTORS } from "../../services/sectorPerformance";
 import { toKoreanSector } from "../../constants/sectorMapping";
@@ -34,16 +33,21 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     | "dividend_high" | "dividend_low"
   >("assets_high");
 
-  // ETF 데이터 로드 (백엔드 API)
+  // ETF 데이터 로드 (정적 JSON 파일)
   useEffect(() => {
     const fetchEtfs = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await etfApi.getAll();
-        setEtfs(response.data || []);
+        const response = await fetch('/data/etfs.json');
+        if (!response.ok) {
+          throw new Error(`Failed to load ETF data: ${response.status}`);
+        }
+        const data = await response.json();
+        setEtfs(data.data || []);
+        console.log(`✓ Loaded ${(data.data || []).length} ETFs from static JSON`);
       } catch (err: any) {
-        console.error("Failed to fetch ETFs:", err);
+        console.error("Failed to fetch ETFs from static JSON:", err);
         setError("ETF 목록을 불러올 수 없습니다.");
       } finally {
         setIsLoading(false);
