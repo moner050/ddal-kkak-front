@@ -586,8 +586,16 @@ export const exchangeRateApi = {
 // ============================================
 
 export const etfApi = {
+  // ⭐️ 전체 ETF 목록 + 상세 정보 조회 (신규 - 단 한번의 API 호출로 모든 정보 포함)
+  // 섹터 비중과 상위 보유 종목 정보가 기본으로 포함됨
+  getAll: async (detail: boolean = true): Promise<EtfListResponse> => {
+    const response = await apiClient.get<EtfListResponse>(
+      `/api/v1/etfs${detail ? '?detail=true' : '?detail=false'}`
+    );
+    return response.data;
+  },
+
   // ETF 상세 조회 (보유 종목 Top 10, 섹터 비중 포함)
-  // 참고: 전체 ETF 목록은 빌드 시 생성되는 public/data/etfs.json 사용
   get: async (ticker: string): Promise<EtfInfo> => {
     const response = await apiClient.get<EtfInfo>(`/api/v1/etfs/${ticker}`);
     return response.data;
