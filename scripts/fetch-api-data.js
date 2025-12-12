@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 // 설정
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://finance-mhb-api.kro.kr';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://finance-mhb-api.kro.kr';
 const OUTPUT_DIR = path.join(__dirname, '../public/data');
 const RECOMMENDATIONS_DIR = path.join(OUTPUT_DIR, 'recommendations');
 
