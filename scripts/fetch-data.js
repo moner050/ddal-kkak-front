@@ -171,29 +171,75 @@ async function fetchAllData() {
       });
     }
 
-    // 3-1. ETF 전체 목록
+    // 3-1. ETF 전체 목록 및 상세 정보
     console.log('\n📊 Fetching ETF data...');
     try {
       const etfResponse = await apiClient.get('/api/v1/etfs');
+      const etfList = etfResponse.data.data || etfResponse.data;
+      const etfCount = etfResponse.data.count || etfList?.length || 0;
 
+      // 기본 목록 저장
       saveJSON('etfs.json', {
         lastUpdated: new Date().toISOString(),
-        count: etfResponse.data.count || etfResponse.data.data?.length || 0,
-        data: etfResponse.data.data || etfResponse.data,
+        count: etfCount,
+        data: etfList,
+      });
+
+      // ETF 상세 정보 수집
+      console.log(`   Fetching detailed info for ${etfCount} ETFs...`);
+      const etfDetailsMap = {};
+      let successCount = 0;
+      let failureCount = 0;
+
+      for (let i = 0; i < etfList.length; i++) {
+        const etf = etfList[i];
+        const ticker = etf.ticker;
+
+        try {
+          const detailResponse = await apiClient.get(`/api/v1/etfs/${ticker}`);
+          etfDetailsMap[ticker] = detailResponse.data;
+          successCount++;
+
+          if ((i + 1) % 10 === 0) {
+            console.log(`   [${i + 1}/${etfList.length}] Fetched ${ticker}`);
+          }
+        } catch (err) {
+          console.warn(`   ⚠️  Failed to fetch details for ${ticker}: ${err.message}`);
+          // 실패한 경우에도 기본 정보는 저장
+          etfDetailsMap[ticker] = etf;
+          failureCount++;
+        }
+
+        // API 부하 방지를 위한 딜레이 (50ms)
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      // ETF 상세 정보 저장
+      saveJSON('etfs-detailed.json', {
+        lastUpdated: new Date().toISOString(),
+        count: etfCount,
+        data: etfDetailsMap,
       });
 
       metadata.sources.etfs = {
-        count: etfResponse.data.count || etfResponse.data.data?.length || 0,
+        count: etfCount,
+        detailsFetched: successCount,
+        detailsFailed: failureCount,
         updatedAt: new Date().toISOString(),
       };
 
-      console.log(`   ✓ ${etfResponse.data.count || etfResponse.data.data?.length || 0} ETFs fetched`);
+      console.log(`   ✓ ${etfCount} ETFs fetched (${successCount} detailed, ${failureCount} failed)`);
     } catch (error) {
       console.error('   ✗ Failed to fetch ETF data:', error.message);
       saveJSON('etfs.json', {
         lastUpdated: new Date().toISOString(),
         count: 0,
         data: [],
+      });
+      saveJSON('etfs-detailed.json', {
+        lastUpdated: new Date().toISOString(),
+        count: 0,
+        data: {},
       });
     }
 
