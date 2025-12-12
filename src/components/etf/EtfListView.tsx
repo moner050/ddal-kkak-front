@@ -24,7 +24,15 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   // 필터링 & 정렬
   const [selectedSector, setSelectedSector] = useState<string>("전체");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"assets" | "ytd" | "1m" | "3m" | "6m" | "1y" | "dividend_high" | "dividend_low">("assets");
+  const [sortBy, setSortBy] = useState<
+    | "assets_high" | "assets_low"
+    | "ytd_high" | "ytd_low"
+    | "1m_high" | "1m_low"
+    | "3m_high" | "3m_low"
+    | "6m_high" | "6m_low"
+    | "1y_high" | "1y_low"
+    | "dividend_high" | "dividend_low"
+  >("assets_high");
 
   // ETF 데이터 로드 (백엔드 API)
   useEffect(() => {
@@ -70,18 +78,30 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     // 정렬
     result.sort((a, b) => {
       switch (sortBy) {
-        case "assets":
+        case "assets_high":
           return (b.total_assets || 0) - (a.total_assets || 0);
-        case "ytd":
+        case "assets_low":
+          return (a.total_assets || 0) - (b.total_assets || 0);
+        case "ytd_high":
           return (b.ytd_return || 0) - (a.ytd_return || 0);
-        case "1m":
+        case "ytd_low":
+          return (a.ytd_return || 0) - (b.ytd_return || 0);
+        case "1m_high":
           return (b.return_1m || 0) - (a.return_1m || 0);
-        case "3m":
+        case "1m_low":
+          return (a.return_1m || 0) - (b.return_1m || 0);
+        case "3m_high":
           return (b.return_3m || 0) - (a.return_3m || 0);
-        case "6m":
+        case "3m_low":
+          return (a.return_3m || 0) - (b.return_3m || 0);
+        case "6m_high":
           return (b.return_6m || 0) - (a.return_6m || 0);
-        case "1y":
+        case "6m_low":
+          return (a.return_6m || 0) - (b.return_6m || 0);
+        case "1y_high":
           return (b.return_1y || 0) - (a.return_1y || 0);
+        case "1y_low":
+          return (a.return_1y || 0) - (b.return_1y || 0);
         case "dividend_high":
           return (b.dividend_yield || 0) - (a.dividend_yield || 0);
         case "dividend_low":
@@ -194,12 +214,18 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
           </label>
           <div className="flex flex-wrap gap-2">
             {[
-              { value: "assets", label: "자산 규모" },
-              { value: "ytd", label: "YTD" },
-              { value: "1m", label: "1개월" },
-              { value: "3m", label: "3개월" },
-              { value: "6m", label: "6개월" },
-              { value: "1y", label: "1년" },
+              { value: "assets_high", label: "자산 규모 ↑" },
+              { value: "assets_low", label: "자산 규모 ↓" },
+              { value: "ytd_high", label: "YTD ↑" },
+              { value: "ytd_low", label: "YTD ↓" },
+              { value: "1m_high", label: "1개월 ↑" },
+              { value: "1m_low", label: "1개월 ↓" },
+              { value: "3m_high", label: "3개월 ↑" },
+              { value: "3m_low", label: "3개월 ↓" },
+              { value: "6m_high", label: "6개월 ↑" },
+              { value: "6m_low", label: "6개월 ↓" },
+              { value: "1y_high", label: "1년 ↑" },
+              { value: "1y_low", label: "1년 ↓" },
               { value: "dividend_high", label: "배당률 ↑" },
               { value: "dividend_low", label: "배당률 ↓" },
             ].map((option) => (
