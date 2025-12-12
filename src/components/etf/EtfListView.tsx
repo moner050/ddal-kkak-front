@@ -3,6 +3,7 @@ import { etfApi } from "../../api/client";
 import type { EtfInfo } from "../../api/types";
 import { GICS_SECTORS } from "../../services/sectorPerformance";
 import { toKoreanSector } from "../../constants/sectorMapping";
+import { etfSectorToKorean, etfCategoryToKorean } from "../../constants/etfMapping";
 
 interface EtfListViewProps {
   onEtfClick?: (etf: EtfInfo) => void;
@@ -277,7 +278,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">주요 섹터</span>
                     <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded">
-                      {toKoreanSector(etf.primary_sector as any)}
+                      {etfSectorToKorean(etf.primary_sector)}
                     </span>
                   </div>
                 )}
@@ -286,8 +287,8 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                 {etf.category && (
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">카테고리</span>
-                    <span className="text-xs text-gray-700 truncate max-w-[60%]" title={etf.category}>
-                      {etf.category}
+                    <span className="text-xs text-gray-700 truncate max-w-[60%]" title={etfCategoryToKorean(etf.category)}>
+                      {etfCategoryToKorean(etf.category)}
                     </span>
                   </div>
                 )}

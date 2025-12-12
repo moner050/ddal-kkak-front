@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { etfApi } from "../../api/client";
 import type { EtfHoldingsResponse, EtfSimpleInfo } from "../../api/types";
+import { etfSectorToKorean, etfCategoryToKorean } from "../../constants/etfMapping";
 
 interface StockEtfHoldingsProps {
   ticker: string;
@@ -166,7 +167,7 @@ const StockEtfHoldings: React.FC<StockEtfHoldingsProps> = ({ ticker, companyName
                     <div className="flex items-center space-x-1">
                       <span className="text-xs text-gray-400">카테고리:</span>
                       <span className="text-xs text-gray-600 font-medium">
-                        {etf.category}
+                        {etfCategoryToKorean(etf.category)}
                       </span>
                     </div>
                   </div>
@@ -177,7 +178,7 @@ const StockEtfHoldings: React.FC<StockEtfHoldingsProps> = ({ ticker, companyName
                   <div className="flex items-center space-x-1">
                     <span className="text-xs text-gray-400">주요 섹터:</span>
                     <span className="text-xs text-gray-600">
-                      {etf.primary_sector}
+                      {etfSectorToKorean(etf.primary_sector)}
                     </span>
                   </div>
                 )}

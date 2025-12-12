@@ -1,0 +1,167 @@
+/**
+ * ETF 카테고리와 섹터 한글 매핑
+ * - ETF primary_sector를 GICS 섹터로 매핑
+ * - ETF category를 한글로 매핑
+ */
+
+// ETF primary_sector → GICS Sector 매핑
+// 백엔드에서 사용하는 소문자 언더스코어 형식을 GICS 표준 형식으로 변환
+export const ETF_SECTOR_TO_GICS: Record<string, string> = {
+  technology: "Information Technology",
+  financial_services: "Financials",
+  healthcare: "Healthcare",
+  energy: "Energy",
+  consumer_cyclical: "Consumer Discretionary",
+  consumer_defensive: "Consumer Staples",
+  industrials: "Industrials",
+  realestate: "Real Estate",
+  utilities: "Utilities",
+  basic_materials: "Materials",
+  communication_services: "Communication Services",
+};
+
+// ETF Category 한글 매핑
+export const ETF_CATEGORY_MAPPING: Record<string, string> = {
+  // 주식형 - 규모별
+  "Large Blend": "대형 혼합",
+  "Large Growth": "대형 성장",
+  "Large Value": "대형 가치",
+  "Mid-Cap Blend": "중형 혼합",
+  "Mid-Cap Growth": "중형 성장",
+  "Mid-Cap Value": "중형 가치",
+  "Small Blend": "소형 혼합",
+  "Small Growth": "소형 성장",
+  "Small Value": "소형 가치",
+
+  // 주식형 - 섹터별
+  Technology: "기술",
+  Financial: "금융",
+  Health: "헬스케어",
+  "Equity Energy": "에너지 주식",
+  "Consumer Cyclical": "경기소비재",
+  "Consumer Defensive": "필수소비재",
+  Industrials: "산업재",
+  "Real Estate": "부동산",
+  Utilities: "유틸리티",
+  Communications: "커뮤니케이션",
+  "Natural Resources": "천연자원",
+
+  // 주식형 - 원자재/귀금속
+  "Commodities Focused": "원자재 집중",
+  "Equity Precious Metals": "귀금속 주식",
+  "Commodities Broad Basket": "원자재 바스켓",
+
+  // 주식형 - 글로벌/지역별
+  "Global Large-Stock Blend": "글로벌 대형주 혼합",
+  "Global Small/Mid Stock": "글로벌 중소형주",
+  "Foreign Large Blend": "해외 대형 혼합",
+  "Foreign Small/Mid Value": "해외 중소형 가치",
+  "Diversified Emerging Mkts": "신흥시장 다각화",
+  "China Region": "중국 지역",
+  "Japan Stock": "일본 주식",
+  "Europe Stock": "유럽 주식",
+  "Latin America Stock": "중남미 주식",
+  "India Equity": "인도 주식",
+  "Miscellaneous Region": "기타 지역",
+
+  // 채권형 - 정부채
+  "Long Government": "장기 국채",
+  "Short Government": "단기 국채",
+  "Intermediate Government": "중기 국채",
+  "Ultrashort Bond": "초단기 채권",
+
+  // 채권형 - 회사채
+  "Corporate Bond": "회사채",
+  "Long-Term Bond": "장기채",
+  "Short-Term Bond": "단기채",
+  "High Yield Bond": "고수익 채권",
+
+  // 채권형 - 물가연동채
+  "Inflation-Protected Bond": "물가연동채",
+  "Short-Term Inflation-Protected Bond": "단기 물가연동채",
+
+  // 채권형 - 지방채
+  "Muni National Interm": "지방채 중기",
+  "Muni National Long": "지방채 장기",
+
+  // 채권형 - 모기지/증권화
+  "Government Mortgage-Backed Bond": "정부 모기지채",
+  "Securitized Bond - Focused": "증권화채권 집중",
+
+  // 채권형 - 글로벌
+  "Global Bond": "글로벌 채권",
+  "Global Bond-USD Hedged": "글로벌 채권 달러헤지",
+  "Emerging Markets Bond": "신흥시장 채권",
+
+  // 특수 - 레버리지/인버스
+  "Trading--Leveraged Equity": "레버리지 주식 거래",
+  "Trading--Inverse Equity": "인버스 주식 거래",
+
+  // 특수 - 디지털 자산
+  "Equity Digital Assets": "디지털자산 주식",
+  "Digital Assets": "디지털자산",
+
+  // 특수 - 인프라/기타
+  Infrastructure: "인프라",
+  "Miscellaneous Sector": "기타 섹터",
+};
+
+/**
+ * ETF primary_sector를 한글로 변환
+ * @param sector ETF의 primary_sector (예: "technology", "financial_services")
+ * @returns 한글 섹터 이름 (예: "정보기술", "금융")
+ */
+export function etfSectorToKorean(sector: string | undefined): string {
+  if (!sector) return "";
+
+  // 먼저 GICS 섹터로 변환
+  const gicsSector = ETF_SECTOR_TO_GICS[sector.toLowerCase()];
+  if (!gicsSector) return sector;
+
+  // sectorMapping의 toKoreanSector를 사용하기 위해 import 필요
+  // 하지만 순환 참조를 피하기 위해 여기서 직접 매핑
+  const sectorKoreanMap: Record<string, string> = {
+    "Information Technology": "정보기술",
+    "Communication Services": "커뮤니케이션 서비스",
+    "Consumer Discretionary": "경기소비재",
+    "Consumer Staples": "필수소비재",
+    Healthcare: "헬스케어",
+    Financials: "금융",
+    Industrials: "산업재",
+    Materials: "소재",
+    Energy: "에너지",
+    Utilities: "유틸리티",
+    "Real Estate": "부동산",
+  };
+
+  return sectorKoreanMap[gicsSector] || gicsSector;
+}
+
+/**
+ * ETF category를 한글로 변환
+ * @param category ETF의 category (예: "Large Blend", "Technology")
+ * @returns 한글 카테고리 이름 (예: "대형 혼합", "기술")
+ */
+export function etfCategoryToKorean(category: string | undefined): string {
+  if (!category) return "";
+  return ETF_CATEGORY_MAPPING[category] || category;
+}
+
+/**
+ * 섹터와 카테고리를 모두 한글로 변환
+ * @param sector ETF의 primary_sector
+ * @param category ETF의 category
+ * @returns 한글로 변환된 섹터와 카테고리
+ */
+export function etfSectorCategoryToKorean(
+  sector: string | undefined,
+  category: string | undefined
+): {
+  sector: string;
+  category: string;
+} {
+  return {
+    sector: etfSectorToKorean(sector),
+    category: etfCategoryToKorean(category),
+  };
+}

@@ -104,6 +104,7 @@ import ColorLegend from "../components/common/ColorLegend";
 // Import page components
 import NewsSummaryTab from "../components/pages/DemoHome/NewsSummaryTab";
 import EtfListView from "../components/etf/EtfListView";
+import EtfDetailView from "../components/etf/EtfDetailView";
 
 // Import section components
 import HeroSection from "../components/sections/HeroSection";
@@ -259,6 +260,9 @@ export default function DemoHome() {
 
   // 종목추천 탭 - 주식/ETF 뷰 모드
   const [recommendationViewMode, setRecommendationViewMode] = useState<"stocks" | "etfs">("stocks");
+
+  // ETF 상세 보기 상태
+  const [selectedEtfTicker, setSelectedEtfTicker] = useState<string | null>(null);
 
   // 종목 추천 데이터 (백엔드 API)
   const {
@@ -701,9 +705,20 @@ export default function DemoHome() {
               )}
             </div>
 
-            {/* ETF 모드: ETF 목록 */}
+            {/* ETF 모드: ETF 목록 또는 상세 보기 */}
             {recommendationViewMode === "etfs" && (
-              <EtfListView />
+              <>
+                {selectedEtfTicker ? (
+                  <EtfDetailView
+                    ticker={selectedEtfTicker}
+                    onClose={() => setSelectedEtfTicker(null)}
+                  />
+                ) : (
+                  <EtfListView
+                    onEtfClick={(etf) => setSelectedEtfTicker(etf.ticker)}
+                  />
+                )}
+              </>
             )}
 
             {/* 주식 모드: 투자 전략 선택 (다중 선택 토글) */}
