@@ -367,7 +367,6 @@ export default function DemoHome() {
               throw new Error(`Performance data for ${strategyKey} not found`);
             }
             newPerformances[strategyKey] = performance;
-            console.log(`✅ 백테스팅 데이터 로드 성공: ${strategyKey}`, performance);
           } catch (error) {
             console.error(`❌ 백테스팅 데이터 로드 실패: ${strategyKey}`, error);
           } finally {
