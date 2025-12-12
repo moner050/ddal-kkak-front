@@ -3,6 +3,7 @@ import { etfApi } from "../../api/client";
 import type { EtfInfo } from "../../api/types";
 import { GICS_SECTORS } from "../../services/sectorPerformance";
 import { toKoreanSector } from "../../constants/sectorMapping";
+import { etfSectorToKorean, etfCategoryToKorean } from "../../constants/etfMapping";
 
 interface EtfListViewProps {
   onEtfClick?: (etf: EtfInfo) => void;
@@ -23,21 +24,24 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   // 필터링 & 정렬
   const [selectedSector, setSelectedSector] = useState<string>("전체");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"assets" | "ytd" | "1m" | "3m" | "6m" | "1y">("assets");
+  const [sortBy, setSortBy] = useState<
+    | "assets_high" | "assets_low"
+    | "ytd_high" | "ytd_low"
+    | "1m_high" | "1m_low"
+    | "3m_high" | "3m_low"
+    | "6m_high" | "6m_low"
+    | "1y_high" | "1y_low"
+    | "dividend_high" | "dividend_low"
+  >("assets_high");
 
-  // ETF 데이터 로드
+  // ETF 데이터 로드 (백엔드 API)
   useEffect(() => {
     const fetchEtfs = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // 빌드 시 생성된 JSON 파일에서 데이터 로드
-        const response = await fetch('/data/etfs.json');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setEtfs(data.data || []);
+        const response = await etfApi.getAll();
+        setEtfs(response.data || []);
       } catch (err: any) {
         console.error("Failed to fetch ETFs:", err);
         setError("ETF 목록을 불러올 수 없습니다.");
@@ -74,18 +78,34 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     // 정렬
     result.sort((a, b) => {
       switch (sortBy) {
-        case "assets":
+        case "assets_high":
           return (b.total_assets || 0) - (a.total_assets || 0);
-        case "ytd":
+        case "assets_low":
+          return (a.total_assets || 0) - (b.total_assets || 0);
+        case "ytd_high":
           return (b.ytd_return || 0) - (a.ytd_return || 0);
-        case "1m":
+        case "ytd_low":
+          return (a.ytd_return || 0) - (b.ytd_return || 0);
+        case "1m_high":
           return (b.return_1m || 0) - (a.return_1m || 0);
-        case "3m":
+        case "1m_low":
+          return (a.return_1m || 0) - (b.return_1m || 0);
+        case "3m_high":
           return (b.return_3m || 0) - (a.return_3m || 0);
-        case "6m":
+        case "3m_low":
+          return (a.return_3m || 0) - (b.return_3m || 0);
+        case "6m_high":
           return (b.return_6m || 0) - (a.return_6m || 0);
-        case "1y":
+        case "6m_low":
+          return (a.return_6m || 0) - (b.return_6m || 0);
+        case "1y_high":
           return (b.return_1y || 0) - (a.return_1y || 0);
+        case "1y_low":
+          return (a.return_1y || 0) - (b.return_1y || 0);
+        case "dividend_high":
+          return (b.dividend_yield || 0) - (a.dividend_yield || 0);
+        case "dividend_low":
+          return (a.dividend_yield || 0) - (b.dividend_yield || 0);
         default:
           return 0;
       }
@@ -194,12 +214,20 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
           </label>
           <div className="flex flex-wrap gap-2">
             {[
-              { value: "assets", label: "자산 규모" },
-              { value: "ytd", label: "YTD" },
-              { value: "1m", label: "1개월" },
-              { value: "3m", label: "3개월" },
-              { value: "6m", label: "6개월" },
-              { value: "1y", label: "1년" },
+              { value: "assets_high", label: "자산 규모 ↑" },
+              { value: "assets_low", label: "자산 규모 ↓" },
+              { value: "ytd_high", label: "연초 대비 수익률 ↑" },
+              { value: "ytd_low", label: "연초 대비 수익률 ↓" },
+              { value: "1m_high", label: "1개월 수익률 ↑" },
+              { value: "1m_low", label: "1개월 수익률 ↓" },
+              { value: "3m_high", label: "3개월 수익률 ↑" },
+              { value: "3m_low", label: "3개월 수익률 ↓" },
+              { value: "6m_high", label: "6개월 수익률 ↑" },
+              { value: "6m_low", label: "6개월 수익률 ↓" },
+              { value: "1y_high", label: "1년 수익률 ↑" },
+              { value: "1y_low", label: "1년 수익률 ↓" },
+              { value: "dividend_high", label: "배당률 ↑" },
+              { value: "dividend_low", label: "배당률 ↓" },
             ].map((option) => (
               <button
                 key={option.value}
@@ -277,7 +305,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">주요 섹터</span>
                     <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded">
-                      {toKoreanSector(etf.primary_sector as any)}
+                      {etfSectorToKorean(etf.primary_sector)}
                     </span>
                   </div>
                 )}
@@ -286,8 +314,8 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                 {etf.category && (
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">카테고리</span>
-                    <span className="text-xs text-gray-700 truncate max-w-[60%]" title={etf.category}>
-                      {etf.category}
+                    <span className="text-xs text-gray-700 truncate max-w-[60%]" title={etfCategoryToKorean(etf.category)}>
+                      {etfCategoryToKorean(etf.category)}
                     </span>
                   </div>
                 )}
