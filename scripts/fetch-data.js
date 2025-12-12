@@ -171,50 +171,30 @@ async function fetchAllData() {
       });
     }
 
-    // 3-1. ETF 전체 목록 및 상세 정보
+    // 3-1. ⭐️ ETF 전체 목록 및 상세 정보 (신규 API - 단 1회 호출로 모든 정보 포함)
     console.log('\n📊 Fetching ETF data...');
     try {
-      const etfResponse = await apiClient.get('/api/v1/etfs');
-      const etfList = etfResponse.data.data || etfResponse.data;
-      const etfCount = etfResponse.data.count || etfList?.length || 0;
+      // GET /api/v1/etfs 로 전체 ETF 목록을 한 번에 조회
+      // 응답에 이미 sector_weightings과 top_holdings 정보가 포함됨 (detail=true 기본값)
+      const etfResponse = await apiClient.get('/api/v1/etfs?detail=true');
+      const etfData = etfResponse.data;
+      const etfList = etfData.data || [];
+      const etfCount = etfData.count || etfList?.length || 0;
 
-      // 기본 목록 저장
+      // 전체 목록 저장 (sector_weightings과 top_holdings 포함)
       saveJSON('etfs.json', {
         lastUpdated: new Date().toISOString(),
         count: etfCount,
         data: etfList,
       });
 
-      // ETF 상세 정보 수집
-      console.log(`   Fetching detailed info for ${etfCount} ETFs...`);
+      // ETF 상세 정보 맵 생성 (각 ETF를 ticker 키로 저장)
       const etfDetailsMap = {};
-      let successCount = 0;
-      let failureCount = 0;
+      etfList.forEach(etf => {
+        etfDetailsMap[etf.ticker] = etf;
+      });
 
-      for (let i = 0; i < etfList.length; i++) {
-        const etf = etfList[i];
-        const ticker = etf.ticker;
-
-        try {
-          const detailResponse = await apiClient.get(`/api/v1/etfs/${ticker}`);
-          etfDetailsMap[ticker] = detailResponse.data;
-          successCount++;
-
-          if ((i + 1) % 10 === 0) {
-            console.log(`   [${i + 1}/${etfList.length}] Fetched ${ticker}`);
-          }
-        } catch (err) {
-          console.warn(`   ⚠️  Failed to fetch details for ${ticker}: ${err.message}`);
-          // 실패한 경우에도 기본 정보는 저장
-          etfDetailsMap[ticker] = etf;
-          failureCount++;
-        }
-
-        // API 부하 방지를 위한 딜레이 (50ms)
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-
-      // ETF 상세 정보 저장
+      // ETF 상세 정보 저장 (동일 데이터, 다른 포맷)
       saveJSON('etfs-detailed.json', {
         lastUpdated: new Date().toISOString(),
         count: etfCount,
@@ -223,12 +203,12 @@ async function fetchAllData() {
 
       metadata.sources.etfs = {
         count: etfCount,
-        detailsFetched: successCount,
-        detailsFailed: failureCount,
+        detailsIncluded: true,
+        dataDate: etfList[0]?.data_date || new Date().toISOString().split('T')[0],
         updatedAt: new Date().toISOString(),
       };
 
-      console.log(`   ✓ ${etfCount} ETFs fetched (${successCount} detailed, ${failureCount} failed)`);
+      console.log(`   ✓ ${etfCount} ETFs fetched (sector_weightings + top_holdings included)`);
     } catch (error) {
       console.error('   ✗ Failed to fetch ETF data:', error.message);
       saveJSON('etfs.json', {

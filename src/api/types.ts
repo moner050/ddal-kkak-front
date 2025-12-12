@@ -481,6 +481,7 @@ export interface EtfInfo {
   category?: string;
   fund_family?: string;
   price?: number;
+  nav_price?: number;
   total_assets?: number;
   primary_sector?: string;
   primary_sector_weight?: number;
