@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import type { EtfInfo } from "../api/types";
-import { etfSectorToKorean, etfCategoryToKorean } from "../constants/etfMapping";
+import { etfSectorToKorean, etfCategoryToKorean, sectorToKorean } from "../constants/etfMapping";
 import EtfSectorPieChart from "../components/charts/EtfSectorPieChart";
 
 /**
@@ -18,9 +18,25 @@ import EtfSectorPieChart from "../components/charts/EtfSectorPieChart";
 const EtfDetailPage: React.FC = () => {
   const { ticker } = useParams<{ ticker: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [etf, setEtf] = useState<EtfInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // URL 쿼리 파라미터에서 뒤로가기 정보 추출
+  const backUrl = searchParams.get("back");
+
+  // 뒤로가기 핸들러
+  const handleGoBack = () => {
+    if (backUrl === "etfs") {
+      navigate("/etfs");
+    } else if (backUrl === "stock") {
+      // 종목에서 왔으면 종목으로
+      navigate(-1);
+    } else {
+      navigate(-1);
+    }
+  };
 
   useEffect(() => {
     if (!ticker) return;
@@ -122,7 +138,7 @@ const EtfDetailPage: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* 뒤로가기 버튼 */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleGoBack}
           className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -376,7 +392,7 @@ const EtfDetailPage: React.FC = () => {
                   .sort(([, a], [, b]) => (b as number) - (a as number))
                   .map(([sector, weight]) => (
                     <div key={sector} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">{sector}</span>
+                      <span className="text-sm text-gray-700">{sectorToKorean(sector)}</span>
                       <div className="flex items-center space-x-2">
                         <div className="w-24 bg-gray-200 rounded-full h-2">
                           <div
@@ -410,15 +426,24 @@ const EtfDetailPage: React.FC = () => {
                   ];
                   const color = colors[index] || 'from-blue-400 to-blue-600';
 
+                  const handleHoldingClick = () => {
+                    // URL 파라미터에 어느 ETF에서 왔는지 정보 저장
+                    navigate(`/stock/${holding.symbol}?from_etf=${ticker}`);
+                  };
+
                   return (
-                    <div key={`${holding.symbol}-${index}`} className="border-l-4 border-blue-500 pl-4 py-2">
+                    <div
+                      key={`${holding.symbol}-${index}`}
+                      onClick={handleHoldingClick}
+                      className="border-l-4 border-blue-500 pl-4 py-2 cursor-pointer hover:bg-blue-50 rounded-r-lg transition-colors"
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-3 flex-1">
                           <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${color} flex items-center justify-center text-white font-bold text-sm`}>
                             {index + 1}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-blue-600">{holding.symbol}</p>
+                            <p className="text-sm font-bold text-blue-600 group-hover:underline">{holding.symbol}</p>
                             <p className="text-xs text-gray-600 truncate">{holding.name}</p>
                           </div>
                         </div>
