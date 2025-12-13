@@ -10,7 +10,6 @@
  * - Header / FilingsSectionByMarket / RankingSectionByMarket / BottomNav 포함
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
 
 /* ------------------------------------------------------------
    엑셀 내보내기 유틸리티 import (분리된 파일)
@@ -152,14 +151,13 @@ import { useBeginnerMode } from "../hooks/useBeginnerMode";
 import { useRecentStocks } from "../hooks/useRecentStocks";
 import { useStockRecommendation } from "../hooks/useStockRecommendation";
 
+// Import Context
+import { useNavigation } from "../context/NavigationContext";
+
 // ======================= DemoHome (메인) =======================
 // TAB_KEYS와 TabKey는 ../types에서 import됨
 
 export default function DemoHome() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const fromEtfTicker = searchParams.get("from_etf");
-
   const fearGreedUS = usFearGreedSeries[usFearGreedSeries.length - 1];
   const fearGreedKR = krFearGreedSeries[krFearGreedSeries.length - 1];
   const asOfUS = formatAsOf(new Date());
@@ -167,6 +165,9 @@ export default function DemoHome() {
   const asOf = asOfUS;
 
   // ===== Custom Hooks =====
+
+  // Navigation Context (ETF에서 종목으로 이동할 때 사용)
+  const { targetStockSymbol, setTargetStockSymbol, fromEtfTicker } = useNavigation();
 
   // 데이터 로딩
   const {
@@ -262,14 +263,6 @@ export default function DemoHome() {
   const [detailSymbol, setDetailSymbol] = useState<string>("");
   const [detailTab, setDetailTab] = useState<"info" | "filings" | "chart">("info");
   const [detailLogoError, setDetailLogoError] = useState(false);
-  const [detailFromEtf, setDetailFromEtf] = useState<string | null>(null);
-
-  // from_etf URL 파라미터가 있으면 저장
-  useEffect(() => {
-    if (fromEtfTicker) {
-      setDetailFromEtf(fromEtfTicker);
-    }
-  }, [fromEtfTicker]);
 
   // 종목추천 탭 - 주식/ETF 뷰 모드
   const [recommendationViewMode, setRecommendationViewMode] = useState<"stocks" | "etfs">("stocks");
@@ -320,6 +313,19 @@ export default function DemoHome() {
       setDetailLogoError(false);
     }
   }, [detailSymbol]);
+
+  // Navigation Context에서 targetStockSymbol 감지 (ETF에서 종목으로 이동할 때)
+  useEffect(() => {
+    if (targetStockSymbol) {
+      // 1. detailSymbol 업데이트
+      setDetailSymbol(targetStockSymbol);
+      // 2. 상세 정보 탭으로 자동 전환
+      setActiveTab("detail");
+      switchTab("detail");
+      // 3. Context 상태 초기화 (다시 사용되지 않도록)
+      setTargetStockSymbol(null);
+    }
+  }, [targetStockSymbol, setActiveTab, switchTab, setTargetStockSymbol]);
 
   // SEC 공시 점수 추이 데이터 로드 (detailSymbol 변경 시)
   useEffect(() => {
@@ -1651,17 +1657,11 @@ export default function DemoHome() {
                 <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
                   <div className="mb-4">
                     <button
-                      onClick={() => {
-                        if (detailFromEtf) {
-                          navigate(`/etf/${detailFromEtf}?back=stock`);
-                        } else {
-                          setDetailSymbol("");
-                        }
-                      }}
+                      onClick={() => setDetailSymbol("")}
                       className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
                     >
                       <span>←</span>
-                      <span>{detailFromEtf ? "ETF로 돌아가기" : "목록으로"}</span>
+                      <span>목록으로</span>
                     </button>
                   </div>
                   <div className="text-center py-24 bg-white rounded-2xl shadow-md border border-gray-200">
@@ -1671,16 +1671,10 @@ export default function DemoHome() {
                       선택하신 종목 <span className="font-semibold text-indigo-600">{detailSymbol}</span>의 상세 정보를 찾을 수 없습니다.
                     </p>
                     <button
-                      onClick={() => {
-                        if (detailFromEtf) {
-                          navigate(`/etf/${detailFromEtf}?back=stock`);
-                        } else {
-                          setDetailSymbol("");
-                        }
-                      }}
+                      onClick={() => setDetailSymbol("")}
                       className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
                     >
-                      {detailFromEtf ? "ETF로 돌아가기" : "목록으로 돌아가기"}
+                      목록으로 돌아가기
                     </button>
                   </div>
                 </main>
@@ -1766,19 +1760,11 @@ export default function DemoHome() {
                 {/* ✅ 뒤로가기 버튼 */}
                 <div className="mb-4">
                   <button
-                    onClick={() => {
-                      if (detailFromEtf) {
-                        // ETF 상세페이지로 돌아가기
-                        navigate(`/etf/${detailFromEtf}?back=stock`);
-                      } else {
-                        // 일반 목록으로 돌아가기
-                        setDetailSymbol("");
-                      }
-                    }}
+                    onClick={() => setDetailSymbol("")}
                     className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
                   >
                     <span>←</span>
-                    <span>{detailFromEtf ? "ETF로 돌아가기" : "목록으로"}</span>
+                    <span>목록으로</span>
                   </button>
                 </div>
                 {/* 히어로 섹션 */}
