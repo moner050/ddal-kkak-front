@@ -151,6 +151,9 @@ import { useBeginnerMode } from "../hooks/useBeginnerMode";
 import { useRecentStocks } from "../hooks/useRecentStocks";
 import { useStockRecommendation } from "../hooks/useStockRecommendation";
 
+// Import Context
+import { useNavigation } from "../context/NavigationContext";
+
 // ======================= DemoHome (메인) =======================
 // TAB_KEYS와 TabKey는 ../types에서 import됨
 
@@ -162,6 +165,9 @@ export default function DemoHome() {
   const asOf = asOfUS;
 
   // ===== Custom Hooks =====
+
+  // Navigation Context (ETF에서 종목으로 이동할 때 사용)
+  const { targetStockSymbol, setTargetStockSymbol, fromEtfTicker } = useNavigation();
 
   // 데이터 로딩
   const {
@@ -307,6 +313,19 @@ export default function DemoHome() {
       setDetailLogoError(false);
     }
   }, [detailSymbol]);
+
+  // Navigation Context에서 targetStockSymbol 감지 (ETF에서 종목으로 이동할 때)
+  useEffect(() => {
+    if (targetStockSymbol) {
+      // 1. detailSymbol 업데이트
+      setDetailSymbol(targetStockSymbol);
+      // 2. 상세 정보 탭으로 자동 전환
+      setActiveTab("detail");
+      switchTab("detail");
+      // 3. Context 상태 초기화 (다시 사용되지 않도록)
+      setTargetStockSymbol(null);
+    }
+  }, [targetStockSymbol, setActiveTab, switchTab, setTargetStockSymbol]);
 
   // SEC 공시 점수 추이 데이터 로드 (detailSymbol 변경 시)
   useEffect(() => {

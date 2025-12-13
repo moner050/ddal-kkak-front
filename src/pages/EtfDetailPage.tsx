@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import type { EtfInfo } from "../api/types";
 import { etfSectorToKorean, etfCategoryToKorean, sectorToKorean } from "../constants/etfMapping";
+import { useNavigation } from "../context/NavigationContext";
 import EtfSectorPieChart from "../components/charts/EtfSectorPieChart";
 
 /**
@@ -18,6 +20,8 @@ import EtfSectorPieChart from "../components/charts/EtfSectorPieChart";
 const EtfDetailPage: React.FC = () => {
   const { ticker } = useParams<{ ticker: string }>();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { setFromEtfTicker, setTargetStockSymbol } = useNavigation();
   const [etf, setEtf] = useState<EtfInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +90,15 @@ const EtfDetailPage: React.FC = () => {
   const formatDecimal = (value: number | undefined, decimals: number = 2): string => {
     if (value === undefined || value === null) return "-";
     return value.toFixed(decimals);
+  };
+
+  // 보유 종목 클릭 핸들러
+  const handleHoldingClick = (symbol: string) => {
+    if (ticker) {
+      setFromEtfTicker(ticker);
+      setTargetStockSymbol(symbol);
+      navigate(`/stock/${symbol}`);
+    }
   };
 
   // 로딩 상태
@@ -413,7 +426,8 @@ const EtfDetailPage: React.FC = () => {
                   return (
                     <div
                       key={`${holding.symbol}-${index}`}
-                      className="border-l-4 border-blue-500 pl-4 py-2 hover:bg-blue-50 rounded-r-lg transition-colors"
+                      className="border-l-4 border-blue-500 pl-4 py-2 hover:bg-blue-50 rounded-r-lg transition-colors cursor-pointer"
+                      onClick={() => handleHoldingClick(holding.symbol)}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-3 flex-1">
