@@ -320,12 +320,11 @@ export default function DemoHome() {
       // 1. detailSymbol 업데이트
       setDetailSymbol(targetStockSymbol);
       // 2. 상세 정보 탭으로 자동 전환
-      setActiveTab("detail");
       switchTab("detail");
       // 3. Context 상태 초기화 (다시 사용되지 않도록)
       setTargetStockSymbol(null);
     }
-  }, [targetStockSymbol, setActiveTab, switchTab, setTargetStockSymbol]);
+  }, [targetStockSymbol]);
 
   // SEC 공시 점수 추이 데이터 로드 (detailSymbol 변경 시)
   useEffect(() => {
