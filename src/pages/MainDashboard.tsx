@@ -26,6 +26,7 @@ import { getScoreLevel, getCriticalMetrics, matchesInvestmentStrategy, getMetric
 import { CATEGORIES, SECTOR_INDUSTRIES, SECTOR_THEMES } from "../constants/categories";
 import { INVESTMENT_STRATEGIES } from "../constants/investmentStrategies";
 import { METRIC_DESCRIPTIONS, CALCULATION_GUIDE_URL } from "../constants/metricDescriptions";
+import { METRIC_SHORT_DESCRIPTIONS } from "../constants/metricShortDescriptions";
 
 // Import types
 import { TAB_KEYS, TabKey, Sentiment } from "../types";
@@ -1944,26 +1945,19 @@ export default function DemoHome() {
                           return (
                             <div key={key} className="text-center p-4 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
                               <div className="text-xs font-semibold text-gray-700 mb-1">{key.replace("Score", "")}</div>
-                              {METRIC_DESCRIPTIONS[key] && (
+                              {(METRIC_DESCRIPTIONS[key] || METRIC_SHORT_DESCRIPTIONS[key]) && (
                                 <div className="mb-2">
-                                  {expandedMetrics[key] ? (
-                                    <>
-                                      <div className="text-[10px] text-gray-500 mb-1 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
-                                      <button
-                                        onClick={() => toggleMetricDescription(key)}
-                                        className="text-[9px] text-blue-600 hover:text-blue-800 font-semibold"
-                                      >
-                                        (간략히)
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <button
-                                      onClick={() => toggleMetricDescription(key)}
-                                      className="text-[9px] text-blue-600 hover:text-blue-800 font-semibold"
-                                    >
-                                      (자세히)
-                                    </button>
-                                  )}
+                                  <div className="text-[10px] text-gray-500 mb-1 leading-tight">
+                                    {expandedMetrics[key]
+                                      ? METRIC_DESCRIPTIONS[key] || METRIC_SHORT_DESCRIPTIONS[key]
+                                      : METRIC_SHORT_DESCRIPTIONS[key] || METRIC_DESCRIPTIONS[key]}
+                                  </div>
+                                  <button
+                                    onClick={() => toggleMetricDescription(key)}
+                                    className="text-[9px] text-blue-600 hover:text-blue-800 font-semibold"
+                                  >
+                                    {expandedMetrics[key] ? "(간략히)" : "(자세히)"}
+                                  </button>
                                 </div>
                               )}
                               <div className={classNames("text-3xl font-bold", isNumber ? getMetricColor(key, value) : "text-gray-900")}>
@@ -2099,26 +2093,19 @@ export default function DemoHome() {
                                   {status.label}
                                 </span>
                               </div>
-                              {METRIC_DESCRIPTIONS[key] && (
+                              {(METRIC_DESCRIPTIONS[key] || METRIC_SHORT_DESCRIPTIONS[key]) && (
                                 <div className="mb-2">
-                                  {expandedMetrics[key] ? (
-                                    <>
-                                      <div className="text-[10px] text-gray-500 mb-1 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
-                                      <button
-                                        onClick={() => toggleMetricDescription(key)}
-                                        className="text-[9px] text-blue-600 hover:text-blue-800 font-semibold"
-                                      >
-                                        (간략히)
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <button
-                                      onClick={() => toggleMetricDescription(key)}
-                                      className="text-[9px] text-blue-600 hover:text-blue-800 font-semibold"
-                                    >
-                                      (자세히)
-                                    </button>
-                                  )}
+                                  <div className="text-[10px] text-gray-500 mb-1 leading-tight">
+                                    {expandedMetrics[key]
+                                      ? METRIC_DESCRIPTIONS[key] || METRIC_SHORT_DESCRIPTIONS[key]
+                                      : METRIC_SHORT_DESCRIPTIONS[key] || METRIC_DESCRIPTIONS[key]}
+                                  </div>
+                                  <button
+                                    onClick={() => toggleMetricDescription(key)}
+                                    className="text-[9px] text-blue-600 hover:text-blue-800 font-semibold"
+                                  >
+                                    {expandedMetrics[key] ? "(간략히)" : "(자세히)"}
+                                  </button>
                                 </div>
                               )}
                               <div className={classNames("text-xl font-bold", colorClass)}>{displayValue}</div>
@@ -2148,8 +2135,20 @@ export default function DemoHome() {
                                     {status.label}
                                   </span>
                                 </div>
-                                {METRIC_DESCRIPTIONS[key] && (
-                                  <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
+                                {(METRIC_DESCRIPTIONS[key] || METRIC_SHORT_DESCRIPTIONS[key]) && (
+                                  <div className="mb-2">
+                                    <div className="text-[10px] text-gray-500 mb-1 leading-tight">
+                                      {expandedMetrics[key]
+                                        ? METRIC_DESCRIPTIONS[key] || METRIC_SHORT_DESCRIPTIONS[key]
+                                        : METRIC_SHORT_DESCRIPTIONS[key] || METRIC_DESCRIPTIONS[key]}
+                                    </div>
+                                    <button
+                                      onClick={() => toggleMetricDescription(key)}
+                                      className="text-[9px] text-blue-600 hover:text-blue-800 font-semibold"
+                                    >
+                                      {expandedMetrics[key] ? "(간략히)" : "(자세히)"}
+                                    </button>
+                                  </div>
                                 )}
                                 <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
                               </div>
@@ -2176,8 +2175,20 @@ export default function DemoHome() {
                                     {status.label}
                                   </span>
                                 </div>
-                                {METRIC_DESCRIPTIONS[key] && (
-                                  <div className="text-[10px] text-gray-500 mb-2 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
+                                {(METRIC_DESCRIPTIONS[key] || METRIC_SHORT_DESCRIPTIONS[key]) && (
+                                  <div className="mb-2">
+                                    <div className="text-[10px] text-gray-500 mb-1 leading-tight">
+                                      {expandedMetrics[key]
+                                        ? METRIC_DESCRIPTIONS[key] || METRIC_SHORT_DESCRIPTIONS[key]
+                                        : METRIC_SHORT_DESCRIPTIONS[key] || METRIC_DESCRIPTIONS[key]}
+                                    </div>
+                                    <button
+                                      onClick={() => toggleMetricDescription(key)}
+                                      className="text-[9px] text-blue-600 hover:text-blue-800 font-semibold"
+                                    >
+                                      {expandedMetrics[key] ? "(간략히)" : "(자세히)"}
+                                    </button>
+                                  </div>
                                 )}
                                 <div className={classNames("text-2xl font-bold", colorClass)}>{displayValue}</div>
                               </div>
@@ -2223,26 +2234,19 @@ export default function DemoHome() {
                                   {status.label}
                                 </span>
                               </div>
-                              {METRIC_DESCRIPTIONS[key] && (
+                              {(METRIC_DESCRIPTIONS[key] || METRIC_SHORT_DESCRIPTIONS[key]) && (
                                 <div className="mb-2">
-                                  {expandedMetrics[key] ? (
-                                    <>
-                                      <div className="text-[10px] text-gray-500 mb-1 leading-tight">{METRIC_DESCRIPTIONS[key]}</div>
-                                      <button
-                                        onClick={() => toggleMetricDescription(key)}
-                                        className="text-[9px] text-blue-600 hover:text-blue-800 font-semibold"
-                                      >
-                                        (간략히)
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <button
-                                      onClick={() => toggleMetricDescription(key)}
-                                      className="text-[9px] text-blue-600 hover:text-blue-800 font-semibold"
-                                    >
-                                      (자세히)
-                                    </button>
-                                  )}
+                                  <div className="text-[10px] text-gray-500 mb-1 leading-tight">
+                                    {expandedMetrics[key]
+                                      ? METRIC_DESCRIPTIONS[key] || METRIC_SHORT_DESCRIPTIONS[key]
+                                      : METRIC_SHORT_DESCRIPTIONS[key] || METRIC_DESCRIPTIONS[key]}
+                                  </div>
+                                  <button
+                                    onClick={() => toggleMetricDescription(key)}
+                                    className="text-[9px] text-blue-600 hover:text-blue-800 font-semibold"
+                                  >
+                                    {expandedMetrics[key] ? "(간략히)" : "(자세히)"}
+                                  </button>
                                 </div>
                               )}
                               <div className={classNames("text-lg font-bold", colorClass)}>{displayValue}</div>
