@@ -75,6 +75,7 @@ export const ETF_CATEGORY_MAPPING: Record<string, string> = {
   "Long-Term Bond": "장기채",
   "Short-Term Bond": "단기채",
   "High Yield Bond": "고수익 채권",
+  "Intermediate Core Bond": "중기 코어 채권",
 
   // 채권형 - 물가연동채
   "Inflation-Protected Bond": "물가연동채",
@@ -136,6 +137,7 @@ export function etfSectorToKorean(sector: string | undefined): string {
   // 하지만 순환 참조를 피하기 위해 여기서 직접 매핑
   const sectorKoreanMap: Record<string, string> = {
     "Information Technology": "정보기술",
+    "Technology": "정보기술",
     "Communication Services": "커뮤니케이션 서비스",
     "Consumer Discretionary": "경기소비재",
     "Consumer Staples": "필수소비재",
@@ -149,6 +151,43 @@ export function etfSectorToKorean(sector: string | undefined): string {
   };
 
   return sectorKoreanMap[gicsSector] || gicsSector;
+}
+
+/**
+ * 모든 섹터명을 한글로 변환 (sector_weightings용)
+ * API에서 반환하는 다양한 형식의 섹터명을 한글로 변환
+ * @param sectorName 섹터명 (예: "Technology", "Information Technology", "Healthcare")
+ * @returns 한글 섹터 이름
+ */
+export function sectorToKorean(sectorName: string | undefined): string {
+  if (!sectorName) return "";
+
+  const sectorMap: Record<string, string> = {
+    // GICS 표준명
+    "Information Technology": "정보기술",
+    "Communication Services": "커뮤니케이션 서비스",
+    "Consumer Discretionary": "경기소비재",
+    "Consumer Staples": "필수소비재",
+    "Healthcare": "헬스케어",
+    "Financials": "금융",
+    "Industrials": "산업재",
+    "Materials": "소재",
+    "Energy": "에너지",
+    "Utilities": "유틸리티",
+    "Real Estate": "부동산",
+
+    // 축약/변형명
+    "Technology": "정보기술",
+    "Health": "헬스케어",
+    "Consumer Cyclical": "경기소비재",
+    "Consumer Defensive": "필수소비재",
+    "Financial": "금융",
+    "Communications": "커뮤니케이션 서비스",
+    "Equity Energy": "에너지 주식",
+    "Equity Precious Metals": "귀금속 주식",
+  };
+
+  return sectorMap[sectorName] || sectorName;
 }
 
 /**
