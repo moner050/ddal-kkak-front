@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import type { EtfInfo } from "../api/types";
 import { etfSectorToKorean, etfCategoryToKorean, sectorToKorean } from "../constants/etfMapping";
 import EtfSectorPieChart from "../components/charts/EtfSectorPieChart";
@@ -17,26 +17,10 @@ import EtfSectorPieChart from "../components/charts/EtfSectorPieChart";
  */
 const EtfDetailPage: React.FC = () => {
   const { ticker } = useParams<{ ticker: string }>();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [etf, setEtf] = useState<EtfInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // URL 쿼리 파라미터에서 뒤로가기 정보 추출
-  const backUrl = searchParams.get("back");
-
-  // 뒤로가기 핸들러
-  const handleGoBack = () => {
-    if (backUrl === "etfs") {
-      navigate("/etfs");
-    } else if (backUrl === "stock") {
-      // 종목에서 왔으면 종목으로
-      navigate(-1);
-    } else {
-      navigate(-1);
-    }
-  };
 
   useEffect(() => {
     if (!ticker) return;
@@ -138,7 +122,7 @@ const EtfDetailPage: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* 뒤로가기 버튼 */}
         <button
-          onClick={handleGoBack}
+          onClick={() => window.history.back()}
           className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -426,16 +410,10 @@ const EtfDetailPage: React.FC = () => {
                   ];
                   const color = colors[index] || 'from-blue-400 to-blue-600';
 
-                  const handleHoldingClick = () => {
-                    // URL 파라미터에 어느 ETF에서 왔는지 정보 저장
-                    navigate(`/stock/${holding.symbol}?from_etf=${ticker}`);
-                  };
-
                   return (
                     <div
                       key={`${holding.symbol}-${index}`}
-                      onClick={handleHoldingClick}
-                      className="border-l-4 border-blue-500 pl-4 py-2 cursor-pointer hover:bg-blue-50 rounded-r-lg transition-colors"
+                      className="border-l-4 border-blue-500 pl-4 py-2 hover:bg-blue-50 rounded-r-lg transition-colors"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-3 flex-1">
