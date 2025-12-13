@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { EtfInfo } from "../../api/types";
-import { etfSectorToKorean, etfCategoryToKorean } from "../../constants/etfMapping";
+import { etfSectorToKorean, etfCategoryToKorean, sectorToKorean } from "../../constants/etfMapping";
+import { useNavigation } from "../../context/NavigationContext";
 import EtfSectorPieChart from "../charts/EtfSectorPieChart";
 
 interface EtfDetailViewProps {
@@ -20,6 +21,7 @@ interface EtfDetailViewProps {
  * - 주요 보유 종목
  */
 const EtfDetailView: React.FC<EtfDetailViewProps> = ({ ticker, onClose }) => {
+  const { setFromEtfTicker, setTargetStockSymbol } = useNavigation();
   const [etf, setEtf] = useState<EtfInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,11 +55,19 @@ const EtfDetailView: React.FC<EtfDetailViewProps> = ({ ticker, onClose }) => {
     fetchEtfDetail();
   }, [ticker]);
 
-  // 수익률 포맷팅
+  // 수익률 포맷팅 (소수점 형식 정규화)
   const formatReturn = (value: number | undefined): string => {
     if (value === undefined || value === null) return "-";
-    const sign = value > 0 ? "+" : "";
-    return `${sign}${value.toFixed(2)}%`;
+
+    // 데이터 값이 -1과 1 사이면 * 100 (소수점 형식: 0.7009 → 70.09)
+    // 그 외에는 그냥 사용 (이미 퍼센트 형식: 70.09 → 70.09)
+    let displayValue = value;
+    if (Math.abs(value) < 1 && value !== 0) {
+      displayValue = value * 100;
+    }
+
+    const sign = displayValue > 0 ? "+" : "";
+    return `${sign}${displayValue.toFixed(2)}%`;
   };
 
   // 수익률 색상
@@ -76,16 +86,31 @@ const EtfDetailView: React.FC<EtfDetailViewProps> = ({ ticker, onClose }) => {
     return `$${assets.toLocaleString()}`;
   };
 
-  // 백분율 포맷팅
+  // 백분율 포맷팅 (소수점 형식 정규화)
   const formatPercent = (value: number | undefined): string => {
     if (value === undefined || value === null) return "-";
-    return `${value.toFixed(2)}%`;
+
+    // 데이터 값이 -1과 1 사이면 * 100 (소수점 형식: 0.7009 → 70.09)
+    // 그 외에는 그냥 사용 (이미 퍼센트 형식: 70.09 → 70.09)
+    let displayValue = value;
+    if (Math.abs(value) < 1 && value !== 0) {
+      displayValue = value * 100;
+    }
+
+    const sign = displayValue > 0 ? "+" : "";
+    return `${sign}${displayValue.toFixed(2)}%`;
   };
 
   // 소수점 포맷팅
   const formatDecimal = (value: number | undefined, decimals: number = 2): string => {
     if (value === undefined || value === null) return "-";
     return value.toFixed(decimals);
+  };
+
+  // 보유 종목 클릭 핸들러
+  const handleHoldingClick = (symbol: string) => {
+    setFromEtfTicker(ticker);
+    setTargetStockSymbol(symbol);
   };
 
   // 로딩 상태
@@ -255,8 +280,31 @@ const EtfDetailView: React.FC<EtfDetailViewProps> = ({ ticker, onClose }) => {
         {/* 섹터 비중 */}
         {etf.sector_weightings && Object.keys(etf.sector_weightings).length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">섹터 비중</h2>
-            <EtfSectorPieChart sectorWeightings={etf.sector_weightings} />
+            <h2 className="text-xl font-bold text-gray-900 mb-4">섹터 비중 분석</h2>
+            <div className="mb-4">
+              <EtfSectorPieChart sectorWeightings={etf.sector_weightings} />
+            </div>
+            <div className="mt-6 space-y-2 max-h-60 overflow-y-auto">
+              <p className="text-xs text-gray-500 font-semibold mb-3 uppercase">모든 섹터 비중</p>
+              {Object.entries(etf.sector_weightings)
+                .sort(([, a], [, b]) => (b as number) - (a as number))
+                .map(([sector, weight]) => (
+                  <div key={sector} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">{sectorToKorean(sector)}</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-24 bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-500 h-2 rounded-full"
+                          style={{ width: `${(weight as number) * 100}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-sm font-bold text-gray-900 w-12 text-right">
+                        {((weight as number) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </div>
           </div>
         )}
 
@@ -270,7 +318,8 @@ const EtfDetailView: React.FC<EtfDetailViewProps> = ({ ticker, onClose }) => {
               {etf.top_holdings.map((holding, index) => (
                 <div
                   key={`${holding.symbol}-${index}`}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                  onClick={() => handleHoldingClick(holding.symbol)}
                 >
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
                     <span className="text-sm font-semibold text-gray-400 w-6">
