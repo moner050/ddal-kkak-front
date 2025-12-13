@@ -7,6 +7,7 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
+import { sectorToKorean } from '../../constants/etfMapping';
 
 interface EtfSectorPieChartProps {
   sectorWeightings: Record<string, number>;
@@ -43,16 +44,22 @@ export default function EtfSectorPieChart({ sectorWeightings, topN = 5 }: EtfSec
   const otherSectors = sortedSectors.slice(topN);
   const otherWeight = otherSectors.reduce((sum, [_, weight]) => sum + weight, 0);
 
-  // 차트 데이터 생성
-  const chartData = [
-    ...topSectors.map(([name, value]) => ({ name, value })),
-    ...(otherWeight > 0 ? [{ name: '기타', value: otherWeight }] : []),
+  // 차트 데이터 생성 (섹터명을 한글로 변환, 색상 매핑용 원본명 유지)
+  interface ChartDataEntry {
+    name: string;
+    originalName: string;
+    value: number;
+  }
+
+  const chartData: ChartDataEntry[] = [
+    ...topSectors.map(([name, value]) => ({ name: sectorToKorean(name), originalName: name, value })),
+    ...(otherWeight > 0 ? [{ name: '기타', originalName: '기타', value: otherWeight }] : []),
   ];
 
-  // 색상 결정
-  const getColor = (sectorName: string, index: number) => {
-    if (sectorName === '기타') return '#9ca3af'; // gray-400
-    return SECTOR_COLORS[sectorName] || DEFAULT_COLORS[index % DEFAULT_COLORS.length];
+  // 색상 결정 (원본 섹터명으로 색상 매핑)
+  const getColor = (entry: ChartDataEntry, index: number) => {
+    if (entry.name === '기타') return '#9ca3af'; // gray-400
+    return SECTOR_COLORS[entry.originalName] || DEFAULT_COLORS[index % DEFAULT_COLORS.length];
   };
 
   // 커스텀 툴팁
@@ -107,7 +114,7 @@ export default function EtfSectorPieChart({ sectorWeightings, topN = 5 }: EtfSec
             dataKey="value"
           >
             {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={getColor(entry.name, index)} />
+              <Cell key={`cell-${index}`} fill={getColor(entry, index)} />
             ))}
           </Pie>
           <Tooltip content={<CustomTooltip />} />
