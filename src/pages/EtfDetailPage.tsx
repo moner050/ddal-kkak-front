@@ -164,38 +164,88 @@ const EtfDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 주요 지표 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* 운용 자산 */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <p className="text-sm text-gray-500 mb-2">운용 자산</p>
-            <p className="text-2xl font-bold text-gray-900">{formatAssets(etf.total_assets)}</p>
+        {/* 가격 정보 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* 현재가 / NAV 가격 */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <p className="text-sm text-gray-500 mb-4">가격 정보</p>
+            <div className="space-y-3">
+              {etf.price !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700 font-medium">현재가</span>
+                  <span className="text-2xl font-bold text-gray-900">${etf.price.toFixed(2)}</span>
+                </div>
+              )}
+              {etf.nav_price !== undefined && (
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                  <span className="text-gray-700 font-medium">NAV 가격</span>
+                  <span className="text-2xl font-bold text-blue-600">${etf.nav_price.toFixed(2)}</span>
+                </div>
+              )}
+              {etf.price !== undefined && etf.nav_price !== undefined && (
+                <div className="flex items-center justify-between pt-2 text-xs">
+                  <span className="text-gray-500">프리미엄/디스카운트</span>
+                  <span className={`font-semibold ${
+                    etf.price > etf.nav_price ? 'text-red-600' : 'text-green-600'
+                  }`}>
+                    {((etf.price - etf.nav_price) / etf.nav_price * 100).toFixed(2)}%
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* 비용 비율 */}
-          {etf.expense_ratio !== undefined && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <p className="text-sm text-gray-500 mb-2">비용 비율</p>
-              <p className="text-2xl font-bold text-gray-900">{formatPercent(etf.expense_ratio)}</p>
-            </div>
-          )}
+          {/* 주요 지표 */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <p className="text-sm text-gray-500 mb-4">주요 지표</p>
+            <div className="space-y-4">
+              {/* 운용 자산 */}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-700 font-medium">운용 자산</span>
+                <span className="text-lg font-bold text-gray-900">{formatAssets(etf.total_assets)}</span>
+              </div>
 
-          {/* 배당 수익률 */}
-          {etf.dividend_yield !== undefined && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <p className="text-sm text-gray-500 mb-2">배당 수익률</p>
-              <p className="text-2xl font-bold text-gray-900">{formatPercent(etf.dividend_yield)}</p>
-            </div>
-          )}
+              {/* 비용 비율 */}
+              {etf.expense_ratio !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700 font-medium">비용 비율</span>
+                  <span className="text-lg font-bold text-gray-900">{formatPercent(etf.expense_ratio)}</span>
+                </div>
+              )}
 
-          {/* 베타 */}
-          {etf.beta !== undefined && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <p className="text-sm text-gray-500 mb-2">베타</p>
-              <p className="text-2xl font-bold text-gray-900">{formatDecimal(etf.beta)}</p>
+              {/* 베타 */}
+              {etf.beta !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700 font-medium">베타</span>
+                  <span className="text-lg font-bold text-gray-900">{formatDecimal(etf.beta)}</span>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
+
+        {/* 배당 정보 */}
+        {(etf.dividend_yield !== undefined || etf.dividend_rate !== undefined) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 p-6">
+              <p className="text-sm text-gray-600 mb-2">배당 수익률</p>
+              <p className="text-3xl font-bold text-green-700 mb-2">
+                {etf.dividend_yield !== undefined ? formatPercent(etf.dividend_yield) : "-"}
+              </p>
+              <p className="text-xs text-gray-600">
+                {etf.dividend_yield !== undefined ? "연간 배당금으로 얻을 수 있는 수익률" : "-"}
+              </p>
+            </div>
+
+            {etf.dividend_rate !== undefined && (
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200 p-6">
+                <p className="text-sm text-gray-600 mb-2">배당금</p>
+                <p className="text-3xl font-bold text-blue-700 mb-2">${etf.dividend_rate.toFixed(2)}</p>
+                <p className="text-xs text-gray-600">연간 배당금</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 수익률 정보 */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
@@ -250,12 +300,97 @@ const EtfDetailPage: React.FC = () => {
           </div>
         )}
 
+        {/* Top 3 섹터 강조 */}
+        {(etf.primary_sector || etf.secondary_sector || etf.tertiary_sector) && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">주요 섹터</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {etf.primary_sector && (
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">주 섹터</p>
+                  <p className="text-lg font-bold text-blue-900 mb-1">{etfSectorToKorean(etf.primary_sector)}</p>
+                  {etf.primary_sector_weight !== undefined && (
+                    <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${(etf.primary_sector_weight * 100)}%` }}
+                      ></div>
+                    </div>
+                  )}
+                  {etf.primary_sector_weight !== undefined && (
+                    <p className="text-sm font-bold text-blue-700 mt-2">{(etf.primary_sector_weight * 100).toFixed(1)}%</p>
+                  )}
+                </div>
+              )}
+
+              {etf.secondary_sector && (
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">2차 섹터</p>
+                  <p className="text-lg font-bold text-purple-900 mb-1">{etfSectorToKorean(etf.secondary_sector)}</p>
+                  {etf.secondary_sector_weight !== undefined && (
+                    <div className="w-full bg-purple-200 rounded-full h-2 mt-2">
+                      <div
+                        className="bg-purple-600 h-2 rounded-full"
+                        style={{ width: `${(etf.secondary_sector_weight * 100)}%` }}
+                      ></div>
+                    </div>
+                  )}
+                  {etf.secondary_sector_weight !== undefined && (
+                    <p className="text-sm font-bold text-purple-700 mt-2">{(etf.secondary_sector_weight * 100).toFixed(1)}%</p>
+                  )}
+                </div>
+              )}
+
+              {etf.tertiary_sector && (
+                <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-4 border border-pink-200">
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">3차 섹터</p>
+                  <p className="text-lg font-bold text-pink-900 mb-1">{etfSectorToKorean(etf.tertiary_sector)}</p>
+                  {etf.tertiary_sector_weight !== undefined && (
+                    <div className="w-full bg-pink-200 rounded-full h-2 mt-2">
+                      <div
+                        className="bg-pink-600 h-2 rounded-full"
+                        style={{ width: `${(etf.tertiary_sector_weight * 100)}%` }}
+                      ></div>
+                    </div>
+                  )}
+                  {etf.tertiary_sector_weight !== undefined && (
+                    <p className="text-sm font-bold text-pink-700 mt-2">{(etf.tertiary_sector_weight * 100).toFixed(1)}%</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* 섹터 비중 */}
           {etf.sector_weightings && Object.keys(etf.sector_weightings).length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">섹터 비중</h2>
-              <EtfSectorPieChart sectorWeightings={etf.sector_weightings} />
+              <h2 className="text-xl font-bold text-gray-900 mb-4">섹터 비중 분석</h2>
+              <div className="mb-4">
+                <EtfSectorPieChart sectorWeightings={etf.sector_weightings} />
+              </div>
+              <div className="mt-6 space-y-2 max-h-60 overflow-y-auto">
+                <p className="text-xs text-gray-500 font-semibold mb-3 uppercase">모든 섹터 비중</p>
+                {Object.entries(etf.sector_weightings)
+                  .sort(([, a], [, b]) => (b as number) - (a as number))
+                  .map(([sector, weight]) => (
+                    <div key={sector} className="flex items-center justify-between">
+                      <span className="text-sm text-gray-700">{sector}</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-500 h-2 rounded-full"
+                            style={{ width: `${(weight as number) * 100}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm font-bold text-gray-900 w-12 text-right">
+                          {((weight as number) * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
           )}
 
@@ -265,29 +400,53 @@ const EtfDetailPage: React.FC = () => {
               <h2 className="text-xl font-bold text-gray-900 mb-4">
                 주요 보유 종목 (TOP {etf.top_holdings.length})
               </h2>
-              <div className="space-y-3">
-                {etf.top_holdings.map((holding, index) => (
-                  <div
-                    key={`${holding.symbol}-${index}`}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      <span className="text-sm font-semibold text-gray-400 w-6">
-                        {index + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-blue-600">{holding.symbol}</p>
-                        <p className="text-xs text-gray-600 truncate">{holding.name}</p>
+              <div className="space-y-4">
+                {etf.top_holdings.map((holding, index) => {
+                  const holdingWeight = holding.weight * 100;
+                  const colors = [
+                    'from-yellow-400 to-yellow-600', // 1위 금색
+                    'from-gray-400 to-gray-600',     // 2위 은색
+                    'from-orange-400 to-orange-600', // 3위 동색
+                  ];
+                  const color = colors[index] || 'from-blue-400 to-blue-600';
+
+                  return (
+                    <div key={`${holding.symbol}-${index}`} className="border-l-4 border-blue-500 pl-4 py-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-3 flex-1">
+                          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${color} flex items-center justify-center text-white font-bold text-sm`}>
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-blue-600">{holding.symbol}</p>
+                            <p className="text-xs text-gray-600 truncate">{holding.name}</p>
+                          </div>
+                        </div>
+                        <div className="text-right ml-4">
+                          <p className="text-lg font-bold text-gray-900">{holdingWeight.toFixed(2)}%</p>
+                          <p className="text-xs text-gray-500">비중</p>
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-blue-600 h-2.5 rounded-full"
+                          style={{ width: `${Math.min(holdingWeight * 3, 100)}%` }}
+                        ></div>
                       </div>
                     </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-bold text-gray-900">
-                        {(holding.weight * 100).toFixed(2)}%
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+              {etf.top_holdings.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">
+                    💡 상위 {etf.top_holdings.length}개 종목의 누적 비중:
+                    <span className="font-bold text-gray-900 ml-2">
+                      {(etf.top_holdings.reduce((sum, h) => sum + h.weight, 0) * 100).toFixed(1)}%
+                    </span>
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
