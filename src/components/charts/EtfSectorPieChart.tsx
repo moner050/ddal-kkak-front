@@ -127,7 +127,7 @@ export default function EtfSectorPieChart({ sectorWeightings, topN = 5 }: EtfSec
           <div key={entry.name} className="flex items-center gap-2">
             <div
               className="w-3 h-3 rounded-sm flex-shrink-0"
-              style={{ backgroundColor: getColor(entry.name, index) }}
+              style={{ backgroundColor: getColor(entry, index) }}
             ></div>
             <div className="flex-1 min-w-0">
               <div className="text-xs text-gray-900 truncate font-medium">{entry.name}</div>

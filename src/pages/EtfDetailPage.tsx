@@ -57,11 +57,19 @@ const EtfDetailPage: React.FC = () => {
     fetchEtfDetail();
   }, [ticker]);
 
-  // 수익률 포맷팅
+  // 수익률 포맷팅 (EtfListView와 동일한 로직)
   const formatReturn = (value: number | undefined): string => {
     if (value === undefined || value === null) return "-";
-    const sign = value > 0 ? "+" : "";
-    return `${sign}${value.toFixed(2)}%`;
+
+    // 데이터 값이 -1과 1 사이면 * 100 (소수점 형식: 0.7009 → 70.09)
+    // 그 외에는 그냥 사용 (이미 퍼센트 형식: 70.09 → 70.09)
+    let displayValue = value;
+    if (Math.abs(value) < 1 && value !== 0) {
+      displayValue = value * 100;
+    }
+
+    const sign = displayValue > 0 ? "+" : "";
+    return `${sign}${displayValue.toFixed(2)}%`;
   };
 
   // 수익률 색상
@@ -80,10 +88,19 @@ const EtfDetailPage: React.FC = () => {
     return `$${assets.toLocaleString()}`;
   };
 
-  // 백분율 포맷팅
+  // 백분율 포맷팅 (EtfListView와 동일한 로직)
   const formatPercent = (value: number | undefined): string => {
     if (value === undefined || value === null) return "-";
-    return `${value.toFixed(2)}%`;
+
+    // 데이터 값이 -1과 1 사이면 * 100 (소수점 형식: 0.7009 → 70.09)
+    // 그 외에는 그냥 사용 (이미 퍼센트 형식: 70.09 → 70.09)
+    let displayValue = value;
+    if (Math.abs(value) < 1 && value !== 0) {
+      displayValue = value * 100;
+    }
+
+    const sign = displayValue > 0 ? "+" : "";
+    return `${sign}${displayValue.toFixed(2)}%`;
   };
 
   // 소수점 포맷팅
