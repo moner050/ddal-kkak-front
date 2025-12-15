@@ -1,1 +1,1 @@
-{updated_content}
+{content}
