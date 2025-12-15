@@ -2,7 +2,31 @@
  * ETF 카테고리와 섹터 한글 매핑
  * - ETF primary_sector를 GICS 섹터로 매핑
  * - ETF category를 한글로 매핑
+ * - ETF 카테고리를 대분류/중분류/소분류로 계층화
  */
+
+// ETF 카테고리 계층 구조 (대분류 → 중분류 → 소분류)
+export const ETF_CATEGORY_HIERARCHY: Record<string, Record<string, string[]>> = {
+  "주식형": {
+    "규모별": ["Large Blend", "Large Growth", "Large Value", "Mid-Cap Blend", "Mid-Cap Growth", "Mid-Cap Value", "Small Blend", "Small Growth", "Small Value"],
+    "섹터별": ["Technology", "Financial", "Health", "Equity Energy", "Consumer Cyclical", "Consumer Defensive", "Industrials", "Real Estate", "Utilities", "Communications", "Natural Resources"],
+    "지역별": ["Global Large-Stock Blend", "Global Small/Mid Stock", "Foreign Large Blend", "Foreign Small/Mid Value", "Diversified Emerging Mkts", "China Region", "Japan Stock", "Europe Stock", "Latin America Stock", "India Equity", "Miscellaneous Region"],
+    "원자재/귀금속": ["Commodities Focused", "Equity Precious Metals", "Commodities Broad Basket"],
+  },
+  "채권형": {
+    "정부채": ["Long Government", "Short Government", "Intermediate Government", "Ultrashort Bond"],
+    "회사채": ["Corporate Bond", "Long-Term Bond", "Short-Term Bond", "High Yield Bond", "Intermediate Core Bond"],
+    "물가연동채": ["Inflation-Protected Bond", "Short-Term Inflation-Protected Bond"],
+    "지방채": ["Muni National Interm", "Muni National Long"],
+    "모기지/증권화": ["Government Mortgage-Backed Bond", "Securitized Bond - Focused"],
+    "글로벌": ["Global Bond", "Global Bond-USD Hedged", "Emerging Markets Bond"],
+  },
+  "특수형": {
+    "레버리지/인버스": ["Trading--Leveraged Equity", "Trading--Inverse Equity"],
+    "디지털자산": ["Equity Digital Assets", "Digital Assets"],
+    "기타": ["Infrastructure", "Miscellaneous Sector"],
+  },
+};
 
 // ETF primary_sector → GICS Sector 매핑
 // 백엔드에서 사용하는 소문자 언더스코어 형식을 GICS 표준 형식으로 변환
