@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import type { EtfInfo } from "../../api/types";
 import { GICS_SECTORS } from "../../services/sectorPerformance";
 import { toKoreanSector } from "../../constants/sectorMapping";
-import { etfSectorToKorean, etfCategoryToKorean, gicsToEtfSector } from "../../constants/etfMapping";
+import { etfSectorToKorean, etfCategoryToKorean, gicsToEtfSector, ETF_CATEGORY_HIERARCHY } from "../../constants/etfMapping";
 import TooltipHeader from "../utils/TooltipHeader";
 import { useBeginnerMode } from "../../hooks/useBeginnerMode";
 
@@ -36,7 +36,9 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
 
   // 필터링 & 정렬
   const [selectedSector, setSelectedSector] = useState<string>("전체");
-  const [selectedCategory, setSelectedCategory] = useState<string>("전체");
+  const [selectedCategoryType, setSelectedCategoryType] = useState<string>("전체"); // 대분류 (주식형, 채권형, 특수형)
+  const [selectedCategoryMid, setSelectedCategoryMid] = useState<string>("전체"); // 중분류 (규모별, 섹터별, etc.)
+  const [selectedCategoryFinal, setSelectedCategoryFinal] = useState<string>("전체"); // 소분류 (실제 category 값)
   const [searchQuery, setSearchQuery] = useState("");
   const [etfSorts, setEtfSorts] = useState<SortConfig[]>([]);
 
@@ -137,9 +139,9 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
       }
     }
 
-    // 카테고리 필터링
-    if (selectedCategory !== "전체") {
-      result = result.filter((etf) => etf.category === selectedCategory);
+    // 카테고리 필터링 (소분류 기준)
+    if (selectedCategoryFinal !== "전체") {
+      result = result.filter((etf) => etf.category === selectedCategoryFinal);
     }
 
     // 검색 필터링
@@ -212,7 +214,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     }
 
     return result;
-  }, [etfs, selectedSector, selectedCategory, searchQuery, etfSorts]);
+  }, [etfs, selectedSector, selectedCategoryType, selectedCategoryMid, selectedCategoryFinal, searchQuery, etfSorts]);
 
   // 포맷팅 함수들
   const formatAssets = (assets: number | undefined): string => {
@@ -321,36 +323,119 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
           </div>
         </div>
 
-        {/* 카테고리 선택 */}
+        {/* 카테고리 선택 - 대분류/중분류/소분류 */}
         <div>
           <label className="text-xs sm:text-sm text-gray-600 mb-2 font-semibold block">
             📁 카테고리
           </label>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setSelectedCategory("전체")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                selectedCategory === "전체"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              전체
-            </button>
-            {uniqueCategories.map((category) => (
+
+          {/* 대분류 (주식형, 채금형, 특수형) */}
+          <div className="mb-3">
+            <p className="text-xs text-gray-500 mb-2 font-medium">대분류</p>
+            <div className="flex flex-wrap gap-2">
               <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => {
+                  setSelectedCategoryType("전체");
+                  setSelectedCategoryMid("전체");
+                  setSelectedCategoryFinal("전체");
+                }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  selectedCategory === category
+                  selectedCategoryType === "전체"
                     ? "bg-blue-600 text-white shadow-md"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                {etfCategoryToKorean(category)}
+                전체
               </button>
-            ))}
+              {Object.keys(ETF_CATEGORY_HIERARCHY).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => {
+                    setSelectedCategoryType(type);
+                    setSelectedCategoryMid("전체");
+                    setSelectedCategoryFinal("전체");
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    selectedCategoryType === type
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* 중분류 (규모별, 섹터별 등) */}
+          {selectedCategoryType !== "전체" && (
+            <div className="mb-3">
+              <p className="text-xs text-gray-500 mb-2 font-medium">중분류</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => {
+                    setSelectedCategoryMid("전체");
+                    setSelectedCategoryFinal("전체");
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    selectedCategoryMid === "전체"
+                      ? "bg-green-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  전체
+                </button>
+                {Object.keys(ETF_CATEGORY_HIERARCHY[selectedCategoryType] || {}).map((mid) => (
+                  <button
+                    key={mid}
+                    onClick={() => {
+                      setSelectedCategoryMid(mid);
+                      setSelectedCategoryFinal("전체");
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      selectedCategoryMid === mid
+                        ? "bg-green-600 text-white shadow-md"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {mid}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 소분류 (실제 카테고리) */}
+          {selectedCategoryType !== "전체" && selectedCategoryMid !== "전체" && (
+            <div>
+              <p className="text-xs text-gray-500 mb-2 font-medium">소분류</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedCategoryFinal("전체")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    selectedCategoryFinal === "전체"
+                      ? "bg-purple-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  전체
+                </button>
+                {(ETF_CATEGORY_HIERARCHY[selectedCategoryType]?.[selectedCategoryMid] || []).map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategoryFinal(category)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      selectedCategoryFinal === category
+                        ? "bg-purple-600 text-white shadow-md"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {etfCategoryToKorean(category)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
