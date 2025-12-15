@@ -1716,11 +1716,11 @@ export default function DemoHome() {
                 <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
                   <div className="mb-4">
                     <button
-                      onClick={() => setDetailSymbol("")}
+                      onClick={() => window.history.back()}
                       className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
                     >
                       <span>←</span>
-                      <span>목록으로</span>
+                      <span>뒤로가기</span>
                     </button>
                   </div>
                   <div className="text-center py-24 bg-white rounded-2xl shadow-md border border-gray-200">
@@ -1730,10 +1730,10 @@ export default function DemoHome() {
                       선택하신 종목 <span className="font-semibold text-indigo-600">{detailSymbol}</span>의 상세 정보를 찾을 수 없습니다.
                     </p>
                     <button
-                      onClick={() => setDetailSymbol("")}
+                      onClick={() => window.history.back()}
                       className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
                     >
-                      목록으로 돌아가기
+                      뒤로가기
                     </button>
                   </div>
                 </main>
