@@ -4,6 +4,7 @@ import { GICS_SECTORS } from "../../services/sectorPerformance";
 import { toKoreanSector } from "../../constants/sectorMapping";
 import { etfSectorToKorean, etfCategoryToKorean, gicsToEtfSector } from "../../constants/etfMapping";
 import TooltipHeader from "../utils/TooltipHeader";
+import { useBeginnerMode } from "../../hooks/useBeginnerMode";
 
 interface EtfListViewProps {
   onEtfClick?: (etf: EtfInfo) => void;
@@ -29,8 +30,11 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 뷰 모드 & 필터링 & 정렬
-  const [viewMode, setViewMode] = useState<ViewMode>("beginner");
+  // 반응형 모드: 모바일=간편모드, 웹=상세모드
+  const { isBeginnerMode } = useBeginnerMode();
+  const viewMode: ViewMode = isBeginnerMode ? "beginner" : "detail";
+
+  // 필터링 & 정렬
   const [selectedSector, setSelectedSector] = useState<string>("전체");
   const [selectedCategory, setSelectedCategory] = useState<string>("전체");
   const [searchQuery, setSearchQuery] = useState("");
@@ -176,26 +180,6 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
               aValue = a.total_assets || 0;
               bValue = b.total_assets || 0;
               break;
-            case "ytd":
-              aValue = normalizePercentValue(a.ytd_return);
-              bValue = normalizePercentValue(b.ytd_return);
-              break;
-            case "1m":
-              aValue = normalizePercentValue(a.return_1m);
-              bValue = normalizePercentValue(b.return_1m);
-              break;
-            case "3m":
-              aValue = normalizePercentValue(a.return_3m);
-              bValue = normalizePercentValue(b.return_3m);
-              break;
-            case "6m":
-              aValue = normalizePercentValue(a.return_6m);
-              bValue = normalizePercentValue(b.return_6m);
-              break;
-            case "1y":
-              aValue = normalizePercentValue(a.return_1y);
-              bValue = normalizePercentValue(b.return_1y);
-              break;
             case "dividend":
               aValue = normalizePercentValue(a.dividend_yield);
               bValue = normalizePercentValue(b.dividend_yield);
@@ -286,32 +270,8 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
 
   return (
     <div className="space-y-6">
-      {/* 헤더: 간편/상세 모드 토글 */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-gray-900">ETF 목록</h2>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setViewMode("beginner")}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              viewMode === "beginner"
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            간편 모드
-          </button>
-          <button
-            onClick={() => setViewMode("detail")}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              viewMode === "detail"
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            상세 모드
-          </button>
-        </div>
-      </div>
+      {/* 헤더: ETF 목록 */}
+      <h2 className="text-lg font-bold text-gray-900">ETF 목록</h2>
 
       {/* 검색 & 필터 */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
@@ -403,11 +363,6 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
               {/* 정렬 옵션 버튼들 */}
               {[
                 { key: "assets", label: "운용 자산" },
-                { key: "ytd", label: "YTD 수익률" },
-                { key: "1m", label: "1개월" },
-                { key: "3m", label: "3개월" },
-                { key: "6m", label: "6개월" },
-                { key: "1y", label: "1년" },
                 { key: "dividend", label: "배당률" },
               ].map((option) => {
                 const currentSort = etfSorts.find((s) => s.key === option.key);
@@ -463,11 +418,6 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
             {etfSorts.map((s) => {
               const label = [
                 { key: "assets", label: "운용 자산" },
-                { key: "ytd", label: "YTD" },
-                { key: "1m", label: "1개월" },
-                { key: "3m", label: "3개월" },
-                { key: "6m", label: "6개월" },
-                { key: "1y", label: "1년" },
                 { key: "dividend", label: "배당률" },
               ].find((l) => l.key === s.key)?.label;
               return `${label}(${s.direction === "desc" ? "↓" : "↑"})`;
@@ -491,28 +441,28 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                 <div
                   key={etf.ticker}
                   onClick={() => onEtfClick?.(etf)}
-                  className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all cursor-pointer"
+                  className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 hover:shadow-lg transition-all cursor-pointer"
                 >
                   {/* 헤더 섹션 */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-2 mb-2">
-                        <h3 className="text-2xl font-bold text-blue-600">{etf.ticker}</h3>
-                        <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                          {etf.category ? etfCategoryToKorean(etf.category) : "-"}
-                        </span>
+                  <div className="mb-3">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg sm:text-xl font-bold text-blue-600">{etf.ticker}</h3>
                       </div>
-                      <p className="text-sm text-gray-600 line-clamp-2">{etf.short_name || etf.long_name}</p>
+                      {etf.price && (
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-lg sm:text-xl font-bold text-gray-900">{formatPrice(etf.price)}</p>
+                        </div>
+                      )}
                     </div>
-                    {etf.price && (
-                      <div className="text-right ml-4">
-                        <p className="text-2xl font-bold text-gray-900">{formatPrice(etf.price)}</p>
-                      </div>
-                    )}
+                    <p className="text-xs sm:text-sm text-gray-600 line-clamp-1 mb-2">{etf.short_name || etf.long_name}</p>
+                    <span className="inline-block text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      {etf.category ? etfCategoryToKorean(etf.category) : "-"}
+                    </span>
                   </div>
 
                   {/* 핵심 정보 행 */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-t border-b border-gray-200">
+                  <div className="grid grid-cols-2 gap-3 py-3 border-t border-gray-200">
                     {/* 섹터 */}
                     <div>
                       <p className="text-xs text-gray-500 mb-1">섹터</p>
@@ -535,57 +485,13 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                       </p>
                     </div>
 
-                    {/* YTD 수익률 */}
+                    {/* 카테고리 */}
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">YTD 수익률</p>
-                      <p className={`text-sm font-semibold ${getReturnColor(etf.ytd_return)}`}>
-                        {formatPercent(etf.ytd_return)}
+                      <p className="text-xs text-gray-500 mb-1">카테고리</p>
+                      <p className="text-xs font-semibold text-gray-900 line-clamp-1">
+                        {etf.category ? etfCategoryToKorean(etf.category) : "-"}
                       </p>
                     </div>
-                  </div>
-
-                  {/* 수익률 상세 정보 */}
-                  <div className="grid grid-cols-5 gap-2 mt-4 pt-4 border-t border-gray-100">
-                    {etf.return_1m !== undefined && (
-                      <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-1">1개월</p>
-                        <p className={`text-xs font-bold ${getReturnColor(etf.return_1m)}`}>
-                          {formatPercent(etf.return_1m)}
-                        </p>
-                      </div>
-                    )}
-                    {etf.return_3m !== undefined && (
-                      <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-1">3개월</p>
-                        <p className={`text-xs font-bold ${getReturnColor(etf.return_3m)}`}>
-                          {formatPercent(etf.return_3m)}
-                        </p>
-                      </div>
-                    )}
-                    {etf.return_6m !== undefined && (
-                      <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-1">6개월</p>
-                        <p className={`text-xs font-bold ${getReturnColor(etf.return_6m)}`}>
-                          {formatPercent(etf.return_6m)}
-                        </p>
-                      </div>
-                    )}
-                    {etf.return_1y !== undefined && (
-                      <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-1">1년</p>
-                        <p className={`text-xs font-bold ${getReturnColor(etf.return_1y)}`}>
-                          {formatPercent(etf.return_1y)}
-                        </p>
-                      </div>
-                    )}
-                    {etf.return_3y !== undefined && (
-                      <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-1">3년</p>
-                        <p className={`text-xs font-bold ${getReturnColor(etf.return_3y)}`}>
-                          {formatPercent(etf.return_3y)}
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}
