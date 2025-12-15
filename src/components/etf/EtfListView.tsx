@@ -139,34 +139,9 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
       }
     }
 
-    // 카테고리 필터링 (계층적 필터링)
-    if (selectedCategoryType !== "전체") {
-      // 대분류가 선택되었을 때
-      const hierarchy = ETF_CATEGORY_HIERARCHY[selectedCategoryType];
-      
-      if (selectedCategoryMid !== "전체") {
-        // 중분류가 선택되었을 때
-        const categoriesInMid = hierarchy?.[selectedCategoryMid] || [];
-        
-        if (selectedCategoryFinal !== "전체") {
-          // 소분류가 선택되었을 때 (가장 구체적인 필터링)
-          result = result.filter((etf) => etf.category === selectedCategoryFinal);
-        } else {
-          // 중분류만 선택 → 해당 중분류에 속한 모든 소분류 표시
-          result = result.filter((etf) => 
-            etf.category && categoriesInMid.includes(etf.category)
-          );
-        }
-      } else {
-        // 대분류만 선택 → 해당 대분류의 모든 중분류에 속한 카테고리 표시
-        const allCategoriesInType: string[] = [];
-        Object.values(hierarchy || {}).forEach((categories) => {
-          allCategoriesInType.push(...categories);
-        });
-        result = result.filter((etf) => 
-          etf.category && allCategoriesInType.includes(etf.category)
-        );
-      }
+    // 카테고리 필터링 (소분류 기준)
+    if (selectedCategoryFinal !== "전체") {
+      result = result.filter((etf) => etf.category === selectedCategoryFinal);
     }
 
     // 검색 필터링
