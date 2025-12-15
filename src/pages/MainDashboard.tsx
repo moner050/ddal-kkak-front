@@ -1818,13 +1818,13 @@ export default function DemoHome() {
               <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
                 {/* ✅ 뒤로가기 버튼 */}
                 <div className="mb-4">
-                  <button
-                    onClick={() => setDetailSymbol("")}
-                    className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
-                  >
-                    <span>←</span>
-                    <span>목록으로</span>
-                  </button>
+                <button
+                  onClick={() => window.history.back()}
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                >
+                  <span>←</span>
+                  <span>뒤로가기</span>
+                </button>
                 </div>
                 {/* 히어로 섹션 */}
                 <div className="mb-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-6 md:p-8 text-white shadow-xl">
