@@ -99,7 +99,6 @@ import BottomNav from "../components/common/BottomNav";
 import Footer from "../components/common/Footer";
 import CategoryChips from "../components/common/CategoryChips";
 import Pagination from "../components/common/Pagination";
-import BeginnerModeToggle from "../components/common/BeginnerModeToggle";
 import ColorLegend from "../components/common/ColorLegend";
 
 // Import page components
@@ -669,13 +668,6 @@ export default function DemoHome() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                  {/* 간편/상세 모드 토글 (주식 모드일 때만 표시) */}
-                  {recommendationViewMode === "stocks" && (
-                    <BeginnerModeToggle
-                      isBeginnerMode={isBeginnerMode}
-                      onToggle={handleBeginnerModeToggle}
-                    />
-                  )}
                   {recommendationViewMode === "stocks" && (
                     <button
                       onClick={() => {
@@ -725,12 +717,7 @@ export default function DemoHome() {
               </div>
               {recommendationViewMode === "stocks" ? (
                 <>
-                  <div className="flex items-center justify-between gap-4 flex-wrap">
-                    <p className="text-xs sm:text-sm text-gray-600">
-                      {isBeginnerMode
-                        ? "🌱 간편 모드: 핵심 지표와 쉬운 설명을 제공합니다. 각 지표를 클릭하면 상세 설명을 볼 수 있어요!"
-                        : "📊 상세 모드: 모든 재무 지표를 한눈에 비교할 수 있습니다."}
-                    </p>
+                  <div className="flex items-center justify-end gap-4 flex-wrap">
                     <a
                       href={CALCULATION_GUIDE_URL}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
