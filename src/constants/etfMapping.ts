@@ -187,6 +187,19 @@ export function sectorToKorean(sectorName: string | undefined): string {
   if (!sectorName) return "";
 
   const sectorMap: Record<string, string> = {
+    // 소문자 언더스코어 형식 (실제 데이터 형식)
+    "technology": "정보기술",
+    "financial_services": "금융 서비스",
+    "healthcare": "헬스케어",
+    "energy": "에너지",
+    "consumer_cyclical": "경기소비재",
+    "consumer_defensive": "필수소비재",
+    "industrials": "산업재",
+    "realestate": "부동산",
+    "utilities": "유틸리티",
+    "basic_materials": "기초 소재",
+    "communication_services": "커뮤니케이션 서비스",
+    
     // GICS 표준명
     "Information Technology": "정보기술",
     "Communication Services": "커뮤니케이션 서비스",
@@ -239,7 +252,7 @@ export function sectorToKorean(sectorName: string | undefined): string {
 /**
  * ETF category를 한글로 변환
  * @param category ETF의 category (예: "Large Blend", "Technology")
- * @returns 한글 카테고리 이름 (예: "대형 혼합", "기술")
+ * @returns 한글 카테곣0리 이름 (예: "대형 혼합", "기술")
  */
 export function etfCategoryToKorean(category: string | undefined): string {
   if (!category) return "";
