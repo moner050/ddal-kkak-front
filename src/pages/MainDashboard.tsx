@@ -9,7 +9,7 @@
  * - TabKey 타입 도입으로 scrollRef 인덱싱 오류 해결
  * - Header / FilingsSectionByMarket / RankingSectionByMarket / BottomNav 포함
  */
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
 /* ------------------------------------------------------------
    엑셀 내보내기 유틸리티 import (분리된 파일)
@@ -322,16 +322,26 @@ export default function DemoHome() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
       const urlParams = new URLSearchParams(window.location.search);
+      
+      // 뷰 모드 복원
       const view = urlParams.get("view");
-      handleViewModeChange(view === "etfs" ? "etfs" : "stocks");
+      const newViewMode = view === "etfs" ? "etfs" : "stocks";
+      
+      // ETF 상세 티커 복원
       const etf = urlParams.get("etf");
-      handleEtfSelect(etf);
+      
+      // 상태 업데이트를 한 번에 처리
+      setRecommendationViewMode(newViewMode);
+      setSelectedEtfTicker(etf);
     };
 
     window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, []);
 
   // Navigation Context에서 targetStockSymbol 감지 (ETF에서 종목으로 이동할 때)
@@ -445,33 +455,47 @@ export default function DemoHome() {
     switchTab("undervalued");
   };
 
-  const handleViewModeChange = (mode: "stocks" | "etfs") => {
-    handleViewModeChange(mode);
+  const handleViewModeChange = useCallback((mode: "stocks" | "etfs") => {
+    // 현재 모드와 같으면 아무것도 하지 않음 (중요!)
+    if (recommendationViewMode === mode) return;
+    
+    setRecommendationViewMode(mode);
+    
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
+      
       if (mode === "etfs") {
         url.searchParams.set("view", "etfs");
       } else {
         url.searchParams.delete("view");
+        // ETF 상세보기를 닫을 때는 etf 파라미터도 제거
         url.searchParams.delete("etf");
-        handleEtfSelect(null);
+        setSelectedEtfTicker(null);
       }
+      
       window.history.pushState({ view: mode }, "", url.toString());
     }
-  };
+  }, [recommendationViewMode]); // 의존성 추가
 
-  const handleEtfSelect = (ticker: string | null) => {
-    handleEtfSelect(ticker);
+  // ETF 선택 시 URL 업데이트 및 히스토리 푸시
+  const handleEtfSelect = useCallback((ticker: string | null) => {
+    // 현재 티커와 같으면 아무것도 하지 않음 (중요!)
+    if (selectedEtfTicker === ticker) return;
+    
+    setSelectedEtfTicker(ticker);
+    
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
+      
       if (ticker) {
         url.searchParams.set("etf", ticker);
       } else {
         url.searchParams.delete("etf");
       }
+      
       window.history.pushState({ etf: ticker }, "", url.toString());
     }
-  };
+  }, [selectedEtfTicker]); // 의존성 추가
 
 
   // 시그널 섹션 카테고리(미국/한국) + 감성
