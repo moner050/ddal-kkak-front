@@ -265,7 +265,12 @@ export default function DemoHome() {
   const [detailLogoError, setDetailLogoError] = useState(false);
 
   // 종목추천 탭 - 주식/ETF 뷰 모드
-  const [recommendationViewMode, setRecommendationViewMode] = useState<"stocks" | "etfs">("stocks");
+  const [recommendationViewMode, setRecommendationViewMode] = useState<"stocks" | "etfs">(() => {
+    if (typeof window === "undefined") return "stocks";
+    const urlParams = new URLSearchParams(window.location.search);
+    const view = urlParams.get("view");
+    return view === "etfs" ? "etfs" : "stocks";
+  });
 
   // ETF 상세 보기 상태
   const [selectedEtfTicker, setSelectedEtfTicker] = useState<string | null>(null);
@@ -313,6 +318,21 @@ export default function DemoHome() {
       setDetailLogoError(false);
     }
   }, [detailSymbol]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const view = urlParams.get("view");
+      handleViewModeChange(view === "etfs" ? "etfs" : "stocks");
+      const etf = urlParams.get("etf");
+      handleEtfSelect(etf);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   // Navigation Context에서 targetStockSymbol 감지 (ETF에서 종목으로 이동할 때)
   useEffect(() => {
@@ -423,6 +443,34 @@ export default function DemoHome() {
     setUndervaluedIndustry("전체");
     setUndervaluedPage(1);
     switchTab("undervalued");
+  };
+
+  const handleViewModeChange = (mode: "stocks" | "etfs") => {
+    handleViewModeChange(mode);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (mode === "etfs") {
+        url.searchParams.set("view", "etfs");
+      } else {
+        url.searchParams.delete("view");
+        url.searchParams.delete("etf");
+        handleEtfSelect(null);
+      }
+      window.history.pushState({ view: mode }, "", url.toString());
+    }
+  };
+
+  const handleEtfSelect = (ticker: string | null) => {
+    handleEtfSelect(ticker);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (ticker) {
+        url.searchParams.set("etf", ticker);
+      } else {
+        url.searchParams.delete("etf");
+      }
+      window.history.pushState({ etf: ticker }, "", url.toString());
+    }
   };
 
 
@@ -646,7 +694,7 @@ export default function DemoHome() {
                   {/* 주식/ETF 토글 */}
                   <div className="flex items-center bg-gray-100 rounded-lg p-1">
                     <button
-                      onClick={() => setRecommendationViewMode("stocks")}
+                      onClick={() => handleViewModeChange("stocks")}
                       className={`px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-md transition-all ${
                         recommendationViewMode === "stocks"
                           ? "bg-white text-blue-600 shadow-sm"
@@ -656,7 +704,7 @@ export default function DemoHome() {
                       주식
                     </button>
                     <button
-                      onClick={() => setRecommendationViewMode("etfs")}
+                      onClick={() => handleViewModeChange("etfs")}
                       className={`px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-md transition-all ${
                         recommendationViewMode === "etfs"
                           ? "bg-white text-blue-600 shadow-sm"
@@ -750,11 +798,11 @@ export default function DemoHome() {
                 {selectedEtfTicker ? (
                   <EtfDetailView
                     ticker={selectedEtfTicker}
-                    onClose={() => setSelectedEtfTicker(null)}
+                    onClose={() => handleEtfSelect(null)}
                   />
                 ) : (
                   <EtfListView
-                    onEtfClick={(etf) => setSelectedEtfTicker(etf.ticker)}
+                    onEtfClick={(etf) => handleEtfSelect(etf.ticker)}
                   />
                 )}
               </>
