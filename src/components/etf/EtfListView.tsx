@@ -182,6 +182,26 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
               aValue = a.total_assets || 0;
               bValue = b.total_assets || 0;
               break;
+            case "ytd":
+              aValue = normalizePercentValue(a.ytd_return);
+              bValue = normalizePercentValue(b.ytd_return);
+              break;
+            case "1m":
+              aValue = normalizePercentValue(a.return_1m);
+              bValue = normalizePercentValue(b.return_1m);
+              break;
+            case "3m":
+              aValue = normalizePercentValue(a.return_3m);
+              bValue = normalizePercentValue(b.return_3m);
+              break;
+            case "6m":
+              aValue = normalizePercentValue(a.return_6m);
+              bValue = normalizePercentValue(b.return_6m);
+              break;
+            case "1y":
+              aValue = normalizePercentValue(a.return_1y);
+              bValue = normalizePercentValue(b.return_1y);
+              break;
             case "dividend":
               aValue = normalizePercentValue(a.dividend_yield);
               bValue = normalizePercentValue(b.dividend_yield);
