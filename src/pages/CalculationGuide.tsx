@@ -6,7 +6,7 @@ export default function CalculationGuide() {
   const [activeTab, setActiveTab] = useState<'metrics' | 'scores' | 'strategies' | 'fairValue'>('metrics');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       {/* 헤더 */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-12 px-4">
         <div className="max-w-6xl mx-auto">
