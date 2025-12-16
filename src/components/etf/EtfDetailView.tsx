@@ -19,6 +19,7 @@ interface EtfDetailViewProps {
  * - 비용 비율
  * - 섹터 비중 차트
  * - 주요 보유 종목
+ * 🎯 티커 표시 개선
  */
 const EtfDetailView: React.FC<EtfDetailViewProps> = ({ ticker, onClose }) => {
   const { setFromEtfTicker, setTargetStockSymbol } = useNavigation();
@@ -157,32 +158,43 @@ const EtfDetailView: React.FC<EtfDetailViewProps> = ({ ticker, onClose }) => {
         </button>
       )}
 
-      {/* 헤더 */}
+      {/* 헤더 - 티커 개선 */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-bold text-blue-600 mb-2">{etf.ticker}</h1>
-            <p className="text-lg text-gray-700 mb-4">{etf.short_name || etf.long_name}</p>
+            {/* 티커 배지 */}
+            <div className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg mb-3">
+              <span className="text-2xl font-extrabold tracking-wide">{etf.ticker}</span>
+            </div>
+            
+            {/* ETF 이름 */}
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">
+              {etf.short_name || etf.long_name}
+            </h2>
+            
+            {/* 태그 */}
             <div className="flex flex-wrap gap-2">
               {etf.category && (
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-lg">
+                <span className="px-3 py-1.5 bg-blue-50 text-blue-700 text-sm font-semibold rounded-lg border border-blue-200">
                   {etfCategoryToKorean(etf.category)}
                 </span>
               )}
               {etf.primary_sector && (
-                <span className="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-lg">
+                <span className="px-3 py-1.5 bg-purple-50 text-purple-700 text-sm font-semibold rounded-lg border border-purple-200">
                   {etfSectorToKorean(etf.primary_sector)}
                 </span>
               )}
               {etf.fund_family && (
-                <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg">
+                <span className="px-3 py-1.5 bg-gray-50 text-gray-700 text-sm font-medium rounded-lg border border-gray-200">
                   {etf.fund_family}
                 </span>
               )}
             </div>
           </div>
+          
+          {/* 현재가 */}
           {etf.price && (
-            <div className="mt-4 sm:mt-0 sm:ml-6 text-right">
+            <div className="sm:ml-6 text-left sm:text-right">
               <p className="text-sm text-gray-500 mb-1">현재가</p>
               <p className="text-3xl font-bold text-gray-900">${etf.price.toFixed(2)}</p>
             </div>
@@ -308,7 +320,7 @@ const EtfDetailView: React.FC<EtfDetailViewProps> = ({ ticker, onClose }) => {
           </div>
         )}
 
-        {/* 주요 보유 종목 */}
+        {/* 주요 보유 종목 - 티커 표시 개선 */}
         {etf.top_holdings && etf.top_holdings.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">
@@ -318,19 +330,27 @@ const EtfDetailView: React.FC<EtfDetailViewProps> = ({ ticker, onClose }) => {
               {etf.top_holdings.map((holding, index) => (
                 <div
                   key={`${holding.symbol}-${index}`}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer border border-gray-100 hover:border-blue-200"
                   onClick={() => handleHoldingClick(holding.symbol)}
                 >
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
-                    <span className="text-sm font-semibold text-gray-400 w-6">
+                    {/* 순위 */}
+                    <span className="text-sm font-semibold text-gray-400 w-6 flex-shrink-0">
                       {index + 1}
                     </span>
+                    
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-blue-600">{holding.symbol}</p>
+                      {/* 티커 배지 */}
+                      <div className="inline-flex items-center px-2 py-0.5 bg-blue-600 text-white rounded text-xs font-bold tracking-wide mb-1">
+                        {holding.symbol}
+                      </div>
+                      {/* 회사명 */}
                       <p className="text-xs text-gray-600 truncate">{holding.name}</p>
                     </div>
                   </div>
-                  <div className="ml-4">
+                  
+                  {/* 비중 */}
+                  <div className="ml-4 flex-shrink-0">
                     <p className="text-sm font-bold text-gray-900">
                       {(holding.weight * 100).toFixed(2)}%
                     </p>
