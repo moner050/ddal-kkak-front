@@ -28,6 +28,7 @@ type ViewMode = "beginner" | "detail";
  * 
  * ✅ 버그 수정: 필터 해제 시 즉시 반영
  * 📊 섹터 성과 차트 통합
+ * 🏷️ 티커 표시 개선
  */
 const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   const [etfs, setEtfs] = useState<EtfInfo[]>([]);
@@ -68,17 +69,6 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
         const data = await response.json();
         setEtfs(data.data || []);
         console.log(`✓ Loaded ${(data.data || []).length} ETFs from static JSON`);
-        // 첫 번째 ETF 데이터 샘플 로깅 (디버깅)
-        if (data.data && data.data.length > 0) {
-          console.log("Sample ETF data (first):", {
-            ticker: data.data[0].ticker,
-            price: data.data[0].price,
-            total_assets: data.data[0].total_assets,
-            dividend_yield: data.data[0].dividend_yield,
-            ytd_return: data.data[0].ytd_return,
-            return_1m: data.data[0].return_1m,
-          });
-        }
       } catch (err: any) {
         console.error("Failed to fetch ETFs from static JSON:", err);
         setError("ETF 목록을 불러올 수 없습니다.");
@@ -164,8 +154,6 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   // 퍼센트 수치 정규화 (소수점 형식과 퍼센트 형식 통일)
   const normalizePercentValue = (value: number | undefined): number => {
     if (value === undefined || value === null || value === 0) return 0;
-    // 값이 -1과 1 사이면 소수점 형식 (0.7009 = 70.09%)
-    // 그 외에는 퍼센트 형식 (70.09 = 70.09%)
     if (Math.abs(value) < 1) {
       return value * 100;
     }
@@ -183,7 +171,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     return Array.from(categories).sort();
   }, [etfs]);
 
-  // 필터링 & 정렬 (✅ filterVersion을 의존성에 추가하여 강제 재계산)
+  // 필터링 & 정렬
   const filteredAndSortedEtfs = useMemo(() => {
     let result = [...etfs];
 
@@ -197,24 +185,19 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
 
     // 카테고리 필터링 (계층적 필터링)
     if (selectedCategoryType !== "전체") {
-      // 대분류가 선택되었을 때
       const hierarchy = ETF_CATEGORY_HIERARCHY[selectedCategoryType];
       
       if (selectedCategoryMid !== "전체") {
-        // 중분류가 선택되었을 때
         const categoriesInMid = hierarchy?.[selectedCategoryMid] || [];
         
         if (selectedCategoryFinal !== "전체") {
-          // 소분류가 선택되었을 때 (가장 구체적인 필터링)
           result = result.filter((etf) => etf.category === selectedCategoryFinal);
         } else {
-          // 중분류만 선택 → 해당 중분류에 속한 모든 소분류 표시
           result = result.filter((etf) => 
             etf.category && categoriesInMid.includes(etf.category)
           );
         }
       } else {
-        // 대분류만 선택 → 해당 대분류의 모든 중분류에 속한 카테고리 표시
         const allCategoriesInType: string[] = [];
         Object.values(hierarchy || {}).forEach((categories) => {
           allCategoriesInType.push(...categories);
@@ -333,8 +316,6 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   const formatPercent = (value: number | undefined): string => {
     if (value === undefined || value === null) return "-";
 
-    // 데이터 값이 -1과 1 사이면 * 100 (소수점 형식: 0.7009 → 70.09)
-    // 그 외에는 그냥 사용 (이미 퍼센트 형식: 70.09 → 70.09)
     let displayValue = value;
     if (Math.abs(value) < 1 && value !== 0) {
       displayValue = value * 100;
@@ -351,7 +332,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     return "text-gray-600";
   };
 
-  // ✅ 필터 핸들러 개선
+  // 필터 핸들러
   const handleSectorChange = (sector: string) => {
     setSelectedSector(sector);
   };
@@ -375,13 +356,11 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     setSearchQuery(query);
   };
 
-  // 섹터 클릭 핸들러 - 섹터 성과 카드에서 클릭 시 해당 섹터 ETF로 필터링
+  // 섹터 클릭 핸들러
   const handleSectorClickFromChart = (sectorKr: string) => {
-    // 한국어 섹터명을 GICS 섹터명으로 변환
     const gicsSector = GICS_SECTORS.find(s => toKoreanSector(s) === sectorKr);
     if (gicsSector) {
       handleSectorChange(gicsSector);
-      // 섹터 필터 섹션으로 스크롤
       const filterSection = document.getElementById('etf-filter-section');
       if (filterSection) {
         filterSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -472,13 +451,13 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
           </div>
         </div>
 
-        {/* 카테고리 선택 - 대분류/중분류/소분류 */}
+        {/* 카테고리 선택 */}
         <div>
           <label className="text-xs sm:text-sm text-gray-600 mb-2 font-semibold block">
             📁 카테고리
           </label>
 
-          {/* 대분류 (주식형, 채금형, 특수형) */}
+          {/* 대분류 */}
           <div className="mb-3">
             <p className="text-xs text-gray-500 mb-2 font-medium">대분류</p>
             <div className="flex flex-wrap gap-2">
@@ -508,7 +487,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
             </div>
           </div>
 
-          {/* 중분류 (규모별, 섹터별 등) */}
+          {/* 중분류 */}
           {selectedCategoryType !== "전체" && (
             <div className="mb-3">
               <p className="text-xs text-gray-500 mb-2 font-medium">중분류</p>
@@ -540,7 +519,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
             </div>
           )}
 
-          {/* 소분류 (실제 카테고리) */}
+          {/* 소분류 */}
           {selectedCategoryType !== "전체" && selectedCategoryMid !== "전체" && (
             <div>
               <p className="text-xs text-gray-500 mb-2 font-medium">소분류</p>
@@ -580,7 +559,6 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <p className="text-sm font-semibold text-gray-700">정렬:</p>
             <div className="flex items-center gap-2 flex-wrap">
-              {/* 정렬 옵션 버튼들 */}
               {[
                 { key: "assets", label: "운용 자산" },
                 { key: "dividend", label: "배당률" },
@@ -599,11 +577,6 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                           } shadow-sm`
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
-                    title={
-                      currentSort
-                        ? `${option.label} (${currentSort.direction === "desc" ? "높은순" : "낮은순"})`
-                        : `${option.label}로 정렬`
-                    }
                   >
                     {option.label}
                     {currentSort && (
@@ -614,7 +587,6 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                   </button>
                 );
               })}
-              {/* 정렬 초기화 */}
               {etfSorts.length > 0 && (
                 <button
                   onClick={() => setEtfSorts([])}
@@ -633,17 +605,6 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
         <p className="text-sm text-gray-600">
           총 <span className="font-bold text-blue-600">{filteredAndSortedEtfs.length}</span>개 ETF
         </p>
-        {etfSorts.length > 0 && viewMode === "beginner" && (
-          <p className="text-xs text-blue-600">
-            {etfSorts.map((s) => {
-              const label = [
-                { key: "assets", label: "운용 자산" },
-                { key: "dividend", label: "배당률" },
-              ].find((l) => l.key === s.key)?.label;
-              return `${label}(${s.direction === "desc" ? "↓" : "↑"})`;
-            }).join(", ")}
-          </p>
-        )}
       </div>
 
       {/* 간편 모드 - 카드 뷰 */}
@@ -665,9 +626,14 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                 >
                   {/* 헤더 섹션 */}
                   <div className="mb-3">
-                    <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-start justify-between gap-2 mb-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg sm:text-xl font-bold text-blue-600">{etf.ticker}</h3>
+                        {/* 티커 배지 */}
+                        <div className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg mb-2">
+                          <span className="text-base sm:text-lg font-bold tracking-wide">{etf.ticker}</span>
+                        </div>
+                        {/* ETF 이름 */}
+                        <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{etf.short_name || etf.long_name}</p>
                       </div>
                       {etf.price && (
                         <div className="text-right flex-shrink-0">
@@ -675,41 +641,28 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                         </div>
                       )}
                     </div>
-                    <p className="text-xs sm:text-sm text-gray-600 line-clamp-1 mb-2">{etf.short_name || etf.long_name}</p>
-                    <span className="inline-block text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                      {etf.category ? etfCategoryToKorean(etf.category) : "-"}
-                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-block text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded font-medium">
+                        {etf.category ? etfCategoryToKorean(etf.category) : "-"}
+                      </span>
+                      {etf.primary_sector && (
+                        <span className="inline-block text-xs text-purple-700 bg-purple-50 px-2 py-1 rounded font-medium">
+                          {etfSectorToKorean(etf.primary_sector)}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  {/* 핵심 정보 행 */}
-                  <div className="grid grid-cols-2 gap-3 py-3 border-t border-gray-200">
-                    {/* 섹터 */}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">섹터</p>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {etf.primary_sector ? etfSectorToKorean(etf.primary_sector) : "-"}
-                      </p>
-                    </div>
-
-                    {/* 운용 자산 */}
+                  {/* 핵심 정보 */}
+                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
                     <div>
                       <p className="text-xs text-gray-500 mb-1">운용 자산</p>
                       <p className="text-sm font-semibold text-gray-900">{formatAssets(etf.total_assets)}</p>
                     </div>
-
-                    {/* 배당률 */}
                     <div>
                       <p className="text-xs text-gray-500 mb-1">배당률</p>
                       <p className={`text-sm font-semibold ${getReturnColor(etf.dividend_yield)}`}>
                         {formatPercent(etf.dividend_yield)}
-                      </p>
-                    </div>
-
-                    {/* 카테고리 */}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">카테고리</p>
-                      <p className="text-xs font-semibold text-gray-900 line-clamp-1">
-                        {etf.category ? etfCategoryToKorean(etf.category) : "-"}
                       </p>
                     </div>
                   </div>
@@ -720,7 +673,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
         </>
       )}
 
-      {/* 상세 모드 - 테이블 뷰 (주식과 동일한 UI) */}
+      {/* 상세 모드 - 테이블 뷰 */}
       {viewMode === "detail" && (
         <>
           {filteredAndSortedEtfs.length === 0 ? (
@@ -736,7 +689,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs">
-                        종목
+                        티커
                       </th>
                       <th className="px-4 py-3 text-center text-xs">
                         <TooltipHeader
@@ -829,8 +782,17 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                         onClick={() => onEtfClick?.(etf)}
                         className="hover:bg-blue-50 transition-colors cursor-pointer"
                       >
-                        <td className="px-4 py-3 text-sm font-semibold text-blue-600">
-                          {etf.ticker}
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col">
+                            {/* 티커 배지 */}
+                            <span className="inline-flex items-center w-fit px-2.5 py-1 bg-blue-600 text-white rounded text-xs font-bold tracking-wide mb-1">
+                              {etf.ticker}
+                            </span>
+                            {/* ETF 이름 */}
+                            <span className="text-xs text-gray-600 line-clamp-1">
+                              {etf.short_name || etf.long_name}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-center text-gray-700">
                           {etf.primary_sector ? etfSectorToKorean(etf.primary_sector) : "-"}
