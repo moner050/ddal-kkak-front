@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
 import type { EtfInfo } from "../../api/types";
-import { GICS_SECTORS } from "../../services/sectorPerformance";
+import { GICS_SECTORS, loadSectorPerformances, type SectorPerformance, type DateRangeType } from "../../services/sectorPerformance";
 import { toKoreanSector } from "../../constants/sectorMapping";
 import { etfSectorToKorean, etfCategoryToKorean, gicsToEtfSector, ETF_CATEGORY_HIERARCHY } from "../../constants/etfMapping";
 import TooltipHeader from "../utils/TooltipHeader";
+import SectorPerformanceCard from "../charts/SectorPerformanceCard";
 import { useBeginnerMode } from "../../hooks/useBeginnerMode";
 
 interface EtfListViewProps {
@@ -26,11 +27,18 @@ type ViewMode = "beginner" | "detail";
  * - 카드 형식(간편) 및 테이블 형식(상세) 표시
  * 
  * ✅ 버그 수정: 필터 해제 시 즉시 반영
+ * 📊 섹터 성과 차트 통합
  */
 const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   const [etfs, setEtfs] = useState<EtfInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 섹터 성과 데이터
+  const [sectorPerformances, setSectorPerformances] = useState<SectorPerformance[]>([]);
+  const [isLoadingSectorPerformances, setIsLoadingSectorPerformances] = useState(false);
+  const [sectorTodayDate, setSectorTodayDate] = useState<string>("");
+  const [sectorYesterdayDate, setSectorYesterdayDate] = useState<string>("");
 
   // 반응형 모드: 모바일=간편모드, 웹=상세모드
   const { isBeginnerMode } = useBeginnerMode();
@@ -81,6 +89,44 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
 
     fetchEtfs();
   }, []);
+
+  // 섹터 성과 데이터 로드
+  React.useEffect(() => {
+    const fetchSectorPerformances = async () => {
+      setIsLoadingSectorPerformances(true);
+      try {
+        const result = await loadSectorPerformances('1day');
+        setSectorPerformances(result.performances);
+        setSectorTodayDate(result.todayDate);
+        setSectorYesterdayDate(result.yesterdayDate);
+      } catch (err) {
+        console.error('Failed to load sector performances:', err);
+      } finally {
+        setIsLoadingSectorPerformances(false);
+      }
+    };
+
+    fetchSectorPerformances();
+  }, []);
+
+  // 섹터 성과 기간 변경 핸들러
+  const handleSectorPerformanceRangeChange = async (
+    rangeType: DateRangeType,
+    startDate?: string,
+    endDate?: string
+  ) => {
+    setIsLoadingSectorPerformances(true);
+    try {
+      const result = await loadSectorPerformances(rangeType, startDate, endDate);
+      setSectorPerformances(result.performances);
+      setSectorTodayDate(result.todayDate);
+      setSectorYesterdayDate(result.yesterdayDate);
+    } catch (err) {
+      console.error('Failed to load sector performances:', err);
+    } finally {
+      setIsLoadingSectorPerformances(false);
+    }
+  };
 
   // ✅ 필터 변경 감지 - 필터가 변경될 때마다 버전 증가
   useEffect(() => {
@@ -329,6 +375,20 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     setSearchQuery(query);
   };
 
+  // 섹터 클릭 핸들러 - 섹터 성과 카드에서 클릭 시 해당 섹터 ETF로 필터링
+  const handleSectorClickFromChart = (sectorKr: string) => {
+    // 한국어 섹터명을 GICS 섹터명으로 변환
+    const gicsSector = GICS_SECTORS.find(s => toKoreanSector(s) === sectorKr);
+    if (gicsSector) {
+      handleSectorChange(gicsSector);
+      // 섹터 필터 섹션으로 스크롤
+      const filterSection = document.getElementById('etf-filter-section');
+      if (filterSection) {
+        filterSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
+
   // 로딩 상태
   if (isLoading) {
     return (
@@ -351,11 +411,21 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
 
   return (
     <div className="space-y-6">
+      {/* 섹터 성과 차트 */}
+      <SectorPerformanceCard
+        performances={sectorPerformances}
+        onSectorClick={handleSectorClickFromChart}
+        loading={isLoadingSectorPerformances}
+        todayDate={sectorTodayDate}
+        yesterdayDate={sectorYesterdayDate}
+        onRangeChange={handleSectorPerformanceRangeChange}
+      />
+
       {/* 헤더: ETF 목록 */}
       <h2 className="text-lg font-bold text-gray-900">ETF 목록</h2>
 
       {/* 검색 & 필터 */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+      <div id="etf-filter-section" className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
         {/* 검색 */}
         <div>
           <label className="text-xs sm:text-sm text-gray-600 mb-2 font-semibold block">
