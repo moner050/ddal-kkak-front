@@ -701,4 +701,3 @@ export default function DemoHome() {
             activeTab === "undervalued" ? "block" : "hidden"
           )}
         >
-{/* 나머지 코드는 변경 사항 없음 - 기존 코드 유지 */}
