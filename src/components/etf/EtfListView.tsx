@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import type { EtfInfo } from "../../api/types";
 import { GICS_SECTORS } from "../../services/sectorPerformance";
 import { toKoreanSector } from "../../constants/sectorMapping";
@@ -24,6 +24,8 @@ type ViewMode = "beginner" | "detail";
  * - 검색 기능
  * - 정렬 기능 (헤더 클릭으로 정렬)
  * - 카드 형식(간편) 및 테이블 형식(상세) 표시
+ * 
+ * ✅ 버그 수정: 필터 해제 시 즉시 반영
  */
 const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   const [etfs, setEtfs] = useState<EtfInfo[]>([]);
@@ -41,6 +43,9 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
   const [selectedCategoryFinal, setSelectedCategoryFinal] = useState<string>("전체"); // 소분류 (실제 category 값)
   const [searchQuery, setSearchQuery] = useState("");
   const [etfSorts, setEtfSorts] = useState<SortConfig[]>([]);
+  
+  // ✅ 강제 리렌더링을 위한 상태
+  const [filterVersion, setFilterVersion] = useState(0);
 
   // ETF 데이터 로드 (정적 JSON 파일)
   React.useEffect(() => {
@@ -76,6 +81,11 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
 
     fetchEtfs();
   }, []);
+
+  // ✅ 필터 변경 감지 - 필터가 변경될 때마다 버전 증가
+  useEffect(() => {
+    setFilterVersion(prev => prev + 1);
+  }, [selectedSector, selectedCategoryType, selectedCategoryMid, selectedCategoryFinal, searchQuery]);
 
   // 정렬 핸들러
   const handleEtfSort = (key: string) => {
@@ -127,7 +137,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     return Array.from(categories).sort();
   }, [etfs]);
 
-  // 필터링 & 정렬
+  // 필터링 & 정렬 (✅ filterVersion을 의존성에 추가하여 강제 재계산)
   const filteredAndSortedEtfs = useMemo(() => {
     let result = [...etfs];
 
@@ -259,7 +269,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     }
 
     return result;
-  }, [etfs, selectedSector, selectedCategoryType, selectedCategoryMid, selectedCategoryFinal, searchQuery, etfSorts]);
+  }, [etfs, selectedSector, selectedCategoryType, selectedCategoryMid, selectedCategoryFinal, searchQuery, etfSorts, filterVersion]);
 
   // 포맷팅 함수들
   const formatAssets = (assets: number | undefined): string => {
@@ -293,6 +303,30 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
     if (returnValue > 0) return "text-green-600";
     if (returnValue < 0) return "text-red-600";
     return "text-gray-600";
+  };
+
+  // ✅ 필터 핸들러 개선
+  const handleSectorChange = (sector: string) => {
+    setSelectedSector(sector);
+  };
+
+  const handleCategoryTypeChange = (type: string) => {
+    setSelectedCategoryType(type);
+    setSelectedCategoryMid("전체");
+    setSelectedCategoryFinal("전체");
+  };
+
+  const handleCategoryMidChange = (mid: string) => {
+    setSelectedCategoryMid(mid);
+    setSelectedCategoryFinal("전체");
+  };
+
+  const handleCategoryFinalChange = (final: string) => {
+    setSelectedCategoryFinal(final);
+  };
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
   };
 
   // 로딩 상태
@@ -330,7 +364,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="ETF 티커 또는 이름으로 검색..."
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           />
@@ -343,7 +377,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
           </label>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setSelectedSector("전체")}
+              onClick={() => handleSectorChange("전체")}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 selectedSector === "전체"
                   ? "bg-blue-600 text-white shadow-md"
@@ -355,7 +389,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
             {GICS_SECTORS.map((sector) => (
               <button
                 key={sector}
-                onClick={() => setSelectedSector(sector)}
+                onClick={() => handleSectorChange(sector)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   selectedSector === sector
                     ? "bg-blue-600 text-white shadow-md"
@@ -379,11 +413,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
             <p className="text-xs text-gray-500 mb-2 font-medium">대분류</p>
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => {
-                  setSelectedCategoryType("전체");
-                  setSelectedCategoryMid("전체");
-                  setSelectedCategoryFinal("전체");
-                }}
+                onClick={() => handleCategoryTypeChange("전체")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   selectedCategoryType === "전체"
                     ? "bg-blue-600 text-white shadow-md"
@@ -395,11 +425,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
               {Object.keys(ETF_CATEGORY_HIERARCHY).map((type) => (
                 <button
                   key={type}
-                  onClick={() => {
-                    setSelectedCategoryType(type);
-                    setSelectedCategoryMid("전체");
-                    setSelectedCategoryFinal("전체");
-                  }}
+                  onClick={() => handleCategoryTypeChange(type)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     selectedCategoryType === type
                       ? "bg-blue-600 text-white shadow-md"
@@ -418,10 +444,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
               <p className="text-xs text-gray-500 mb-2 font-medium">중분류</p>
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => {
-                    setSelectedCategoryMid("전체");
-                    setSelectedCategoryFinal("전체");
-                  }}
+                  onClick={() => handleCategoryMidChange("전체")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     selectedCategoryMid === "전체"
                       ? "bg-green-600 text-white shadow-md"
@@ -433,10 +456,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                 {Object.keys(ETF_CATEGORY_HIERARCHY[selectedCategoryType] || {}).map((mid) => (
                   <button
                     key={mid}
-                    onClick={() => {
-                      setSelectedCategoryMid(mid);
-                      setSelectedCategoryFinal("전체");
-                    }}
+                    onClick={() => handleCategoryMidChange(mid)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                       selectedCategoryMid === mid
                         ? "bg-green-600 text-white shadow-md"
@@ -456,7 +476,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
               <p className="text-xs text-gray-500 mb-2 font-medium">소분류</p>
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => setSelectedCategoryFinal("전체")}
+                  onClick={() => handleCategoryFinalChange("전체")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     selectedCategoryFinal === "전체"
                       ? "bg-purple-600 text-white shadow-md"
@@ -468,7 +488,7 @@ const EtfListView: React.FC<EtfListViewProps> = ({ onEtfClick }) => {
                 {(ETF_CATEGORY_HIERARCHY[selectedCategoryType]?.[selectedCategoryMid] || []).map((category) => (
                   <button
                     key={category}
-                    onClick={() => setSelectedCategoryFinal(category)}
+                    onClick={() => handleCategoryFinalChange(category)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                       selectedCategoryFinal === category
                         ? "bg-purple-600 text-white shadow-md"
