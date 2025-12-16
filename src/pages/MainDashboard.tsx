@@ -69,7 +69,6 @@ import BuffettCard from "../components/charts/BuffettCard";
 import CategoryHeatmapCard from "../components/charts/CategoryHeatmapCard";
 import DashboardSummaryCard from "../components/charts/DashboardSummaryCard";
 import UnifiedSectorPerformanceCard from "../components/charts/UnifiedSectorPerformanceCard";
-import SectorYearlyPerformanceCard from "../components/charts/SectorYearlyPerformanceCard";
 
 // Import stock components
 import AIScoreGauge from "../components/stock/AIScoreGauge";
@@ -613,15 +612,6 @@ export default function DemoHome() {
                 yearlyData={yearlySectorPerformances}
                 onYearlyRangeChange={handleYearlySectorPerformanceRangeChange}
                 loadingYearly={isLoadingYearlySectorPerformances}
-              />
-            </section>
-
-            {/* GICS 섹터별 연간 성과 (2025년) */}
-            <section>
-              <SectorYearlyPerformanceCard
-                data={yearlySectorPerformances}
-                loading={isLoadingYearlySectorPerformances}
-                onRangeChange={handleYearlySectorPerformanceRangeChange}
               />
             </section>
 

@@ -13,6 +13,7 @@ import type {
   SectorPerformance,
   YearlySectorPerformanceResult,
   SectorYearlySummary,
+  MonthlySectorData,
   DateRangeType
 } from '../../services/sectorPerformance';
 import { classNames } from '../../utils/format';
@@ -108,6 +109,327 @@ function SimpleSectorBarChart({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * 라인 차트 컴포넌트 - 섹터별 월별 누적 수익률 추이
+ */
+function SectorLineChart({
+  monthlyData,
+  summaries
+}: {
+  monthlyData: MonthlySectorData[];
+  summaries: SectorYearlySummary[];
+}) {
+  const [hoveredMonth, setHoveredMonth] = useState<number | null>(null);
+  // 기본적으로 상위 5개 섹터만 선택되도록 변경
+  const [selectedSectors, setSelectedSectors] = useState<Set<string>>(
+    new Set(summaries.slice(0, 5).map(s => s.sectorKr))
+  );
+
+  if (monthlyData.length === 0 || summaries.length === 0) {
+    return <div className="text-center text-gray-500 py-8">데이터가 없습니다</div>;
+  }
+
+  const width = 1000;
+  const height = 400;
+  const padding = { top: 30, right: 30, bottom: 50, left: 60 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+
+  // Y축 범위 계산
+  const allReturns = monthlyData.flatMap(d =>
+    summaries
+      .filter(s => selectedSectors.has(s.sectorKr))
+      .map(s => d[s.sectorKr] as number)
+      .filter(v => typeof v === 'number' && !isNaN(v))
+  );
+
+  // allReturns가 비어있거나 유효한 데이터가 없는 경우
+  if (allReturns.length === 0) {
+    return <div className="text-center text-gray-500 py-8">유효한 데이터가 없습니다</div>;
+  }
+
+  const minReturn = Math.min(0, ...allReturns);
+  const maxReturn = Math.max(0, ...allReturns);
+  const yRange = Math.max(Math.abs(minReturn), Math.abs(maxReturn)) * 1.1 || 1; // 0으로 나누기 방지
+
+  // 좌표 변환 함수
+  const xScale = (index: number) => {
+    // monthlyData가 1개만 있는 경우 중앙에 표시
+    if (monthlyData.length === 1) {
+      return padding.left + chartWidth / 2;
+    }
+    return padding.left + (index / (monthlyData.length - 1)) * chartWidth;
+  };
+  const yScale = (value: number) => padding.top + chartHeight / 2 - (value / yRange) * (chartHeight / 2);
+
+  // 섹터 선택/해제
+  const toggleSector = (sectorKr: string) => {
+    setSelectedSectors(prev => {
+      const next = new Set(prev);
+      if (next.has(sectorKr)) {
+        next.delete(sectorKr);
+      } else {
+        next.add(sectorKr);
+      }
+      return next;
+    });
+  };
+
+  // 라인 경로 생성 (부드러운 곡선)
+  const createLinePath = (sectorKr: string) => {
+    const points = monthlyData
+      .map((d, i) => {
+        const value = d[sectorKr] as number;
+        // NaN이나 유효하지 않은 값 체크
+        if (typeof value !== 'number' || isNaN(value)) return null;
+        const x = xScale(i);
+        const y = yScale(value);
+        // x, y가 유효한 숫자인지 체크
+        if (isNaN(x) || isNaN(y)) return null;
+        return { x, y, i };
+      })
+      .filter(p => p !== null) as { x: number; y: number; i: number }[];
+
+    if (points.length === 0) return '';
+
+    let path = `M ${points[0].x} ${points[0].y}`;
+
+    // Catmull-Rom 스플라인을 사용한 부드러운 곡선
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[Math.max(0, i - 1)];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[Math.min(points.length - 1, i + 2)];
+
+      // 제어점 계산
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+      path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+    }
+
+    return path;
+  };
+
+  const toggleAllSectors = () => {
+    if (selectedSectors.size === summaries.length) {
+      // 전체 선택 해제 -> 상위 5개만 선택
+      setSelectedSectors(new Set(summaries.slice(0, 5).map(s => s.sectorKr)));
+    } else {
+      // 전체 선택
+      setSelectedSectors(new Set(summaries.map(s => s.sectorKr)));
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* 범례 */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-gray-700">
+            섹터 선택 ({selectedSectors.size}/{summaries.length})
+          </p>
+          <button
+            onClick={toggleAllSectors}
+            className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+          >
+            {selectedSectors.size === summaries.length ? '기본 선택' : '전체 선택'}
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {summaries.map(s => {
+            const isSelected = selectedSectors.has(s.sectorKr);
+            return (
+              <button
+                key={s.sector}
+                onClick={() => toggleSector(s.sectorKr)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all border-2 ${
+                  isSelected
+                    ? 'opacity-100 shadow-sm'
+                    : 'opacity-40 hover:opacity-70'
+                }`}
+                style={{
+                  backgroundColor: isSelected ? `${s.color}15` : 'transparent',
+                  borderColor: isSelected ? s.color : '#e5e7eb',
+                  color: isSelected ? s.color : '#6b7280',
+                }}
+              >
+                <span
+                  className="inline-block w-3 h-3 rounded-full mr-1.5"
+                  style={{ backgroundColor: s.color }}
+                />
+                {s.sectorKr}
+                {isSelected && (
+                  <span className="ml-1.5 text-[10px]">
+                    {s.ytdReturn >= 0 ? '+' : ''}{s.ytdReturn.toFixed(1)}%
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 차트 */}
+      <div className="relative">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="w-full"
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const relX = e.clientX - rect.left;
+            const chartRelX = (relX / rect.width) * width - padding.left;
+            const index = Math.round((chartRelX / chartWidth) * (monthlyData.length - 1));
+            const clampedIndex = Math.max(0, Math.min(monthlyData.length - 1, index));
+            setHoveredMonth(clampedIndex);
+          }}
+          onMouseLeave={() => setHoveredMonth(null)}
+        >
+          {/* 격자선 */}
+          <g className="grid-lines">
+            {/* Y축 격자선 */}
+            {[-yRange, -yRange / 2, 0, yRange / 2, yRange].map((value, i) => (
+              <g key={i}>
+                <line
+                  x1={padding.left}
+                  y1={yScale(value)}
+                  x2={width - padding.right}
+                  y2={yScale(value)}
+                  stroke="#e5e7eb"
+                  strokeWidth={value === 0 ? 2 : 1}
+                  strokeDasharray={value === 0 ? '0' : '4 2'}
+                />
+                <text
+                  x={padding.left - 10}
+                  y={yScale(value) + 4}
+                  textAnchor="end"
+                  className="text-xs fill-gray-500"
+                >
+                  {value.toFixed(0)}%
+                </text>
+              </g>
+            ))}
+          </g>
+
+          {/* X축 레이블 */}
+          <g className="x-labels">
+            {monthlyData.map((d, i) => {
+              // 짝수 인덱스만 표시 (너무 많으면 겹침)
+              if (i % 2 !== 0 && i !== monthlyData.length - 1) return null;
+              return (
+                <text
+                  key={i}
+                  x={xScale(i)}
+                  y={height - padding.bottom + 20}
+                  textAnchor="middle"
+                  className="text-xs fill-gray-500"
+                >
+                  {d.month}
+                </text>
+              );
+            })}
+          </g>
+
+          {/* 라인들 */}
+          {summaries
+            .filter(s => selectedSectors.has(s.sectorKr))
+            .map(s => (
+              <path
+                key={s.sector}
+                d={createLinePath(s.sectorKr)}
+                fill="none"
+                stroke={s.color}
+                strokeWidth={3}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                className="transition-all hover:stroke-[4]"
+                style={{ opacity: 0.9 }}
+              />
+            ))}
+
+          {/* 호버 라인 */}
+          {hoveredMonth !== null && (
+            <>
+              <line
+                x1={xScale(hoveredMonth)}
+                y1={padding.top}
+                x2={xScale(hoveredMonth)}
+                y2={height - padding.bottom}
+                stroke="#6b7280"
+                strokeWidth={1}
+                strokeDasharray="4 2"
+              />
+              {summaries
+                .filter(s => selectedSectors.has(s.sectorKr))
+                .map(s => {
+                  const value = monthlyData[hoveredMonth][s.sectorKr] as number;
+                  if (typeof value !== 'number') return null;
+                  return (
+                    <circle
+                      key={s.sector}
+                      cx={xScale(hoveredMonth)}
+                      cy={yScale(value)}
+                      r={4}
+                      fill={s.color}
+                      stroke="white"
+                      strokeWidth={2}
+                    />
+                  );
+                })}
+            </>
+          )}
+        </svg>
+
+        {/* 툴팁 */}
+        {hoveredMonth !== null && (
+          <div
+            className="absolute bg-gray-900 text-white text-xs rounded-lg px-4 py-3 shadow-xl pointer-events-none z-10 max-w-xs"
+            style={{
+              left: `${((hoveredMonth / (monthlyData.length - 1)) * 100)}%`,
+              top: hoveredMonth < monthlyData.length / 2 ? '10px' : 'auto',
+              bottom: hoveredMonth >= monthlyData.length / 2 ? '60px' : 'auto',
+              transform: 'translateX(-50%)',
+            }}
+          >
+            <div className="font-bold mb-2 text-sm border-b border-gray-700 pb-1">
+              {monthlyData[hoveredMonth].month}
+            </div>
+            <div className="space-y-1.5">
+              {summaries
+                .filter(s => selectedSectors.has(s.sectorKr))
+                .sort((a, b) => {
+                  const aVal = monthlyData[hoveredMonth][a.sectorKr] as number;
+                  const bVal = monthlyData[hoveredMonth][b.sectorKr] as number;
+                  return (bVal || 0) - (aVal || 0);
+                })
+                .map(s => {
+                  const value = monthlyData[hoveredMonth][s.sectorKr] as number;
+                  if (typeof value !== 'number') return null;
+                  return (
+                    <div key={s.sector} className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="inline-block w-3 h-3 rounded-full"
+                          style={{ backgroundColor: s.color }}
+                        />
+                        <span className="text-gray-300 text-xs">{s.sectorKr}</span>
+                      </div>
+                      <span className={`font-bold ${value >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {value >= 0 ? '+' : ''}{value.toFixed(2)}%
+                      </span>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -373,14 +695,31 @@ export default function UnifiedSectorPerformanceCard({
             {activeTab === 'short' ? '섹터별 단기 성과' : '섹터별 연간 성과'}
           </h4>
           <p className="text-xs text-gray-500">
-            💡 섹터를 클릭하면 해당 섹터의 종목 목록을 볼 수 있습니다
+            {activeTab === 'short'
+              ? '💡 섹터를 클릭하면 해당 섹터의 종목 목록을 볼 수 있습니다'
+              : '💡 바 차트에서 섹터별 연초 대비 수익률을 볼 수 있습니다'
+            }
           </p>
         </div>
         <SimpleSectorBarChart
           data={currentData}
-          onSectorClick={onSectorClick}
+          onSectorClick={activeTab === 'short' ? onSectorClick : undefined}
         />
       </div>
+
+      {/* 연간 탭에서만 라인 차트 표시 */}
+      {activeTab === 'yearly' && (
+        <div>
+          <h4 className="text-md font-bold text-gray-800 mb-3">섹터별 월별 누적 수익률 추이</h4>
+          <p className="text-xs text-gray-500 mb-3">
+            💡 섹터를 클릭하여 차트에 표시할 항목을 선택하세요. 기본적으로 상위 5개 섹터가 선택되어 있습니다.
+          </p>
+          <SectorLineChart
+            monthlyData={yearlyData.monthlyData}
+            summaries={yearlyData.summaries}
+          />
+        </div>
+      )}
 
       {/* 설명 */}
       <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3 border border-gray-200">
