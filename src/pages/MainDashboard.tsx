@@ -68,6 +68,8 @@ import LineChartCard from "../components/charts/LineChartCard";
 import BuffettCard from "../components/charts/BuffettCard";
 import CategoryHeatmapCard from "../components/charts/CategoryHeatmapCard";
 import DashboardSummaryCard from "../components/charts/DashboardSummaryCard";
+import UnifiedSectorPerformanceCard from "../components/charts/UnifiedSectorPerformanceCard";
+import SectorYearlyPerformanceCard from "../components/charts/SectorYearlyPerformanceCard";
 
 // Import stock components
 import AIScoreGauge from "../components/stock/AIScoreGauge";
