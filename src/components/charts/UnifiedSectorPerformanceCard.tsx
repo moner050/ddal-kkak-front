@@ -1,11 +1,12 @@
 /**
  * 통합 GICS 섹터 성과 카드 컴포넌트
- * 
+ *
  * 기능:
- * - 단기 성과 (1일, 1주일, 1개월 전 대비)
- * - 연간 성과 (연초 대비 수익률)
+ * - 단기 성과 (1일, 1주일, 1개월 전 대비) - 바 차트
+ * - 연간 성과 (연초 대비 수익률) - 카드 그리드
  * - 색상: 초록(상승), 빨강(하락)으로 단순화
  * - 탭 방식으로 단기/연간 뷰 전환
+ * - 섹터 클릭 시 해당 섹터의 종목 추천으로 이동
  */
 
 import React, { useState } from 'react';
@@ -105,6 +106,57 @@ function SimpleSectorBarChart({
                 </div>
               </div>
             )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * 카드 형식의 섹터별 연간 성과 컴포넌트
+ */
+function SectorCardGrid({
+  summaries,
+  onSectorClick
+}: {
+  summaries: SectorYearlySummary[];
+  onSectorClick?: (sector: string) => void;
+}) {
+  if (summaries.length === 0) {
+    return <div className="text-center text-gray-500 py-8">데이터가 없습니다</div>;
+  }
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      {summaries.map((summary) => {
+        const isPositive = summary.ytdReturn >= 0;
+        return (
+          <div
+            key={summary.sector}
+            onClick={() => onSectorClick?.(summary.sectorKr)}
+            className="cursor-pointer group"
+          >
+            <div
+              className="rounded-lg p-4 transition-all hover:shadow-lg hover:scale-105"
+              style={{
+                backgroundColor: `${summary.color}15`,
+                borderLeft: `4px solid ${summary.color}`,
+              }}
+            >
+              <div className="text-sm font-semibold text-gray-800 mb-2 group-hover:text-gray-900">
+                {summary.sectorKr}
+              </div>
+              <div
+                className={`text-2xl font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}
+              >
+                {isPositive ? '+' : ''}{summary.ytdReturn.toFixed(2)}%
+              </div>
+              <div className="text-xs text-gray-600 mt-2 space-y-1">
+                <div>최고: +{summary.highestReturn.toFixed(2)}%</div>
+                <div>최저: {summary.lowestReturn.toFixed(2)}%</div>
+              </div>
+            </div>
           </div>
         );
       })}
@@ -366,20 +418,27 @@ export default function UnifiedSectorPerformanceCard({
         </div>
       </div>
 
-      {/* 바 차트 */}
+      {/* 차트 */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-md font-bold text-gray-800">
             {activeTab === 'short' ? '섹터별 단기 성과' : '섹터별 연간 성과'}
           </h4>
           <p className="text-xs text-gray-500">
-            💡 섹터를 클릭하면 해당 섹터의 종목 목록을 볼 수 있습니다
+            💡 섹터 카드를 클릭하면 해당 섹터의 종목 목록을 볼 수 있습니다
           </p>
         </div>
-        <SimpleSectorBarChart
-          data={currentData}
-          onSectorClick={onSectorClick}
-        />
+        {activeTab === 'short' ? (
+          <SimpleSectorBarChart
+            data={currentData}
+            onSectorClick={onSectorClick}
+          />
+        ) : (
+          <SectorCardGrid
+            summaries={yearlyData.summaries}
+            onSectorClick={onSectorClick}
+          />
+        )}
       </div>
 
       {/* 설명 */}
