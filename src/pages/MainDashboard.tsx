@@ -609,9 +609,6 @@ export default function DemoHome() {
                 todayDate={sectorTodayDate}
                 yesterdayDate={sectorYesterdayDate}
                 onShortTermRangeChange={handleSectorPerformanceRangeChange}
-                yearlyData={yearlySectorPerformances}
-                onYearlyRangeChange={handleYearlySectorPerformanceRangeChange}
-                loadingYearly={isLoadingYearlySectorPerformances}
               />
             </section>
 
