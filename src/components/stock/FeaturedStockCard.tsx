@@ -49,11 +49,9 @@ export default function FeaturedStockCard({ stock, onClick, isFavorite, onToggle
 
             {/* 티커 + 종목명 */}
             <div className="min-w-0 flex-1">
-              {/* 티커 배지 + 국가 플래그 */}
+              {/* 티커 + 국가 플래그 */}
               <div className="flex items-center gap-1.5 mb-1">
-                <div className="inline-flex items-center px-2.5 py-1 bg-blue-600 text-white rounded-md">
-                  <span className="text-sm sm:text-base font-bold tracking-wide">{stock.symbol}</span>
-                </div>
+                <span className="text-sm sm:text-base font-bold text-gray-900">{stock.symbol}</span>
                 <span className="text-base sm:text-lg">{countryFlag}</span>
               </div>
 
