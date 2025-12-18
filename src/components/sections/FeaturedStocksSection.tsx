@@ -61,14 +61,13 @@ export default function FeaturedStocksSection({
             >
               🇺🇸 미국
             </button>
-            {/* KR 종목 지원 예정 - 현재 숨김 처리
+            {/* ✨ KR 종목 지원 활성화 */}
             <button
               onClick={() => setFeaturedMarket("KR")}
               className={classNames("rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap", featuredMarket === "KR" ? "bg-indigo-600 text-white shadow" : "text-gray-700 hover:bg-gray-100")}
             >
               🇰🇷 한국
             </button>
-            */}
           </div>
         </div>
       </div>
