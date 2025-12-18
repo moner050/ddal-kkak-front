@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { stockService, featuredService, filingService } from '../api/services';
+import { stockService } from '../api/services';
 import {
   loadSectorPerformances,
   loadYearlySectorPerformances,
@@ -18,10 +18,17 @@ import {
   type YearlySectorPerformanceResult,
   type DateRangeType
 } from '../services/sectorPerformance';
-import type {
-  FrontendUndervaluedStock,
-  FrontendFeaturedStock,
-  FrontendFiling
+import {
+  loadFeaturedStocks,
+  loadFilings,
+  type Market
+} from '../services/jsonDataLoader';
+import {
+  toFrontendFeaturedStock,
+  toFrontendFiling,
+  type FrontendUndervaluedStock,
+  type FrontendFeaturedStock,
+  type FrontendFiling
 } from '../utils/apiMappers';
 
 export interface UseDemoHomeDataReturn {
@@ -54,8 +61,13 @@ export interface UseDemoHomeDataReturn {
 
 /**
  * DemoHome 데이터 로딩 hook
+ * @param featuredMarket 주목 종목 마켓 ('US' | 'KR')
+ * @param filingsMarket 공시 마켓 ('US' | 'KR')
  */
-export function useDemoHomeData(): UseDemoHomeDataReturn {
+export function useDemoHomeData(
+  featuredMarket: Market = 'US',
+  filingsMarket: Market = 'US'
+): UseDemoHomeDataReturn {
   // Featured Stocks
   const [featuredStocks, setFeaturedStocks] = useState<FrontendFeaturedStock[]>([]);
   const [isLoadingFeatured, setIsLoadingFeatured] = useState(false);
@@ -151,20 +163,22 @@ export function useDemoHomeData(): UseDemoHomeDataReturn {
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log('🔄 Loading API data...');
+        console.log(`🔄 Loading JSON data... (Featured Market: ${featuredMarket}, Filings Market: ${filingsMarket})`);
 
-        // Featured Stocks 로드 (5개만 표시)
+        // Featured Stocks 로드 (JSON 파일에서)
         setIsLoadingFeatured(true);
-        const featured = await featuredService.getFeatured(5);
-        setFeaturedStocks(featured);
-        console.log('✅ Featured stocks loaded:', featured.length);
+        const featuredData = await loadFeaturedStocks(featuredMarket);
+        const mappedFeaturedStocks = featuredData.map(stock => toFrontendFeaturedStock(stock));
+        setFeaturedStocks(mappedFeaturedStocks);
+        console.log(`✅ Featured stocks loaded (${featuredMarket}):`, mappedFeaturedStocks.length);
         setIsLoadingFeatured(false);
 
-        // Filings 로드
+        // Filings 로드 (JSON 파일에서)
         setIsLoadingFilings(true);
-        const filingsData = await filingService.getLatest(20);
-        setFilings(filingsData);
-        console.log('✅ Filings loaded:', filingsData.length);
+        const filingsData = await loadFilings(filingsMarket);
+        const mappedFilings = filingsData.map(filing => toFrontendFiling(filing));
+        setFilings(mappedFilings);
+        console.log(`✅ Filings loaded (${filingsMarket}):`, mappedFilings.length);
         setIsLoadingFilings(false);
 
         // Undervalued Stocks 로드 (정적 데이터 Export)
@@ -183,7 +197,7 @@ export function useDemoHomeData(): UseDemoHomeDataReturn {
         // Yearly Sector Performances 로드 (기본값: 한달 전)
         await handleYearlySectorPerformanceRangeChange('1month');
       } catch (error) {
-        console.error('❌ Failed to load API data:', error);
+        console.error('❌ Failed to load JSON data:', error);
         setIsLoadingFeatured(false);
         setIsLoadingFilings(false);
         setIsLoadingUndervalued(false);
@@ -193,7 +207,7 @@ export function useDemoHomeData(): UseDemoHomeDataReturn {
     };
 
     loadData();
-  }, [handleSectorPerformanceRangeChange, handleYearlySectorPerformanceRangeChange]);
+  }, [featuredMarket, filingsMarket, handleSectorPerformanceRangeChange, handleYearlySectorPerformanceRangeChange]);
 
   return {
     featuredStocks,

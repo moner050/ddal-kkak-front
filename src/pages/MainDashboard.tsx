@@ -168,6 +168,10 @@ export default function DemoHome() {
   // Navigation Context (ETF에서 종목으로 이동할 때 사용)
   const { targetStockSymbol, setTargetStockSymbol, fromEtfTicker } = useNavigation();
 
+  // 홈 화면 필터 (hooks에 포함되지 않은 홈 화면 전용 상태)
+  const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
+  const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
+
   // 데이터 로딩
   const {
     featuredStocks,
@@ -186,7 +190,7 @@ export default function DemoHome() {
     yearlySectorPerformances,
     isLoadingYearlySectorPerformances,
     handleYearlySectorPerformanceRangeChange,
-  } = useDemoHomeData();
+  } = useDemoHomeData(featuredMarket, filingsMarket);
 
   // 탭 관리
   const {
@@ -306,10 +310,6 @@ export default function DemoHome() {
   // 백테스팅 데이터 (투자 전략별 성과)
   const [backtestPerformances, setBacktestPerformances] = useState<Record<string, ProfilePerformance>>({});
   const [backtestLoading, setBacktestLoading] = useState<Record<string, boolean>>({});
-
-  // 홈 화면 필터 (hooks에 포함되지 않은 홈 화면 전용 상태)
-  const [featuredMarket, setFeaturedMarket] = useState<"US" | "KR">("US");
-  const [filingsMarket, setFilingsMarket] = useState<"US" | "KR">("US");
 
   // 로고 에러 초기화 (detailSymbol 변경 시)
   useEffect(() => {

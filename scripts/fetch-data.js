@@ -61,115 +61,153 @@ async function fetchAllData() {
   };
 
   try {
-    // 1. 저평가 우량주 데이터 (10000개)
-    console.log('\n📊 Fetching undervalued stocks...');
-
+    // ✨ 마켓별 데이터 다운로드 (US, KR)
+    const markets = ['US', 'KR'];
     let latestDataDate = null;
 
-    try {
-      const undervaluedResponse = await apiClient.get('/api/undervalued-stocks/export', {
-        params: { limit: 10000 },
-      });
+    // 1. 저평가 우량주 데이터 (마켓별, 10000개)
+    console.log('\n📊 Fetching undervalued stocks by market...');
 
-      const stocksData = {
-        lastUpdated: undervaluedResponse.data.lastUpdated,
-        dataDate: undervaluedResponse.data.dataDate,
-        totalCount: undervaluedResponse.data.totalCount,
-        stocks: undervaluedResponse.data.stocks,
-      };
+    const undervaluedStocksByMarket = {};
 
-      saveJSON('undervalued-stocks.json', stocksData);
+    for (const market of markets) {
+      try {
+        console.log(`\n   🌍 Market: ${market}`);
+        const undervaluedResponse = await apiClient.get(
+          `/api/undervalued-stocks/market/${market}/export`,
+          { params: { limit: 10000 } }
+        );
 
-      // historical data 디렉토리에도 오늘 날짜로 저장하여 중복 방지
-      const historicalDir = path.join(DATA_DIR, 'undervalued-stocks');
-      if (!fs.existsSync(historicalDir)) {
-        fs.mkdirSync(historicalDir, { recursive: true });
+        const stocksData = {
+          market,
+          lastUpdated: undervaluedResponse.data.lastUpdated,
+          dataDate: undervaluedResponse.data.dataDate,
+          totalCount: undervaluedResponse.data.totalCount,
+          stocks: undervaluedResponse.data.stocks,
+        };
+
+        // ✨ 마켓별 파일로 저장 (undervalued-stocks-us.json, undervalued-stocks-kr.json)
+        saveJSON(`undervalued-stocks-${market.toLowerCase()}.json`, stocksData);
+        undervaluedStocksByMarket[market] = stocksData;
+
+        // historical data 디렉토리에도 저장
+        const historicalDir = path.join(DATA_DIR, 'undervalued-stocks');
+        if (!fs.existsSync(historicalDir)) {
+          fs.mkdirSync(historicalDir, { recursive: true });
+        }
+
+        const todayFile = `${undervaluedResponse.data.dataDate}-${market.toLowerCase()}.json`;
+        const todayFilePath = path.join(historicalDir, todayFile);
+        fs.writeFileSync(todayFilePath, JSON.stringify({
+          market,
+          date: undervaluedResponse.data.dataDate,
+          lastUpdated: new Date().toISOString(),
+          totalCount: undervaluedResponse.data.totalCount,
+          stocks: undervaluedResponse.data.stocks,
+        }, null, 2), 'utf-8');
+
+        if (!latestDataDate) {
+          metadata.dataDate = undervaluedResponse.data.dataDate;
+          latestDataDate = undervaluedResponse.data.dataDate;
+        }
+
+        console.log(`     ✓ ${undervaluedResponse.data.totalCount} stocks fetched for ${market}`);
+      } catch (error) {
+        console.error(`     ✗ Failed to fetch undervalued stocks for ${market}:`, error.message);
+        // 실패 시 빈 데이터 저장
+        saveJSON(`undervalued-stocks-${market.toLowerCase()}.json`, {
+          market,
+          lastUpdated: new Date().toISOString(),
+          dataDate: null,
+          totalCount: 0,
+          stocks: [],
+        });
       }
-
-      const todayFile = `${undervaluedResponse.data.dataDate}.json`;
-      const todayFilePath = path.join(historicalDir, todayFile);
-      fs.writeFileSync(todayFilePath, JSON.stringify({
-        date: undervaluedResponse.data.dataDate,
-        lastUpdated: new Date().toISOString(),
-        totalCount: undervaluedResponse.data.totalCount,
-        stocks: undervaluedResponse.data.stocks,
-      }, null, 2), 'utf-8');
-      console.log(`   ✓ Also saved to ${todayFile} (avoiding duplicate fetch later)`);
-
-      metadata.dataDate = undervaluedResponse.data.dataDate;
-      latestDataDate = undervaluedResponse.data.dataDate;
-      metadata.sources.undervaluedStocks = {
-        count: undervaluedResponse.data.totalCount,
-        updatedAt: undervaluedResponse.data.lastUpdated,
-      };
-
-      console.log(`   ✓ ${undervaluedResponse.data.totalCount} stocks fetched`);
-    } catch (error) {
-      console.error('   ✗ Failed to fetch undervalued stocks:', error.message);
-      // 실패 시 빈 데이터 저장
-      saveJSON('undervalued-stocks.json', {
-        lastUpdated: new Date().toISOString(),
-        dataDate: null,
-        totalCount: 0,
-        stocks: [],
-      });
     }
 
-    // 2. 오늘의 주목 종목 (Featured Stocks)
-    console.log('\n⭐ Fetching featured stocks...');
-    try {
-      const featuredResponse = await apiClient.get('/api/undervalued-stocks/featured', {
-        params: { limit: 10 },
-      });
+    // 메타데이터에 마켓별 정보 저장
+    metadata.sources.undervaluedStocks = undervaluedStocksByMarket;
+    console.log('\n   ✓ All markets completed');
 
-      saveJSON('featured-stocks.json', {
-        lastUpdated: new Date().toISOString(),
-        totalCount: featuredResponse.data.length,
-        stocks: featuredResponse.data,
-      });
+    // 2. 오늘의 주목 종목 (Featured Stocks) - 마켓별
+    console.log('\n⭐ Fetching featured stocks by market...');
 
-      metadata.sources.featuredStocks = {
-        count: featuredResponse.data.length,
-        updatedAt: new Date().toISOString(),
-      };
+    const featuredStocksByMarket = {};
 
-      console.log(`   ✓ ${featuredResponse.data.length} featured stocks fetched`);
-    } catch (error) {
-      console.error('   ✗ Failed to fetch featured stocks:', error.message);
-      saveJSON('featured-stocks.json', {
-        lastUpdated: new Date().toISOString(),
-        totalCount: 0,
-        stocks: [],
-      });
+    for (const market of markets) {
+      try {
+        console.log(`\n   🌍 Market: ${market}`);
+        const featuredResponse = await apiClient.get(
+          '/api/undervalued-stocks/featured',
+          { params: { limit: 10, market } }
+        );
+
+        const featuredData = {
+          market,
+          lastUpdated: new Date().toISOString(),
+          totalCount: featuredResponse.data.length,
+          stocks: featuredResponse.data,
+        };
+
+        // ✨ 마켓별 파일로 저장
+        saveJSON(`featured-stocks-${market.toLowerCase()}.json`, featuredData);
+        featuredStocksByMarket[market] = featuredData;
+
+        console.log(`     ✓ ${featuredResponse.data.length} featured stocks fetched for ${market}`);
+      } catch (error) {
+        console.error(`     ✗ Failed to fetch featured stocks for ${market}:`, error.message);
+        // 실패 시 빈 데이터 저장
+        saveJSON(`featured-stocks-${market.toLowerCase()}.json`, {
+          market,
+          lastUpdated: new Date().toISOString(),
+          totalCount: 0,
+          stocks: [],
+        });
+      }
     }
 
-    // 3. 공시 정보 (Filings)
-    console.log('\n📋 Fetching filings...');
-    try {
-      const filingsResponse = await apiClient.get('/api/sec-filings/latest', {
-        params: { limit: 20 },
-      });
+    metadata.sources.featuredStocks = featuredStocksByMarket;
+    console.log('\n   ✓ All markets completed');
 
-      saveJSON('filings.json', {
-        lastUpdated: new Date().toISOString(),
-        totalCount: filingsResponse.data.length,
-        filings: filingsResponse.data,
-      });
+    // 3. 공시 정보 (Filings) - 마켓별
+    console.log('\n📋 Fetching filings by market...');
 
-      metadata.sources.filings = {
-        count: filingsResponse.data.length,
-        updatedAt: new Date().toISOString(),
-      };
+    const filingsByMarket = {};
 
-      console.log(`   ✓ ${filingsResponse.data.length} filings fetched`);
-    } catch (error) {
-      console.error('   ✗ Failed to fetch filings:', error.message);
-      saveJSON('filings.json', {
-        lastUpdated: new Date().toISOString(),
-        totalCount: 0,
-        filings: [],
-      });
+    for (const market of markets) {
+      try {
+        console.log(`\n   🌍 Market: ${market}`);
+        const filingsResponse = await apiClient.get(
+          '/api/sec-filings/latest',
+          { params: { limit: 20, market } }
+        );
+
+        const filingsData = {
+          market,
+          lastUpdated: new Date().toISOString(),
+          totalCount: filingsResponse.data.length,
+          filings: filingsResponse.data,
+        };
+
+        // ✨ 마켓별 파일로 저장
+        saveJSON(`filings-${market.toLowerCase()}.json`, filingsData);
+        filingsByMarket[market] = filingsData;
+
+        console.log(`     ✓ ${filingsResponse.data.length} filings fetched for ${market}`);
+      } catch (error) {
+        console.error(`     ✗ Failed to fetch filings for ${market}:`, error.message);
+        // 실패 시 빈 데이터 저장
+        saveJSON(`filings-${market.toLowerCase()}.json`, {
+          market,
+          lastUpdated: new Date().toISOString(),
+          totalCount: 0,
+          filings: [],
+        });
+      }
     }
+
+    metadata.sources.filings = filingsByMarket;
+    console.log('\n   ✓ All markets completed');
 
     // 3-1. ⭐️ ETF 전체 목록 및 상세 정보 (신규 API - 단 1회 호출로 모든 정보 포함)
     console.log('\n📊 Fetching ETF data...');
