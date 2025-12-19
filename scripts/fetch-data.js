@@ -262,42 +262,30 @@ async function fetchAllData() {
     }
 
     // 4. 날짜별 전체 종목 히스토리 데이터 (분산 저장)
+    // 🆕 API를 이용해 실제 DB에 저장된 모든 날짜 목록 조회
     console.log('\n📈 Fetching historical stock data by date...');
     const historicalDates = [];
     try {
-      // latestDataDate가 없으면 최신 데이터 날짜 조회
-      let latestDate = latestDataDate;
-      if (!latestDate) {
-        const latestDateResponse = await apiClient.get('/api/undervalued-stocks/latest-date');
-        latestDate = latestDateResponse.data.latestDate;
+      // 🆕 먼저 사용 가능한 모든 날짜 조회
+      console.log('   📅 Fetching available dates from API...');
+      const availableDatesResponse = await apiClient.get('/api/undervalued-stocks/available-dates');
+      const availableDates = availableDatesResponse.data.dates || [];
+      const latestDate = availableDatesResponse.data.latest;
+
+      if (!availableDates || availableDates.length === 0) {
+        throw new Error('No available dates returned from API');
       }
 
-      if (!latestDate) {
-        throw new Error('Latest date not available');
-      }
+      console.log(`   ✓ Found ${availableDates.length} available dates (latest: ${latestDate})`);
+      console.log(`     Date range: ${availableDatesResponse.data.earliest} ~ ${latestDate}`);
 
-      console.log(`   Latest data date: ${latestDate}`);
+      // 🆕 1년 전 날짜부터 현재까지의 데이터만 필터링
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      const oneYearAgoDateStr = oneYearAgo.toISOString().split('T')[0];
 
-      // 날짜 범위 생성 (1개월, 일 단위)
-      const generateDateRange = (endDate, months, interval = 1) => {
-        const end = new Date(endDate);
-        const start = new Date(endDate);
-        start.setMonth(start.getMonth() - months);
-
-        const dates = [];
-        const current = new Date(start);
-
-        while (current <= end) {
-          dates.push(current.toISOString().split('T')[0]);
-          current.setDate(current.getDate() + interval);
-        }
-
-        // 오늘 날짜는 이미 위에서 저장했으므로 제외
-        return dates.filter(date => date !== endDate);
-      };
-
-      const dates = generateDateRange(latestDate, 12, 1);
-      console.log(`   Generated ${dates.length} dates to fetch (excluding today: ${latestDate})`);
+      const datesToFetch = availableDates.filter(date => date >= oneYearAgoDateStr);
+      console.log(`   📊 Filtered to ${datesToFetch.length} dates from ${oneYearAgoDateStr} to ${latestDate} (1년 범위)`);
 
       // undervalued-stocks 디렉토리 생성
       const historicalDir = path.join(DATA_DIR, 'undervalued-stocks');
@@ -306,24 +294,24 @@ async function fetchAllData() {
         console.log('   ✓ Created undervalued-stocks directory');
       }
 
-      // 각 날짜별로 전체 종목 데이터 수집
+      // 🆕 필터링된 날짜들로 각 날짜별 전체 종목 데이터 수집
       let successCount = 0;
       let skippedCount = 0;
       let emptyCount = 0;
-      for (let i = 0; i < dates.length; i++) {
-        const date = dates[i];
+      for (let i = 0; i < datesToFetch.length; i++) {
+        const date = datesToFetch[i];
         const filename = `${date}.json`;
         const filePath = path.join(historicalDir, filename);
 
         // 이미 파일이 존재하면 스킵
         if (fs.existsSync(filePath)) {
-          console.log(`   [${i + 1}/${dates.length}] Skipping ${date} (already exists)`);
+          console.log(`   [${i + 1}/${datesToFetch.length}] Skipping ${date} (already exists)`);
           historicalDates.push(date);
           skippedCount++;
           continue;
         }
 
-        console.log(`   [${i + 1}/${dates.length}] Fetching data for ${date}...`);
+        console.log(`   [${i + 1}/${datesToFetch.length}] Fetching data for ${date}...`);
 
         try {
           // 특정 날짜의 전체 종목 데이터 조회
@@ -369,10 +357,12 @@ async function fetchAllData() {
           start: historicalDates[0],
           end: historicalDates[historicalDates.length - 1],
         } : null,
+        availableDatesTotal: availableDates.length,
+        fetchedDatesTotal: datesToFetch.length,
         updatedAt: new Date().toISOString(),
       };
 
-      console.log(`   ✓ Historical data: ${successCount} fetched, ${skippedCount} skipped, ${emptyCount} empty (${successCount + skippedCount + emptyCount}/${dates.length} total)`);
+      console.log(`   ✓ Historical data: ${successCount} fetched, ${skippedCount} skipped, ${emptyCount} empty (${successCount + skippedCount + emptyCount}/${datesToFetch.length} total)`);
     } catch (error) {
       console.error('   ✗ Failed to fetch historical data:', error.message);
       metadata.sources.historicalData = {
