@@ -128,6 +128,28 @@ export function matchesInvestmentStrategy(stock: any, strategy: keyof typeof INV
         (s.beta || 0) > 2.0  // Beta > 2.0 (고성장 특성)
       );
 
+    case "hyper_growth":
+      return (
+        (s.marketCap || 0) >= 0.5 &&  // 5억 달러 이상
+        (s.price || 0) >= 5 &&
+        (s.dollarVolume || 0) >= 1 &&  // 100만 달러
+        (s.RevYoY || 0) >= 25 &&  // 매출 성장률 >= 25%
+        (s.PEG || 0) < 1.5 &&
+        (s.PER || 0) < 100 &&  // 높은 성장 허용
+        (s.PS || 0) < 50 &&  // P/S < 50
+        (s.shortPercent || 0) < 25  // 공매도 비율 < 25%
+      );
+
+    case "turnaround_undervalued":
+      return (
+        (s.marketCap || 0) >= 0.5 &&  // 5억 달러 이상
+        (s.price || 0) >= 5 &&
+        (s.dollarVolume || 0) >= 1 &&  // 100만 달러
+        (s.PS || 0) < 1.5 &&  // 주가매출배수(P/S) < 1.5 (저평가)
+        (s.OpMarginTTM || 0) > 0 &&  // 영업이익률 > 0% (회복 추세)
+        (s.PER || 0) > 0  // PER: 양수 (수익성 회복)
+      );
+
     default:
       return true;
   }

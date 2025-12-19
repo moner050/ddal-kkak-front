@@ -23,7 +23,9 @@ export type InvestmentProfile =
   | 'growth_quality'
   | 'momentum'
   | 'swing'
-  | 'ai_transformation';
+  | 'ai_transformation'
+  | 'hyper_growth'
+  | 'turnaround_undervalued';
 
 export type GicsSector =
   | 'Information Technology'
