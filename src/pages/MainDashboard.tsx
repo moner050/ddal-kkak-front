@@ -1096,10 +1096,10 @@ export default function DemoHome() {
                                   </button>
                                 </div>
                                 <div>
-                                  <div className="text-sm font-bold text-gray-900">{stock.name}</div>
                                   <div className="text-xs text-gray-500">
-                                    {stock.symbol} · {stock.market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                                    {stock.symbol}.{stock.market === "US" ? "미국" : "한국"}
                                   </div>
+                                  <div className="text-sm font-bold text-gray-900">{stock.name}</div>
                                   <div className="text-xs text-gray-500">{stock.category}</div>
                                 </div>
                               </div>
@@ -1622,10 +1622,10 @@ export default function DemoHome() {
                                       </button>
                                     </div>
                                     <div>
-                                      <div className="text-sm font-bold text-gray-900">{stock.name}</div>
                                       <div className="text-xs text-gray-500">
-                                        {stock.symbol} · {stock.market === "US" ? "🇺🇸 미국" : "🇰🇷 한국"}
+                                        {stock.symbol}.{stock.market === "US" ? "미국" : "한국"}
                                       </div>
+                                      <div className="text-sm font-bold text-gray-900">{stock.name}</div>
                                     </div>
                                   </div>
                                 </td>
