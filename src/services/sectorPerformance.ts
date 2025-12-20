@@ -103,10 +103,36 @@ function calculateSectorAvgReturn(
   const avgReturn = returns.reduce((sum, ret) => sum + ret, 0) / returns.length;
 
   if (debug) {
-    console.log(`📊 Sector ${sector} (${sectorKr}): ${returns.length}/${todaySectorStocks.length} stocks calculated, avg return: ${avgReturn > 0 ? '+' : ''}${avgReturn.toFixed(2)}%`);
+    const minReturn = Math.min(...returns);
+    const maxReturn = Math.max(...returns);
+    console.log(`📊 Sector ${sector} (${sectorKr}): ${returns.length}/${todaySectorStocks.length} stocks calculated`);
+    console.log(`   Min: ${minReturn.toFixed(4)}%, Max: ${maxReturn.toFixed(4)}%, Avg: ${avgReturn > 0 ? '+' : ''}${avgReturn.toFixed(4)}%`);
+    if (avgReturn === 0) {
+      console.log(`   ⚠️ Average return is exactly 0 - Sum of returns: ${returns.reduce((sum, ret) => sum + ret, 0).toFixed(4)}`);
+    }
   }
 
   return avgReturn;
+}
+
+/**
+ * 특정 섹터의 평균 가격 계산 (연간 성과 계산용)
+ * @param stocks 종목 데이터
+ * @param sector 영문 섹터명
+ * @returns 평균 가격
+ */
+function calculateSectorAvgPrice(stocks: FrontendUndervaluedStock[], sector: string): number {
+  const sectorKr = toKoreanSector(sector);
+  const sectorStocks = stocks.filter((s) => s.category === sectorKr);
+
+  if (sectorStocks.length === 0) return 0;
+
+  // price가 유효한 데이터만 사용
+  const validStocks = sectorStocks.filter((s) => s.price && s.price > 0);
+  if (validStocks.length === 0) return 0;
+
+  const totalPrice = validStocks.reduce((sum, stock) => sum + (stock.price || 0), 0);
+  return totalPrice / validStocks.length;
 }
 
 /**
