@@ -56,25 +56,46 @@ function calculateSectorAvgReturn(
     return 0;
   }
 
+  // 어제 섹터 종목 필터링
+  const yesterdaySectorStocks = yesterdayStocks.filter((s) => s.category === sectorKr);
+  if (yesterdaySectorStocks.length === 0) {
+    if (debug) console.warn(`⚠️ No yesterday stocks found for sector: ${sector}, today: ${todaySectorStocks.length}`);
+    return 0;
+  }
+
   // 각 종목의 수익률 계산
   const returns: number[] = [];
+  let matchedCount = 0;
+  let noMatchCount = 0;
+  let noPriceCount = 0;
 
   for (const todayStock of todaySectorStocks) {
     // 어제 같은 종목 찾기
-    const yesterdayStock = yesterdayStocks.find((s) => s.symbol === todayStock.symbol);
+    const yesterdayStock = yesterdaySectorStocks.find((s) => s.symbol === todayStock.symbol);
 
-    if (!yesterdayStock || !todayStock.price || !yesterdayStock.price) {
-      continue; // 가격 데이터 없으면 건너뛰기
+    if (!yesterdayStock) {
+      noMatchCount++;
+      continue; // 어제 데이터 없으면 건너뛰기
+    }
+
+    if (!todayStock.price || !yesterdayStock.price || yesterdayStock.price <= 0) {
+      noPriceCount++;
+      continue; // 가격 데이터 없거나 어제 가격이 0 이하이면 건너뛰기
     }
 
     // 개별 종목의 수익률 계산
     const ret = ((todayStock.price - yesterdayStock.price) / yesterdayStock.price) * 100;
     returns.push(ret);
+    matchedCount++;
   }
 
   // 수익률이 없으면 0 반환
   if (returns.length === 0) {
-    if (debug) console.warn(`⚠️ No valid price data in sector: ${sector}`);
+    if (debug) {
+      console.warn(`⚠️ Sector ${sector} (${sectorKr}): No valid returns`);
+      console.log(`   Today: ${todaySectorStocks.length}, Yesterday: ${yesterdaySectorStocks.length}`);
+      console.log(`   Matched: ${matchedCount}, No match: ${noMatchCount}, No price: ${noPriceCount}`);
+    }
     return 0;
   }
 
@@ -82,7 +103,7 @@ function calculateSectorAvgReturn(
   const avgReturn = returns.reduce((sum, ret) => sum + ret, 0) / returns.length;
 
   if (debug) {
-    console.log(`📊 Sector ${sector} (${sectorKr}): ${returns.length} stocks with valid data, avg return: ${avgReturn > 0 ? '+' : ''}${avgReturn.toFixed(2)}%`);
+    console.log(`📊 Sector ${sector} (${sectorKr}): ${returns.length}/${todaySectorStocks.length} stocks calculated, avg return: ${avgReturn > 0 ? '+' : ''}${avgReturn.toFixed(2)}%`);
   }
 
   return avgReturn;
