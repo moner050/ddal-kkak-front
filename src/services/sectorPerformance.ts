@@ -34,19 +34,39 @@ export interface SectorPerformance {
 
 /**
  * 특정 섹터의 평균 가격 계산
+ * @param stocks 종목 데이터
+ * @param sector 영문 섹터명
+ * @param debug 디버그 모드 (콘솔 출력)
+ * @returns 평균 가격 (없으면 0)
  */
-function calculateSectorAvgPrice(stocks: FrontendUndervaluedStock[], sector: string): number {
+function calculateSectorAvgPrice(stocks: FrontendUndervaluedStock[], sector: string, debug: boolean = false): number {
   // sector는 영문명, stock.category는 한글명이므로 한글로 변환해서 비교
   const sectorKr = toKoreanSector(sector);
   const sectorStocks = stocks.filter((s) => s.category === sectorKr);
 
-  if (sectorStocks.length === 0) return 0;
+  if (sectorStocks.length === 0) {
+    if (debug) console.warn(`⚠️ No stocks found for sector: ${sector} (${sectorKr})`);
+    return 0;
+  }
 
-  const totalPrice = sectorStocks.reduce((sum, stock) => {
+  // price가 유효한 데이터만 사용 (null, undefined, 0 제외)
+  const validStocks = sectorStocks.filter((s) => s.price && s.price > 0);
+  if (validStocks.length === 0) {
+    if (debug) console.warn(`⚠️ No valid prices in sector: ${sector} (${sectorKr}), found ${sectorStocks.length} stocks with invalid prices`);
+    return 0;
+  }
+
+  const totalPrice = validStocks.reduce((sum, stock) => {
     return sum + (stock.price || 0);
   }, 0);
 
-  return totalPrice / sectorStocks.length;
+  const avgPrice = totalPrice / validStocks.length;
+
+  if (debug) {
+    console.log(`📊 Sector ${sector} (${sectorKr}): ${validStocks.length}/${sectorStocks.length} stocks with valid prices, avg: $${avgPrice.toFixed(2)}`);
+  }
+
+  return avgPrice;
 }
 
 /**
@@ -60,14 +80,17 @@ export function calculateSectorPerformances(
   yesterdayStocks: FrontendUndervaluedStock[]
 ): SectorPerformance[] {
   const performances: SectorPerformance[] = [];
+  const debug = false; // 필요시 true로 변경하여 디버그 모드 활성화
+
+  console.log(`📊 Calculating sector performances: ${todayStocks.length} today vs ${yesterdayStocks.length} yesterday stocks`);
 
   for (const sector of GICS_SECTORS) {
-    const todayAvgPrice = calculateSectorAvgPrice(todayStocks, sector);
-    const yesterdayAvgPrice = calculateSectorAvgPrice(yesterdayStocks, sector);
+    const todayAvgPrice = calculateSectorAvgPrice(todayStocks, sector, debug);
+    const yesterdayAvgPrice = calculateSectorAvgPrice(yesterdayStocks, sector, debug);
 
     // 어제 데이터가 없으면 변동률 0
     const changePercent =
-      yesterdayAvgPrice > 0
+      yesterdayAvgPrice > 0 && todayAvgPrice > 0
         ? ((todayAvgPrice - yesterdayAvgPrice) / yesterdayAvgPrice) * 100
         : 0;
 
@@ -85,6 +108,11 @@ export function calculateSectorPerformances(
       avgPrice: todayAvgPrice,
       trend,
     });
+
+    // 디버그 로그
+    if (debug || changePercent !== 0) {
+      console.log(`  ${toKoreanSector(sector)}: ${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}% (${stockCount} stocks, today: $${todayAvgPrice.toFixed(2)}, yesterday: $${yesterdayAvgPrice.toFixed(2)})`);
+    }
   }
 
   // 변동률 내림차순 정렬
@@ -176,10 +204,23 @@ export async function loadSectorPerformances(
       stockService.loadStocksByDate(yesterdayDate),
     ]);
 
-    if (todayStocks.length === 0 || yesterdayStocks.length === 0) {
-      console.warn('Failed to load stocks for sector performance calculation');
+    console.log(`📥 Loaded data: ${todayStocks.length} stocks on ${todayDate}, ${yesterdayStocks.length} stocks on ${yesterdayDate}`);
+
+    if (todayStocks.length === 0) {
+      console.error(`❌ No stocks found for today's date: ${todayDate}`);
       return {
         performances: [],
+        todayDate,
+        yesterdayDate,
+      };
+    }
+
+    if (yesterdayStocks.length === 0) {
+      console.warn(`⚠️ No stocks found for yesterday's date: ${yesterdayDate}, using today's data only`);
+      // 어제 데이터가 없으면 오늘 데이터만으로 계산 (모든 변동률이 0)
+      const performances = calculateSectorPerformances(todayStocks, todayStocks);
+      return {
+        performances,
         todayDate,
         yesterdayDate,
       };
@@ -189,8 +230,12 @@ export async function loadSectorPerformances(
     const performances = calculateSectorPerformances(todayStocks, yesterdayStocks);
 
     console.log(
-      `✅ Calculated performances for ${performances.length} sectors (${todayStocks.length} stocks today, ${yesterdayStocks.length} yesterday)`
+      `✅ Calculated performances for ${performances.length} sectors`
     );
+
+    // 데이터 검증: 각 섹터의 데이터가 제대로 있는지 확인
+    const nonZeroPerformances = performances.filter((p) => p.stockCount > 0);
+    console.log(`📈 Sectors with data: ${nonZeroPerformances.length}/${performances.length}`);
 
     return {
       performances,
@@ -198,7 +243,7 @@ export async function loadSectorPerformances(
       yesterdayDate,
     };
   } catch (error) {
-    console.error('Failed to load sector performances:', error);
+    console.error('❌ Failed to load sector performances:', error);
     return {
       performances: [],
       todayDate: '',

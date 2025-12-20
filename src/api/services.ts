@@ -46,7 +46,7 @@ const loadMockData = async <T>(path: string, fallback: T): Promise<T> => {
 export const stockService = {
   /**
    * 정적 JSON 파일에서 저평가 우량주 데이터 로드
-   * 빌드 타임에 생성된 static JSON 파일 사용
+   * 최신 날짜의 데이터를 로드 (날짜별로 저장된 파일 사용)
    */
   exportAllStocks: async (limit: number = 1000): Promise<{
     lastUpdated: string;
@@ -55,20 +55,41 @@ export const stockService = {
     stocks: FrontendUndervaluedStock[];
   }> => {
     try {
-      // static JSON 파일에서 로드
-      const response = await fetch('/data/undervalued-stocks.json');
+      // 1. 사용 가능한 날짜 조회
+      const availableDates = await stockService.getAvailableDates();
+      if (availableDates.length === 0) {
+        console.warn('No available dates for undervalued stocks');
+        return {
+          lastUpdated: new Date().toISOString(),
+          dataDate: new Date().toISOString().split('T')[0],
+          totalCount: 0,
+          stocks: [],
+        };
+      }
+
+      // 2. 최신 날짜 선택 (첫 번째가 최신)
+      const latestDate = availableDates.sort(
+        (a, b) => new Date(b).getTime() - new Date(a).getTime()
+      )[0];
+
+      // 3. 해당 날짜의 JSON 파일에서 로드
+      const response = await fetch(`/data/undervalued-stocks/${latestDate}.json`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
 
-      // API 응답 형식과 동일하게 변환
+      // 4. API 응답 형식과 동일하게 변환
       const usStocks = filterUSOnlyFromApi(data.stocks);
+
+      // limit 적용
+      const limitedStocks = usStocks.slice(0, limit);
+
       return {
-        lastUpdated: data.lastUpdated,
-        dataDate: data.dataDate,
+        lastUpdated: data.lastUpdated || new Date().toISOString(),
+        dataDate: data.dataDate || latestDate,
         totalCount: usStocks.length,
-        stocks: toFrontendUndervaluedStocks(usStocks),
+        stocks: toFrontendUndervaluedStocks(limitedStocks),
       };
     } catch (error) {
       console.error('Failed to load stocks from static JSON:', error);
