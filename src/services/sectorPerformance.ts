@@ -33,40 +33,59 @@ export interface SectorPerformance {
 }
 
 /**
- * 특정 섹터의 평균 가격 계산
- * @param stocks 종목 데이터
+ * 섹터별 평균 수익률 계산 (개선된 방식)
+ * 각 종목의 개별 수익률을 계산한 후 평균을 구함
+ * @param todayStocks 오늘 날짜 주식 데이터
+ * @param yesterdayStocks 어제 날짜 주식 데이터
  * @param sector 영문 섹터명
- * @param debug 디버그 모드 (콘솔 출력)
- * @returns 평균 가격 (없으면 0)
+ * @param debug 디버그 모드
+ * @returns 평균 수익률 (%)
  */
-function calculateSectorAvgPrice(stocks: FrontendUndervaluedStock[], sector: string, debug: boolean = false): number {
-  // sector는 영문명, stock.category는 한글명이므로 한글로 변환해서 비교
+function calculateSectorAvgReturn(
+  todayStocks: FrontendUndervaluedStock[],
+  yesterdayStocks: FrontendUndervaluedStock[],
+  sector: string,
+  debug: boolean = false
+): number {
   const sectorKr = toKoreanSector(sector);
-  const sectorStocks = stocks.filter((s) => s.category === sectorKr);
 
-  if (sectorStocks.length === 0) {
-    if (debug) console.warn(`⚠️ No stocks found for sector: ${sector} (${sectorKr})`);
+  // 오늘 섹터 종목 필터링
+  const todaySectorStocks = todayStocks.filter((s) => s.category === sectorKr);
+  if (todaySectorStocks.length === 0) {
+    if (debug) console.warn(`⚠️ No stocks found for sector: ${sector}`);
     return 0;
   }
 
-  // price가 유효한 데이터만 사용 (null, undefined, 0 제외)
-  const validStocks = sectorStocks.filter((s) => s.price && s.price > 0);
-  if (validStocks.length === 0) {
-    if (debug) console.warn(`⚠️ No valid prices in sector: ${sector} (${sectorKr}), found ${sectorStocks.length} stocks with invalid prices`);
+  // 각 종목의 수익률 계산
+  const returns: number[] = [];
+
+  for (const todayStock of todaySectorStocks) {
+    // 어제 같은 종목 찾기
+    const yesterdayStock = yesterdayStocks.find((s) => s.symbol === todayStock.symbol);
+
+    if (!yesterdayStock || !todayStock.price || !yesterdayStock.price) {
+      continue; // 가격 데이터 없으면 건너뛰기
+    }
+
+    // 개별 종목의 수익률 계산
+    const ret = ((todayStock.price - yesterdayStock.price) / yesterdayStock.price) * 100;
+    returns.push(ret);
+  }
+
+  // 수익률이 없으면 0 반환
+  if (returns.length === 0) {
+    if (debug) console.warn(`⚠️ No valid price data in sector: ${sector}`);
     return 0;
   }
 
-  const totalPrice = validStocks.reduce((sum, stock) => {
-    return sum + (stock.price || 0);
-  }, 0);
-
-  const avgPrice = totalPrice / validStocks.length;
+  // 평균 수익률 계산
+  const avgReturn = returns.reduce((sum, ret) => sum + ret, 0) / returns.length;
 
   if (debug) {
-    console.log(`📊 Sector ${sector} (${sectorKr}): ${validStocks.length}/${sectorStocks.length} stocks with valid prices, avg: $${avgPrice.toFixed(2)}`);
+    console.log(`📊 Sector ${sector} (${sectorKr}): ${returns.length} stocks with valid data, avg return: ${avgReturn > 0 ? '+' : ''}${avgReturn.toFixed(2)}%`);
   }
 
-  return avgPrice;
+  return avgReturn;
 }
 
 /**
@@ -80,19 +99,13 @@ export function calculateSectorPerformances(
   yesterdayStocks: FrontendUndervaluedStock[]
 ): SectorPerformance[] {
   const performances: SectorPerformance[] = [];
-  const debug = false; // 필요시 true로 변경하여 디버그 모드 활성화
+  const debug = true; // 디버그 모드 활성화 - 콘솔에서 계산 과정 확인 가능
 
   console.log(`📊 Calculating sector performances: ${todayStocks.length} today vs ${yesterdayStocks.length} yesterday stocks`);
 
   for (const sector of GICS_SECTORS) {
-    const todayAvgPrice = calculateSectorAvgPrice(todayStocks, sector, debug);
-    const yesterdayAvgPrice = calculateSectorAvgPrice(yesterdayStocks, sector, debug);
-
-    // 어제 데이터가 없으면 변동률 0
-    const changePercent =
-      yesterdayAvgPrice > 0 && todayAvgPrice > 0
-        ? ((todayAvgPrice - yesterdayAvgPrice) / yesterdayAvgPrice) * 100
-        : 0;
+    // 개선된 방식: 개별 종목 수익률의 평균
+    const changePercent = calculateSectorAvgReturn(todayStocks, yesterdayStocks, sector, debug);
 
     const stockCount = todayStocks.filter((s) => s.category === toKoreanSector(sector)).length;
 
@@ -105,13 +118,13 @@ export function calculateSectorPerformances(
       sectorKr: toKoreanSector(sector),
       changePercent,
       stockCount,
-      avgPrice: todayAvgPrice,
+      avgPrice: 0, // 새 방식에서는 사용하지 않음
       trend,
     });
 
     // 디버그 로그
     if (debug || changePercent !== 0) {
-      console.log(`  ${toKoreanSector(sector)}: ${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}% (${stockCount} stocks, today: $${todayAvgPrice.toFixed(2)}, yesterday: $${yesterdayAvgPrice.toFixed(2)})`);
+      console.log(`  ${toKoreanSector(sector)}: ${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}% (${stockCount} stocks)`);
     }
   }
 
