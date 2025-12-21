@@ -63,71 +63,7 @@ async function fetchAllData() {
   try {
     // ✨ 마켓별 데이터 다운로드 (US, KR)
     const markets = ['US', 'KR'];
-    let latestDataDate = null;
 
-    // 1. 저평가 우량주 데이터 (마켓별, 10000개)
-    console.log('\n📊 Fetching undervalued stocks by market...');
-
-    const undervaluedStocksByMarket = {};
-
-    for (const market of markets) {
-      try {
-        console.log(`\n   🌍 Market: ${market}`);
-        const undervaluedResponse = await apiClient.get(
-          `/api/undervalued-stocks/market/${market}/export`,
-          { params: { limit: 10000 } }
-        );
-
-        const stocksData = {
-          market,
-          lastUpdated: undervaluedResponse.data.lastUpdated,
-          dataDate: undervaluedResponse.data.dataDate,
-          totalCount: undervaluedResponse.data.totalCount,
-          stocks: undervaluedResponse.data.stocks,
-        };
-
-        // ✨ 마켓별 파일로 저장 (undervalued-stocks-us.json, undervalued-stocks-kr.json)
-        saveJSON(`undervalued-stocks-${market.toLowerCase()}.json`, stocksData);
-        undervaluedStocksByMarket[market] = stocksData;
-
-        // historical data 디렉토리에도 저장
-        const historicalDir = path.join(DATA_DIR, 'undervalued-stocks');
-        if (!fs.existsSync(historicalDir)) {
-          fs.mkdirSync(historicalDir, { recursive: true });
-        }
-
-        const todayFile = `${undervaluedResponse.data.dataDate}-${market.toLowerCase()}.json`;
-        const todayFilePath = path.join(historicalDir, todayFile);
-        fs.writeFileSync(todayFilePath, JSON.stringify({
-          market,
-          date: undervaluedResponse.data.dataDate,
-          lastUpdated: new Date().toISOString(),
-          totalCount: undervaluedResponse.data.totalCount,
-          stocks: undervaluedResponse.data.stocks,
-        }, null, 2), 'utf-8');
-
-        if (!latestDataDate) {
-          metadata.dataDate = undervaluedResponse.data.dataDate;
-          latestDataDate = undervaluedResponse.data.dataDate;
-        }
-
-        console.log(`     ✓ ${undervaluedResponse.data.totalCount} stocks fetched for ${market}`);
-      } catch (error) {
-        console.error(`     ✗ Failed to fetch undervalued stocks for ${market}:`, error.message);
-        // 실패 시 빈 데이터 저장
-        saveJSON(`undervalued-stocks-${market.toLowerCase()}.json`, {
-          market,
-          lastUpdated: new Date().toISOString(),
-          dataDate: null,
-          totalCount: 0,
-          stocks: [],
-        });
-      }
-    }
-
-    // 메타데이터에 마켓별 정보 저장
-    metadata.sources.undervaluedStocks = undervaluedStocksByMarket;
-    console.log('\n   ✓ All markets completed');
 
     // 2. 오늘의 주목 종목 (Featured Stocks) - 마켓별
     console.log('\n⭐ Fetching featured stocks by market...');
